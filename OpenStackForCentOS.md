@@ -46,4 +46,16 @@ GRANT ALL PRIVILEGES ON quantum.* TO 'quantum'@'10.0.2.15' \
 IDENTIFIED BY 'password';
 FLUSH PRIVILEGES;
 EOF
+→パスワードが聞かれるが、空白のままEnterしてOK.
 ```
+
+Install Queing Service(s)
+```
+yum -y install qpid-cpp-server
+```
+
+
+
+
+
+
