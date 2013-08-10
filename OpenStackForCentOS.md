@@ -52,10 +52,13 @@ EOF
 Install Queing Service(s)
 ```
 yum -y install qpid-cpp-server
+# echo auth=1 >> /etc/qpidd.conf
+→1を入れない。qpidd.confにauth=YESが既に入っているため。
+chkconfig qpidd on
+service qpidd start
 ```
 
-
-
+Openstackパッケージのインストール
 
 
 
