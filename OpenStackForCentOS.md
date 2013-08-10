@@ -1,4 +1,4 @@
-﻿<!--
+<!--
 ************************************************************
 OpenStack GrizzyをCentOS6(x86_64)へインストールする手順
 参照元: http://docs.openstack.org/grizzly/basic-install/yum/content/basic-install_controller.html
@@ -59,6 +59,10 @@ service qpidd start
 ```
 
 Openstackパッケージのインストール
+```
+yum -y install wget
+cd /etc/yum.repos.d
+rpm -i http://dl.fedoraproject.org/pub/epel/6/x86_64/epel-release-6-8.noarch.rpm
+→CentOSパッケージ用の拡張リポジトリを指定する。OpenStack-**をインストールできる。
 
-
-
+```
