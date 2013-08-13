@@ -13,6 +13,12 @@ Copyright (c) Takehiko OGASAWARA 2013 All Rights Reserved.
 Reference From
 http://docs.openstack.org/grizzly/basic-install/yum/content/basic-install_controller.html>
 
+バックアップディレクトリ作成
+```
+mkdir -p /root/MAINTENANCE/`date "+%Y%m%d"`/{bak,new}
+BAK=/root/MAINTENANCE/`date "+%Y%m%d"`/bak
+```
+
 パッケージインストール  
 ```
 yum -y install ntp
@@ -20,9 +26,11 @@ yum -y install mysql mysql-server MySQL-python
 ```
 mysql設定更新
 ```
-cp -p /etc/my.cnf /root/MAINTENANCE/20130810/bak/.
+cp -p /etc/my.cnf $BAK
 sed -i 's/127.0.0.1/0.0.0.0/g' /etc/my.cnf
 service mysqld start
+chkconfig --list |grep -i mysqld
+chkconfig mysqld on
 ```
 OpenStack用DB作成
 ```
@@ -65,4 +73,138 @@ cd /etc/yum.repos.d
 rpm -i http://dl.fedoraproject.org/pub/epel/6/x86_64/epel-release-6-8.noarch.rpm
 →CentOSパッケージ用の拡張リポジトリを指定する。OpenStack-**をインストールできる。
 
+```
+
+Install KeyStone
+```
+yum -y install openstack-keystone python-keystone python-keystoneclient
+```
+
+設定ファイル編集
+```
+cp -apr /etc/keystone $BAK
+vi /etc/keystone/keystone.conf
+```
+以下の設定値を追記する
+```
+[DEFAULT]
+admin_token = password
+debug = True
+verbose = True
+
+[sql]
+connection = mysql://keystone:password@localhost/keystone
+```
+
+KeyStone用の鍵を作成する
+```
+keystone-manage pki_setup
+chown -R keystone:keystone /etc/keystone/*
+```
+
+設定値を反映する
+```
+service openstack-keystone restart
+chkconifig --list |grep -i keystone
+chkconfig openstack-keystone on
+keystone-manage db_sync
+~~~マニュアルはopenstack-dbコマンドであったが、keystone-manageでDBをInitializeする。
+openstack-dbコマンドが無かったため。
+```
+
+openrcファイル作成
+```
+vi /root/.openrc
+export OS_TENANT_NAME=admin
+export OS_USERNAME=admin
+export OS_PASSWORD=password
+export OS_AUTH_URL="http://localhost:5000/v2.0/"
+export OS_SERVICE_ENDPOINT="http://localhost:35357/v2.0"
+export OS_SERVICE_TOKEN=password
+```
+ログイン時に読込むよう設定
+```
+source /root/.openrc
+echo "source /root/.openrc" >> /root/.bashrc
+```
+
+keystone初期データ作成
+```
+vi /usr/local/src/initkeystone.sh
+※IPアドレスを確認すること。
+---
+#!/bin/bash
+
+# Modify these variables as needed
+ADMIN_PASSWORD=${ADMIN_PASSWORD:-password}
+SERVICE_PASSWORD=${SERVICE_PASSWORD:-$ADMIN_PASSWORD}
+DEMO_PASSWORD=${DEMO_PASSWORD:-$ADMIN_PASSWORD}
+export OS_SERVICE_TOKEN="password"
+export OS_SERVICE_ENDPOINT="http://localhost:35357/v2.0"
+SERVICE_TENANT_NAME=${SERVICE_TENANT_NAME:-service}
+#
+MYSQL_USER=keystone
+MYSQL_DATABASE=keystone
+MYSQL_HOST=localhost
+MYSQL_PASSWORD=password
+#
+KEYSTONE_REGION=RegionOne
+KEYSTONE_HOST=10.0.2.15
+
+# Shortcut function to get a newly generated ID
+function get_field() {
+    while read data; do
+        if [ "$1" -lt 0 ]; then
+            field="(\$(NF$1))"
+        else
+            field="\$$(($1 + 1))"
+        fi
+        echo "$data" | awk -F'[ \t]*\\|[ \t]*' "{print $field}"
+    done
+}
+
+# Tenants
+ADMIN_TENANT=$(keystone tenant-create --name=admin | grep " id " | get_field 2)
+DEMO_TENANT=$(keystone tenant-create --name=demo | grep " id " | get_field 2)
+SERVICE_TENANT=$(keystone tenant-create --name=$SERVICE_TENANT_NAME | grep " id " | get_field 2)
+
+# Users
+ADMIN_USER=$(keystone user-create --name=admin --pass="$ADMIN_PASSWORD" --email=admin@domain.com | grep " id " | get_field 2)
+DEMO_USER=$(keystone user-create --name=demo --pass="$DEMO_PASSWORD" --email=demo@domain.com --tenant-id=$DEMO_TENANT | grep " id " | get_field 2)
+NOVA_USER=$(keystone user-create --name=nova --pass="$SERVICE_PASSWORD" --tenant-id $SERVICE_TENANT --email=nova@domain.com | grep " id " | get_field 2)
+GLANCE_USER=$(keystone user-create --name=glance --pass="$SERVICE_PASSWORD" --tenant-id $SERVICE_TENANT --email=glance@domain.com | grep " id " | get_field 2)
+QUANTUM_USER=$(keystone user-create --name=quantum --pass="$SERVICE_PASSWORD" --tenant-id $SERVICE_TENANT --email=quantum@domain.com | grep " id " | get_field 2)
+CINDER_USER=$(keystone user-create --name=cinder --pass="$SERVICE_PASSWORD" --tenant-id $SERVICE_TENANT --email=cinder@domain.com | grep " id " | get_field 2)
+
+# Roles
+ADMIN_ROLE=$(keystone role-create --name=admin | grep " id " | get_field 2)
+MEMBER_ROLE=$(keystone role-create --name=Member | grep " id " | get_field 2)
+
+# Add Roles to Users in Tenants
+keystone user-role-add --user-id $ADMIN_USER --role-id $ADMIN_ROLE --tenant-id $ADMIN_TENANT
+keystone user-role-add --tenant-id $SERVICE_TENANT --user-id $NOVA_USER --role-id $ADMIN_ROLE
+keystone user-role-add --tenant-id $SERVICE_TENANT --user-id $GLANCE_USER --role-id $ADMIN_ROLE
+keystone user-role-add --tenant-id $SERVICE_TENANT --user-id $QUANTUM_USER --role-id $ADMIN_ROLE
+keystone user-role-add --tenant-id $SERVICE_TENANT --user-id $CINDER_USER --role-id $ADMIN_ROLE
+keystone user-role-add --tenant-id $DEMO_TENANT --user-id $DEMO_USER --role-id $MEMBER_ROLE
+
+# Create services
+COMPUTE_SERVICE=$(keystone service-create --name nova --type compute --description 'OpenStack Compute Service' | grep " id " | get_field 2)
+VOLUME_SERVICE=$(keystone service-create --name cinder --type volume --description 'OpenStack Volume Service' | grep " id " | get_field 2)
+IMAGE_SERVICE=$(keystone service-create --name glance --type image --description 'OpenStack Image Service' | grep " id " | get_field 2)
+IDENTITY_SERVICE=$(keystone service-create --name keystone --type identity --description 'OpenStack Identity' | grep " id " | get_field 2)
+EC2_SERVICE=$(keystone service-create --name ec2 --type ec2 --description 'OpenStack EC2 service' | grep " id " | get_field 2)
+NETWORK_SERVICE=$(keystone service-create --name quantum --type network --description 'OpenStack Networking service' | grep " id " | get_field 2)
+
+# Create endpoints
+keystone endpoint-create --region $KEYSTONE_REGION --service-id $COMPUTE_SERVICE --publicurl 'http://'"$KEYSTONE_HOST"':8774/v2/$(tenant_id)s' --adminurl 'http://'"$KEYSTONE_HOST"':8774/v2/$(tenant_id)s' --internalurl 'http://'"$KEYSTONE_HOST"':8774/v2/$(tenant_id)s'
+keystone endpoint-create --region $KEYSTONE_REGION --service-id $VOLUME_SERVICE --publicurl 'http://'"$KEYSTONE_HOST"':8776/v1/$(tenant_id)s' --adminurl 'http://'"$KEYSTONE_HOST"':8776/v1/$(tenant_id)s' --internalurl 'http://'"$KEYSTONE_HOST"':8776/v1/$(tenant_id)s'
+keystone endpoint-create --region $KEYSTONE_REGION --service-id $IMAGE_SERVICE --publicurl 'http://'"$KEYSTONE_HOST"':9292' --adminurl 'http://'"$KEYSTONE_HOST"':9292' --internalurl 'http://'"$KEYSTONE_HOST"':9292'
+keystone endpoint-create --region $KEYSTONE_REGION --service-id $IDENTITY_SERVICE --publicurl 'http://'"$KEYSTONE_HOST"':5000/v2.0' --adminurl 'http://'"$KEYSTONE_HOST"':35357/v2.0' --internalurl 'http://'"$KEYSTONE_HOST"':5000/v2.0'
+keystone endpoint-create --region $KEYSTONE_REGION --service-id $EC2_SERVICE --publicurl 'http://'"$KEYSTONE_HOST"':8773/services/Cloud' --adminurl 'http://'"$KEYSTONE_HOST"':8773/services/Admin' --internalurl 'http://'"$KEYSTONE_HOST"':8773/services/Cloud'
+keystone endpoint-create --region $KEYSTONE_REGION --service-id $NETWORK_SERVICE --publicurl 'http://'"$KEYSTONE_HOST"':9696/' --adminurl 'http://'"$KEYSTONE_HOST"':9696/' --internalurl 'http://'"$KEYSTONE_HOST"':9696/'
+---
+bash /usr/local/src/initkeystone.sh
+~~~★keystoneコマンドを正常終了できること。
+(warningはOK、Errorの場合はmmysql:keystoneDBを再作成、keystone db_sync後、shell再実行)
 ```
