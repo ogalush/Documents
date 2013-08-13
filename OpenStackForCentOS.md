@@ -57,7 +57,7 @@ EOF
 →パスワードが聞かれるが、空白のままEnterしてOK.
 ```
 
-Install Queing Service(s)
+### Install Queing Service(s)
 ```
 yum -y install qpid-cpp-server
 # echo auth=1 >> /etc/qpidd.conf
@@ -66,7 +66,7 @@ chkconfig qpidd on
 service qpidd start
 ```
 
-Openstackパッケージのインストール
+Openstackパッケージのパッケージ登録
 ```
 yum -y install wget
 cd /etc/yum.repos.d
@@ -75,7 +75,7 @@ rpm -i http://dl.fedoraproject.org/pub/epel/6/x86_64/epel-release-6-8.noarch.rpm
 
 ```
 
-Install KeyStone
+### Install KeyStone
 ```
 yum -y install openstack-keystone python-keystone python-keystoneclient
 ```
@@ -208,3 +208,68 @@ bash /usr/local/src/initkeystone.sh
 ~~~★keystoneコマンドを正常終了できること。
 (warningはOK、Errorの場合はmmysql:keystoneDBを再作成、keystone db_sync後、shell再実行)
 ```
+
+
+### Install glance
+パッケージインストール
+```
+yum -y install openstack-glance
+```
+
+バックアップ
+```
+cp -apr /etc/glance $BAK
+```
+
+DB接続先設定
+```
+vi /etc/glance/glance-api.conf
+vi /etc/glance/glance-registry.conf
+上記量ファイルともに、以下の設定値を適用する
+---
+[DEFAULT]
+sql_connection = mysql://glance:password@localhost/glance
+[keystone_authtoken]
+admin_tenant_name = service
+admin_user = glance
+admin_password = password
+[paste_deploy]
+flavor=keystone
+---
+```
+
+設定値の適用
+```
+chkconfig --list |grep -i glance
+chkconfig openstack-glance-api on
+chkconfig openstack-glance-registry on
+chkconfig openstack-glance-scrubber on
+service openstack-glance-api restart
+service openstack-glance-registry restart
+service openstack-glance-scrubber restart
+```
+
+DB初期化
+```
+glance-manage db_sync
+```
+
+OSイメージのimport
+※OSの種類は任意。
+※CentOSを仮想ゲストとする場合は、イメージの手動作成が必要そう。
+```
+ubuntu 13.04
+cd /usr/local/src
+wget http://cloud-images.ubuntu.com/releases/13.04/release/ubuntu-13.04-server-cloudimg-amd64-disk1.img
+glance image-create --is-public true --disk-format qcow2 --container-format bare --name "Ubuntu 13.04" < ubuntu-13.04-server-cloudimg-amd64-disk1.img
+[root@opencent src]# glance image-list
++--------------------------------------+--------------+-------------+------------------+-----------+--------+
+| ID                                   | Name         | Disk Format | Container Format | Size      | Status |
++--------------------------------------+--------------+-------------+------------------+-----------+--------+
+| 1b78576a-4cd9-4aba-90d5-bb811c845da1 | Ubuntu 13.04 | qcow2       | bare             | 235405312 | active |
++--------------------------------------+--------------+-------------+------------------+-----------+--------+
+~~~~イメージをインポートできればOK
+
+```
+
+次は、novaインストールです、、、
