@@ -7,8 +7,7 @@ Copyright (c) Takehiko OGASAWARA 2013 All Rights Reserved.
 -->
 <div id='title'>　</div>    
 
-# OpenStack概要
-## GrizzlyをCentOSへインストールする方法
+# GrizzlyをCentOSへインストールする方法
 
 Reference From
 http://docs.openstack.org/grizzly/basic-install/yum/content/basic-install_controller.html>
@@ -57,7 +56,7 @@ EOF
 →パスワードが聞かれるが、空白のままEnterしてOK.
 ```
 
-### Install Queing Service(s)
+### Queueing Service
 ```
 yum -y install qpid-cpp-server
 # echo auth=1 >> /etc/qpidd.conf
@@ -75,7 +74,7 @@ rpm -i http://dl.fedoraproject.org/pub/epel/6/x86_64/epel-release-6-8.noarch.rpm
 
 ```
 
-### Install KeyStone
+### KeyStone
 ```
 yum -y install openstack-keystone python-keystone python-keystoneclient
 ```
@@ -210,7 +209,7 @@ bash /usr/local/src/initkeystone.sh
 ```
 
 
-### Install glance
+### glance
 パッケージインストール
 ```
 yum -y install openstack-glance
@@ -225,7 +224,7 @@ DB接続先設定
 ```
 vi /etc/glance/glance-api.conf
 vi /etc/glance/glance-registry.conf
-上記量ファイルともに、以下の設定値を適用する
+glance-api.conf, glance-registry.confへ、下記設定値を適用する
 ---
 [DEFAULT]
 sql_connection = mysql://glance:password@localhost/glance
@@ -272,4 +271,4 @@ glance image-create --is-public true --disk-format qcow2 --container-format bare
 
 ```
 
-次は、novaインストールです、、、
+次は、novaインストール、、、
