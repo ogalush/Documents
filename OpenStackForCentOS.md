@@ -271,4 +271,95 @@ glance image-create --is-public true --disk-format qcow2 --container-format bare
 
 ```
 
-次は、novaインストール、、、
+### nova
+パッケージインストール
+```
+yum install -y openstack-nova-api openstack-nova-scheduler openstack-nova-cert \
+  openstack-nova-console openstack-nova-doc genisoimage openstack-dashboard \
+  openstack-nova-novncproxy openstack-nova-conductor novnc openstack-nova-compute
+```
+
+edit config file
+```
+cp -ap /etc/nova $BAK
+vi /etc/nova/api-paste.ini 
+[filter:authtoken]
+paste.filter_factory = keystoneclient.middleware.auth_token:filter_factory
+service_protocol = http
+service_host = 127.0.0.1
+service_port = 5000
+admin_tenant_name = service 
+admin_user  = nova  
+admin_password = password
+# Workaround for https://bugs.launchpad.net/nova/+bug/1154809
+auth_version = v2.0
+
+vi /etc/nova/nova.conf
+パスワードを以下へ変更する
+sql_connection = mysql://nova:password@localhost/nova
+
+default欄へ追記する
+---
+# General
+verbose = True
+qpid_username=guest
+qpid_password=guest
+rpc_backend = nova.openstack.common.rpc.impl_qpid
+
+# Networking
+network_api_class=nova.network.quantumv2.api.API
+quantum_url=http://10.0.2.15:9696
+quantum_auth_strategy=keystone
+quantum_admin_tenant_name=service
+quantum_admin_username=quantum
+quantum_admin_password=password
+quantum_admin_auth_url=http://10.0.2.15:35357/v2.0
+libvirt_vif_driver=nova.virt.libvirt.vif.LibvirtHybridOVSBridgeDriver
+linuxnet_interface_driver=nova.network.linux_net.LinuxOVSInterfaceDriver
+
+# Security Groups
+firewall_driver=nova.virt.firewall.NoopFirewallDriver
+security_group_api=quantum
+
+# Metadata
+quantum_metadata_proxy_shared_secret=password
+service_quantum_metadata_proxy=true
+metadata_listen = 10.0.2.15
+metadata_listen_port = 8775
+
+# Cinder
+volume_api_class=nova.volume.cinder.API
+
+# Glance
+glance_api_servers=10.0.2.15:9292
+image_service=nova.image.glance.GlanceImageService
+
+# novnc
+novnc_enable=true
+novncproxy_port=6080
+novncproxy_host=10.0.2.15
+vncserver_listen=0.0.0.0
+---
+```
+
+db初期化
+```
+nova-manage db sync
+```
+
+サービス再起動
+```
+service openstack-nova-api restart
+service openstack-nova-cert restart
+service openstack-nova-consoleauth restart
+service openstack-nova-scheduler restart
+service openstack-nova-novncproxy restart
+service openstack-nova-compute restart
+chkconfig openstack-nova-api on
+chkconfig openstack-nova-cert on
+chkconfig openstack-nova-consoleauth on
+chkconfig openstack-nova-scheduler on
+chkconfig openstack-nova-novncproxy on
+chkconfig openstack-nova-compute on
+※openstack-nova-conductorがないため、conductorのみスキップする。
+```
