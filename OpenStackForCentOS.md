@@ -469,3 +469,33 @@ service quantum-linuxbridge-agent start
 chkconfig quantum-server on
 chkconfig quantum-linuxbridge-agent on
 ```
+
+### horizon
+パッケージインストール
+```
+yum -y install httpd memcached
+```
+
+初期設定
+```
+ ( cat | sudo tee -a /etc/openstack-dashboard/local_settings ) <<EOF
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'horizon',
+        'USER': 'horizon',
+        'PASSWORD': 'password',
+        'HOST': '10.0.2.15',
+        'PORT': '',
+    }
+}
+EOF
+```
+
+サービス再起動
+```
+service httpd start
+service memcached start
+chkconfig httpd on
+chkconfig memcached on
+```
