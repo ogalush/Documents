@@ -419,3 +419,53 @@ chkconfig openstack-cinder-api on
 chkconfig openstack-cinder-scheduler on
 chkconfig openstack-cinder-volume on
 ```
+
+### quantum with Linux Bridge
+OpenVswitchがイマイチなので、Linux Bridgeを使用する。
+
+install Package
+```
+yum -y install openstack-quantum-linuxbridge openstack-quantum
+```
+
+設定ファイル更新
+```
+cp -ap /etc/quantum $BAK
+vi /etc/quantum/quantum.conf
+---
+core_plugin = quantum.plugins.linuxbridge.lb_quantum_plugin.LinuxBridgePluginV2
+...
+auth_strategy = keystone
+...
+rpc_backend=quantum.openstack.common.rpc.impl_qpid
+fake_rabbit = False
+---
+
+vi /etc/quantum/plugins/linuxbridge/linuxbridge_conf.ini 
+---
+tenant_network_type = vlan
+network_vlan_ranges = physnet1:1:1000
+sql_connection = mysql://quantum:password@127.0.0.1:3306/quantum
+physical_interface_mappings = physnet1:eth0
+---
+
+vi /etc/quantum/api-paste.ini 
+---
+paste.filter_factory = keystoneclient.middleware.auth_token:filter_factory
+...
+admin_tenant_name = service
+admin_user = quantum
+admin_password = password
+---
+
+ln -s /etc/quantum/plugins/linuxbridge/linuxbridge_conf.ini /etc/quantum/plugin.ini
+
+```
+
+サービス再起動
+```
+service quantum-server 
+service quantum-linuxbridge-agent start
+chkconfig quantum-server on
+chkconfig quantum-linuxbridge-agent on
+```
