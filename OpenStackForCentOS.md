@@ -363,3 +363,59 @@ chkconfig openstack-nova-novncproxy on
 chkconfig openstack-nova-compute on
 ※openstack-nova-conductorがないため、conductorのみスキップする。
 ```
+
+### cinder
+install package
+```
+yum install -y openstack-cinder openstack-cinder-doc \
+        iscsi-initiator-utils scsi-target-utils
+```
+
+setup iscsi
+```
+service tgtd start
+service iscsi start
+chkconfig tgtd on
+chkconfig iscsi on
+```
+
+設定ファイル更新
+```
+cp -ap /etc/cinder $BAK
+vi /etc/cinder/cinder.conf
+---
+設定変更、追記
+sql_connection = mysql://cinder:password@localhost/cinder
+qpid_user = guest
+qpid_password = quest
+---
+
+vi /etc/cinder/api-paste.ini
+---
+[filter:authtoken]へ追記
+admin_tenant_name = service
+admin_user = cinder 
+admin_password = password
+---
+```
+
+cinderストレージセットアップ
+```
+pvcreate /dev/sdb
+vgcreate cinder-volumes /dev/sdb
+```
+
+db初期化
+```
+cinder-manage db sync
+```
+
+サービス起動設定
+```
+service openstack-cinder-api restart
+service openstack-cinder-scheduler restart
+service openstack-cinder-volume restart
+chkconfig openstack-cinder-api on
+chkconfig openstack-cinder-scheduler on
+chkconfig openstack-cinder-volume on
+```
