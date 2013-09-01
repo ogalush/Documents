@@ -743,3 +743,77 @@ quantum subnet-create --ip_version 4 --gateway 192.168.0.254 public 192.168.0.0/
 quantum router-gateway-set demo-router public
 →仮想Routerから外部ネットワークへの接続を設定
 ```
+
+## Compute Node
+### nova
+※source.listへの追記, rp_filter, ntpは実施済みのためスキップ
+
+インストール
+```
+apt-get -y install nova-compute-kvm
+```
+
+設定
+```
+cp -ap /etc/nova $BAK
+vi /etc/nova/api-paste.ini
+---
+[filter:authtoken]
+auth_host = 127.0.0.1
+~~~★controller nodeのIP
+admin_tenant_name = service 
+admin_user = nova 
+admin_password = password
+---
+
+vi /etc/nova/nova.conf
+---
+[DEFAULT]
+sql_connection=mysql://nova:password@localhost/nova
+my_ip=10.0.0.10
+rabbit_password=password
+auth_strategy=keystone
+rabbit_host=10.0.0.10
+ec2_host=10.0.0.10
+ec2_url=http://10.0.0.10:8773/services/Cloud
+...
+
+↓URLと実機の設定差分を比べて追記する
+rabbit_host=10.0.0.10
+ec2_host=10.0.0.10
+ec2_url=http://10.0.0.10:8773/services/Cloud
+novncproxy_base_url=http://10.0.0.10:6080/vnc_auto.html
+
+# Compute
+compute_driver=libvirt.LibvirtDriver
+connection_type=libvirt 
+↑ここまで
+---
+```
+
+再起動
+```
+service nova-compute restart
+service nova-compute status
+```
+
+Networkインストール
+→OpenVswitch, br-exインストール済みのためスキップ
+
+## 初回起動前に
+
+horizonネットワーク設定
+```
+http://192.168.0.200/horizon
+[アクセスとセキュリティ]→[default]→[ルールの編集]
+ ★anyで許可されていればOK
+```
+
+sshkey登録
+```
+nova keypair-add --pub_key ~/.ssh/id_rsa.pub default_key 
+```
+
+→horizonからインスタンスを起動させてみる
+
+```
