@@ -271,6 +271,72 @@ bash /usr/local/src/initkeystone.sh
 ```
 
 
+### glance
+
+インストール
+```
+apt-get -y install glance
+```
+
+設定変更
+```
+cp -ap /etc/glance $BAK
+vi /etc/glance/glance-api.conf
+---
+[DEFAULT]
+sql_connection = mysql://glance:password@localhost/glance
+...
+[keystone_authtoken]
+admin_tenant_name = service
+admin_user = glance
+admin_password = password
+...
+[paste_deploy]
+flavor=keystone
+---
+
+vi /etc/glance/glance-registry.conf
+---
+[DEFAULT]
+sql_connection = mysql://glance:password@localhost/glance
+...
+[keystone_authtoken]
+admin_tenant_name = service
+admin_user = glance
+admin_password = password
+...
+[paste_deploy]
+flavor=keystone
+---
+```
+
+再起動
+```
+service glance-api restart
+service glance-api status
+service glance-registry restart
+service glance-registry status
+```
+
+初期設定
+```
+glance-manage db_sync
+```
+
+OSイメージのダウンロード
+```
+cd /usr/local/src
+wget http://uec-images.ubuntu.com/releases/12.04.2/release/ubuntu-12.04.3-server-cloudimg-amd64-disk1.img
+→ダウンロード完了後にimportする
+glance image-create --is-public true --disk-format qcow2 --container-format bare --name "Ubuntu12" < ubuntu-12.04.3-server-cloudimg-amd64-disk1.img
+```
+
+OSイメージのimport確認
+```
+glance image-list
+→importされていればOK
+```
+
 
 ------------------
 mysql設定更新
