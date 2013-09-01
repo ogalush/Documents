@@ -546,9 +546,200 @@ apt-get remove --purge openstack-dashboard-ubuntu-theme
  (NetworkMapが見えるようになる)
 ```
 
-ブラウザでの表示確認
+ブラウザ確認
 http://192.168.0.200/horizon
-→ログインID: demo
- パスワード: password
-★ブラウザでログインできれば、ひとまずOK
+→Login: admin/password
 
+
+## Network node
+### quantum
+インストール
+→ sourcelistの登録はcontrollnodeで実施したのでスキップする。
+
+設定変更
+```
+vi /etc/sysctl.conf
+---
+net.ipv4.ip_forward = 1
+net.ipv4.conf.all.forwarding = 1
+net.ipv4.conf.all.rp_filter = 0
+net.ipv4.conf.default.rp_filter = 0
+→rp_filterはControllNodeと同じ設定
+---
+```
+
+再起動
+```
+sysctl -e -p /etc/sysctl.conf
+/etc/init.d/networking restart
+```
+※ntpインストール、hosts設定共に重複してるので、スキップ
+
+
+OVSインストール
+```
+apt-get -y install quantum-plugin-openvswitch-agent quantum-dhcp-agent quantum-l3-agent
+service openvswitch-switch restart
+```
+
+仮想NIC追加
+```
+ovs-vsctl add-br br-ex
+ovs-vsctl add-port br-ex eth1
+ovs-vsctl add-br br-int
+
+cp -p /etc/network/interfaces $BAK/interfaces.2
+vi /etc/network/interfaces
+→eth0通信をbr-ex通信へ切替える
+---
+# The loopback network interface
+auto lo
+iface lo inet loopback
+
+# The primary network interface
+auto eth0
+iface eth0 inet manual
+ up ip address add 0/0 dev $IFACE
+ up ip link set $IFACE up
+ down ip link set $IFACE down
+
+auto br-ex
+iface br-ex inet static
+ address 192.168.0.200
+ netmask 255.255.255.0
+ gateway 192.168.0.254
+ dns-nameservers 192.168.0.254
+
+auto eth1
+iface eth1 inet static
+ address 10.0.0.10
+ netmask 255.255.255.0
+ network 10.0.0.0
+ broadcast 10.0.0.255
+# gateway 10.0.0.1
+
+---
+```
+
+対応インターフェイス変更
+→グローバル側のIPアドレスをbr-exへ寄せる
+```
+ip addr del 192.168.0.200/24 dev eth0
+ip addr add 192.168.0.200/24 dev br-ex
+→通信断になるので、コンソールで実施
+```
+
+再起動
+```
+/etc/init.d/networking restart
+→可能であればrebootして通信設定できてる事を確認する
+```
+
+内部→外部通信許可設定
+```
+iptables -A FORWARD -i eth1 -o br-ex -s 10.0.0.0/24 -m conntrack --ctstate NEW -j ACCEPT
+iptables -A FORWARD -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+iptables -A POSTROUTING -s 10.0.0.0/24 -t nat -j MASQUERADE
+iptables -L
+→追加した設定が入っていればOK
+```
+
+quantum設定
+```
+vi /etc/quantum/quantum.conf
+---
+[DEFAULT]
+verbose = True
+rabbit_password = password
+rabbit_host = 127.0.0.1
+~~~★自ホストなので127.0.0.1とする。別ホストにするなら変更
+[keystone_authtoken]
+auth_host = 127.0.0.1
+~~~★自ホストなので127.0.0.1とする。別ホストにするなら変更
+admin_tenant_name = service
+admin_user = quantum
+admin_password = password
+---
+
+vi /etc/quantum/plugins/openvswitch/ovs_quantum_plugin.ini
+---
+[DATABASE]
+sql_connection = mysql://quantum:password@localhost/quantum
+...
+[OVS]
+tenant_network_type = gre
+tunnel_id_ranges = 1:1000
+enable_tunneling = True
+local_ip = 10.0.0.10
+...
+[securitygroup]
+firewall_driver = quantum.agent.linux.iptables_firewall.OVSHybridIptablesFirewallDriver
+---
+
+cp -p /etc/quantum/dhcp_agent.ini $BAK
+vi /etc/quantum/dhcp_agent.ini
+---
+enable_isolated_metadata = True
+enable_metadata_network = True
+---
+
+cp -p /etc/quantum/metadata_agent.ini $BAK
+vi /etc/quantum/metadata_agent.ini
+---
+# The Quantum user information for accessing the Quantum API.
+auth_url = http://localhost:35357/v2.0
+auth_region = RegionOne
+admin_tenant_name = service
+admin_user = quantum
+admin_password = password
+nova_metadata_ip = 127.0.0.1
+metadata_proxy_shared_secret = password
+---
+```
+
+再起動
+```
+service quantum-plugin-openvswitch-agent restart
+service quantum-plugin-openvswitch-agent status
+service quantum-dhcp-agent restart
+service quantum-dhcp-agent status
+service quantum-metadata-agent restart
+service quantum-metadata-agent status
+service quantum-l3-agent restart
+service quantum-l3-agent status
+```
+
+仮想Router作成
+→openrcは作成済みのためskip
+```
+vi /usr/local/src/addvmnetwork.sh
+---
+#!/bin/bash
+TENANT_NAME="demo"
+TENANT_NETWORK_NAME="demo-net"
+TENANT_SUBNET_NAME="${TENANT_NETWORK_NAME}-subnet"
+TENANT_ROUTER_NAME="demo-router"
+FIXED_RANGE="10.0.0.0/24"
+NETWORK_GATEWAY="10.0.0.1"
+TENANT_ID=$(keystone tenant-list | grep " $TENANT_NAME " | awk '{print $2}')
+
+TENANT_NET_ID=$(quantum net-create --tenant_id $TENANT_ID $TENANT_NETWORK_NAME --provider:network_type gre  --provider:segmentation_id 1 | grep " id " | awk '{print $4}')
+TENANT_SUBNET_ID=$(quantum subnet-create --tenant_id $TENANT_ID --ip_version 4 --name $TENANT_SUBNET_NAME $TENANT_NET_ID $FIXED_RANGE --gateway $NETWORK_GATEWAY --dns_nameservers list=true 8.8.8.8 | grep " id " | awk '{print $4}')
+ROUTER_ID=$(quantum router-create --tenant_id $TENANT_ID $TENANT_ROUTER_NAME | grep " id " | awk '{print $4}')
+quantum router-interface-add $ROUTER_ID $TENANT_SUBNET_ID
+---
+bash /usr/local/src/addvmnetwork.sh
+→Added Interface to router ...と出ればOK
+```
+
+外部Network設定
+```
+quantum net-create public --router:external=True
+quantum subnet-create --ip_version 4 --gateway 192.168.0.254 public 192.168.0.0/24 --allocation-pool start=192.168.0.100,end=192.168.0.150 --disable-dhcp --name public-subnet
+```
+
+仮想Routerのゲートウェイ設定
+```
+quantum router-gateway-set demo-router public
+→仮想Routerから外部ネットワークへの接続を設定
+```
