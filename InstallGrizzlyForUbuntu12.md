@@ -9,6 +9,7 @@ Copyright (c) Takehiko OGASAWARA 2013 All Rights Reserved.
 
 # Grizzlyをインストールする方法
 
+### 準備
 バックアップディレクトリ作成
 ```
 mkdir -p /root/MAINTENANCE/`date "+%Y%m%d"`/{bak,new}
@@ -28,10 +29,128 @@ deb http://ubuntu-cloud.archive.canonical.com/ubuntu precise-updates/grizzly mai
 ---
 ```
 
+```
+vi /etc/apt/sources.list.d/grizzly.list
+---
+deb http://archive.gplhost.com/debian grizzly main
+deb http://archive.gplhost.com/debian grizzly-backports main
+---
+```
+
+GPGキーエラーとなるので、keyをimportする
+```
+apt-get -y update
+→GPGエラーが出力される。
+gpg --keyserver subkeys.pgp.net --recv 64AA94D00B849883
+gpg --export --armor 64AA94D00B849883 | apt-key add -
+```
+
 最新版へアップデート
 ```
+apt-get install gplhost-archive-keyring
 sudo apt-get -y update && apt-get -y upgrade
 ```
+
+ネットワーク設定
+```
+cp -p /etc/network/interfaces $BAK
+vi /etc/network/interfaces
+---
+# The loopback network interface
+auto lo
+iface lo inet loopback
+
+# The primary network interface
+auto eth0
+iface eth0 inet static
+ address 192.168.0.200
+ netmask 255.255.255.0
+ network 192.168.0.0
+ broadcast 192.168.0.255
+ gateway 192.168.0.254
+ dns-nameservers 192.168.0.254
+ 
+
+auto eth1
+iface eth1 inet static
+ address 10.0.0.10
+ netmask 255.255.255.0
+ network 10.0.0.0
+ broadcast 10.0.0.255
+# gateway 10.0.0.1
+---
+```
+
+パケットフォワード設定
+````
+cp -p /etc/sysctl.conf $BAK
+vi /etc/sysctl.conf
+---
+net.ipv4.conf.all.rp_filter = 0
+net.ipv4.conf.default.rp_filter = 0
+---
+````
+
+サービス再起動
+---
+/etc/init.d/networking restart
+sysctl -e -p /etc/sysctl.conf
+→rp_filterが0と表示されればOK
+---
+
+ntpdインストール
+```
+---
+apt-get install -y ntp
+---
+```
+
+MySQLインストール
+```
+apt-get install -y python-mysqldb mysql-server
+→rootのDBパスワードはadmin!
+```
+
+mysql設定更新
+```
+cp -p /etc/mysql/my.cnf $BAK
+sed -i 's/127.0.0.1/0.0.0.0/g' /etc/mysql/my.cnf
+→bind-addressが0.0.0.0へ変更できていればOK
+service mysql restart
+```
+
+DB作成
+```
+mysql -u root -p <<EOF
+CREATE DATABASE nova;
+GRANT ALL PRIVILEGES ON nova.* TO 'nova'@'localhost' IDENTIFIED BY 'password';
+CREATE DATABASE cinder;
+GRANT ALL PRIVILEGES ON cinder.* TO 'cinder'@'localhost' IDENTIFIED BY 'password';
+CREATE DATABASE glance;
+GRANT ALL PRIVILEGES ON glance.* TO 'glance'@'localhost' IDENTIFIED BY 'password';
+CREATE DATABASE keystone;
+GRANT ALL PRIVILEGES ON keystone.* TO 'keystone'@'localhost' IDENTIFIED BY 'password';
+CREATE DATABASE quantum;
+GRANT ALL PRIVILEGES ON quantum.* TO 'quantum'@'localhost' IDENTIFIED BY 'password';
+GRANT ALL PRIVILEGES ON quantum.* TO 'quantum'@'10.0.0.10' IDENTIFIED BY 'password';
+FLUSH PRIVILEGES;
+EOF
+→ひとまず自ホストのみで設定。
+```
+
+rabbitMQインストール
+```
+apt-get install -y rabbitmq-server
+rabbitmqctl change_password guest password
+```
+
+### Keystone
+
+keystone
+```
+apt-get install -y keystone python-keystone python-keystoneclient
+```
+
 
 
 ------------------
