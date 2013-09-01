@@ -485,8 +485,58 @@ service cinder-scheduler restart
 service cinder-scheduler status
 service cinder-volume restart
 service cinder-volume status
+```
+
+### quantum
+インストール
+```
+apt-get -y install quantum-server
+```
+
+設定変更
+```
+cp -p /etc/quantum/quantum.conf $BAK
+vi /etc/quantum/quantum.conf
+---
+[DEFAULT]
+verbose = True
+rabbit_password = password
+...
+[keystone_authtoken]
+admin_tenant_name = service
+admin_user = quantum 
+admin_password = password
+---
+
+cp -p /etc/quantum/plugins/openvswitch/ovs_quantum_plugin.ini $BAK
+vi /etc/quantum/plugins/openvswitch/ovs_quantum_plugin.ini
+---
+[DATABASE]
+sql_connection = mysql://quantum:password@localhost/quantum
+...
+[OVS]
+tenant_network_type = gre 
+tunnel_id_ranges = 1:1000
+enable_tunneling = True
+local_ip = 10.0.0.10
+...
+[SECURITYGROUP]
+firewall_driver = quantum.agent.linux.iptables_firewall.OVSHybridIptablesFirewallDriver
+---
 
 ```
+
+OVSplugin有効化
+```
+ln -s /etc/quantum/plugins/openvswitch/ovs_quantum_plugin.ini /etc/quantum/plugin.ini
+```
+
+再起動
+```
+service quantum-server restart
+service quantum-server status
+```
+
 
 
 ------------------
