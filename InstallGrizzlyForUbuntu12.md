@@ -21,7 +21,7 @@ BAK=/root/MAINTENANCE/`date "+%Y%m%d"`/bak
 apt-get install ubuntu-cloud-keyring
 ```
 
-バックアップ
+sourcelist追加
 ```
 vi /etc/apt/sources.list.d/cloud-archive.list
 ---
@@ -48,7 +48,7 @@ gpg --export --armor 64AA94D00B849883 | apt-key add -
 最新版へアップデート
 ```
 apt-get install gplhost-archive-keyring
-sudo apt-get -y update && apt-get -y upgrade
+apt-get -y update && apt-get -y upgrade
 ```
 
 ネットワーク設定
@@ -92,16 +92,16 @@ net.ipv4.conf.default.rp_filter = 0
 ```
 
 サービス再起動
----
-/etc/init.d/networking restart
+```
 sysctl -e -p /etc/sysctl.conf
 →rp_filterが0と表示されればOK
----
+/etc/init.d/networking restart
+```
 
 ntpdインストール
 ```
 ---
-apt-get install -y ntp
+apt-get -y install ntp
 ---
 ```
 
@@ -140,7 +140,7 @@ EOF
 
 rabbitMQインストール
 ```
-apt-get install -y rabbitmq-server
+apt-get -y install rabbitmq-server
 rabbitmqctl change_password guest password
 ```
 
@@ -148,7 +148,7 @@ rabbitmqctl change_password guest password
 
 keystone
 ```
-apt-get install -y keystone python-keystone python-keystoneclient
+apt-get -y install keystone python-keystone python-keystoneclient
 ```
 
 設定変更
@@ -337,21 +337,97 @@ glance image-list
 →importされていればOK
 ```
 
-### Compute(nova)
+### nova
 インストール
 ```
-libjs-swfobjectがエラーになるので、手動でPackage追加
----
-wget http://mirror.pnl.gov/ubuntu//pool/universe/libj/libjs-swfobject/libjs-swfobject_2.2+dfsg-1_all.deb
+cd /usr/local/src
+wget http://mirror.pnl.gov/ubuntu/pool/universe/libj/libjs-swfobject/libjs-swfobject_2.2+dfsg-1_all.deb
 dpkg -i libjs-swfobject_2.2+dfsg-1_all.deb
+→libjs-swfobjectがエラーになるので、手動でPackage追加
+
+apt-get install -y nova-api nova-cert nova-common nova-conductor nova-scheduler python-nova python-novaclient nova-consoleauth novnc nova-novncproxy nova-compute
+apt-get -y update
+apt-get -y upgrade
+```
+
+設定変更
+```
+cp -p /etc/nova/api-paste.ini $BAK
+vi /etc/nova/api-paste.ini
+---
+admin_tenant_name = service 
+admin_user = nova 
+admin_password = password
+---
+
+cp -p /etc/nova/nova.conf $BAK
+vi /etc/nova/nova.conf
+以下をdefaultセクションへ追記
+---
+[DEFAULT]
+sql_connection=mysql://nova:password@localhost/nova
+my_ip=10.0.0.10
+rabbit_password=password
+auth_strategy=keystone
+
+# Networking
+network_api_class=nova.network.quantumv2.api.API
+quantum_url=http://10.0.0.10:9696
+quantum_auth_strategy=keystone
+quantum_admin_tenant_name=service
+quantum_admin_username=quantum
+quantum_admin_password=password
+quantum_admin_auth_url=http://10.0.0.10:35357/v2.0
+libvirt_vif_driver=nova.virt.libvirt.vif.LibvirtHybridOVSBridgeDriver
+linuxnet_interface_driver=nova.network.linux_net.LinuxOVSInterfaceDriver
+
+# Security Groups
+firewall_driver=nova.virt.firewall.NoopFirewallDriver
+security_group_api=quantum
+
+# Metadata
+quantum_metadata_proxy_shared_secret=password
+service_quantum_metadata_proxy=true
+metadata_listen = 10.0.0.10
+metadata_listen_port = 8775
+
+# Cinder
+volume_api_class=nova.volume.cinder.API
+
+# Glance
+glance_api_servers=10.0.0.10:9292
+image_service=nova.image.glance.GlanceImageService
+
+# novnc
+novnc_enable=true
+novncproxy_port=6080
+novncproxy_host=10.0.0.10
+vncserver_listen=0.0.0.0
 ---
 ```
 
+初期設定
 ```
-apt-get -y update && apt-get -y upgrade
-apt-get -y install libjs-swfobject
-apt-get install -y nova-api nova-cert nova-common nova-conductor nova-scheduler python-nova python-novaclient nova-consoleauth novnc nova-novncproxy nova-compute
+nova-manage db sync
 ```
+
+再起動
+```
+service nova-api restart
+service nova-api status
+service nova-cert restart
+service nova-cert status
+service nova-consoleauth restart
+service nova-consoleauth status
+service nova-scheduler restart
+service nova-scheduler status
+service nova-novncproxy restart
+service nova-novncproxy status
+service nova-compute restart
+service nova-compute status
+```
+
+
 
 
 ------------------
