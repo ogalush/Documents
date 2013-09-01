@@ -337,6 +337,22 @@ glance image-list
 →importされていればOK
 ```
 
+### Compute(nova)
+インストール
+```
+libjs-swfobjectがエラーになるので、手動でPackage追加
+---
+wget http://mirror.pnl.gov/ubuntu//pool/universe/libj/libjs-swfobject/libjs-swfobject_2.2+dfsg-1_all.deb
+dpkg -i libjs-swfobject_2.2+dfsg-1_all.deb
+---
+```
+
+```
+apt-get -y update && apt-get -y upgrade
+apt-get -y install libjs-swfobject
+apt-get install -y nova-api nova-cert nova-common nova-conductor nova-scheduler python-nova python-novaclient nova-consoleauth novnc nova-novncproxy nova-compute
+```
+
 
 ------------------
 mysql設定更新
