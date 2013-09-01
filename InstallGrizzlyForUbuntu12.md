@@ -427,7 +427,66 @@ service nova-compute restart
 service nova-compute status
 ```
 
+### cinder
+インストール
+```
+cd /usr/local/src
+wget http://ftp.jaist.ac.jp/pub/Linux/ubuntu//pool/main/libr/librdmacm/librdmacm1_1.0.15-1_amd64.deb
+wget http://ftp.jaist.ac.jp/pub/Linux/ubuntu//pool/main/libi/libibverbs/libibverbs1_1.1.5-1ubuntu1_amd64.deb
+dpkg -i librdmacm1_1.0.15-1_amd64.deb libibverbs1_1.1.5-1ubuntu1_amd64.deb
+→cinder-volumeエラーが出るので、先にインストールする。
 
+apt-get -y install cinder-api cinder-scheduler cinder-volume iscsitarget open-iscsi iscsitarget-dkms python-cinderclient linux-headers-`uname -r`
+```
+
+※iscsiは使用しないので、以下はスキップする。
+```
+## sed -i 's/false/true/g' /etc/default/iscsitarget
+## service iscsitarget start
+## service open-iscsi start
+```
+
+設定変更
+```
+cp -p /etc/cinder/cinder.conf $BAK
+vi /etc/cinder/cinder.conf
+---
+[DEFAULT]
+sql_connection = mysql://cinder:password@localhost/cinder
+rabbit_password = password
+---
+
+cp -p /etc/cinder/api-paste.ini $BAK
+vi /etc/cinder/api-paste.ini
+---
+admin_tenant_name = service
+admin_user = cinder 
+admin_password = password
+---
+```
+
+cinderパーテーション作成
+※事前にUSBメモリやSDカード、別のストレージを用意する。
+```
+pvcreate /dev/sdb1
+vgcreate cinder-volumes /dev/sdb1
+```
+
+設定初期化
+```
+cinder-manage db sync
+```
+
+再起動
+```
+service cinder-api restart
+service cinder-api status
+service cinder-scheduler restart
+service cinder-scheduler status
+service cinder-volume restart
+service cinder-volume status
+
+```
 
 
 ------------------
