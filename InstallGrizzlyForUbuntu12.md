@@ -326,9 +326,9 @@ glance-manage db_sync
 OSイメージのダウンロード
 ```
 cd /usr/local/src
-wget http://uec-images.ubuntu.com/releases/12.04.2/release/ubuntu-12.04.3-server-cloudimg-amd64-disk1.img
+wget http://cloud-images.ubuntu.com/releases/quantal/release/ubuntu-12.10-server-cloudimg-amd64-disk1.img
 →ダウンロード完了後にimportする
-glance image-create --is-public true --disk-format qcow2 --container-format bare --name "Ubuntu12" < ubuntu-12.04.3-server-cloudimg-amd64-disk1.img
+glance image-create --is-public true --disk-format qcow2 --container-format bare --name "Ubuntu12.10" < ubuntu-12.10-server-cloudimg-amd64-disk1.img
 ```
 
 OSイメージのimport確認
@@ -812,8 +812,6 @@ http://192.168.0.200/horizon
 sshkey登録
 ```
 nova keypair-add --pub_key ~/.ssh/id_rsa.pub default_key 
+※horizonから登録しても良い
 ```
-
 →horizonからインスタンスを起動させてみる
-
-```
