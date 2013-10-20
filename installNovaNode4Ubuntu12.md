@@ -169,6 +169,122 @@ exit 0
 # service cinder-scheduler restart
 ```
 
+### nova
+パッケージインストール
+```
+# cd /usr/local/src
+# wget http://archive.ubuntu.com/ubuntu/pool/universe/libj/libjs-swfobject/libjs-swfobject_2.2+dfsg-1_all.deb
+# dpkg -i libjs-swfobject_2.2+dfsg-1_all.deb
+# apt-get -y install nova-novncproxy novnc nova-api nova-ajax-console-proxy nova-cert nova-conductor nova-consoleauth nova-doc nova-scheduler nova-network
+# apt-get -y install nova-compute nova-network
+```
+
+設定ファイル更新
+```
+# cp -raf /etc/nova $BAK
+# chown -R nova:nova /etc/nova
+# chmod 640 /etc/nova/nova.conf
+# vi /etc/nova/nova.conf
+---
+[DEFAULT]
+# LOGS/STATE
+verbose=True
+logdir=/var/log/nova
+state_path=/var/lib/nova
+lock_path=/var/lock/nova
+rootwrap_config=/etc/nova/rootwrap.conf
+
+# SCHEDULER
+compute_scheduler_driver=nova.scheduler.filter_scheduler.FilterScheduler
+
+# VOLUMES
+volume_api_class=nova.volume.cinder.API
+volume_driver=nova.volume.driver.ISCSIDriver
+volume_group=cinder-volumes
+volume_name_template=volume-%s
+iscsi_helper=tgtadm
+
+# DATABASE
+sql_connection=mysql://nova:password@localhost/nova
+
+# COMPUTE
+libvirt_type=qemu
+compute_driver=libvirt.LibvirtDriver
+instance_name_template=instance-%08x
+api_paste_config=/etc/nova/api-paste.ini
+
+# COMPUTE/APIS: if you have separate configs for separate services
+# this flag is required for both nova-api and nova-compute
+allow_resize_to_same_host=True
+
+# APIS
+osapi_compute_extension=nova.api.openstack.compute.contrib.standard_extensions
+ec2_dmz_host=192.168.0.210
+s3_host=192.168.0.210
+enabled_apis=ec2,osapi_compute,metadata
+
+# RABBITMQ
+rabbit_host=192.168.0.210
+
+# GLANCE
+image_service=nova.image.glance.GlanceImageService
+glance_api_servers=192.168.0.210:9292
+
+
+# Networking
+network_api_class=nova.network.quantumv2.api.API
+quantum_url=http://192.168.0.210:9696
+quantum_auth_strategy=keystone
+quantum_admin_tenant_name=service
+quantum_admin_username=quantum
+quantum_admin_password=password
+quantum_admin_auth_url=http://192.168.0.210:35357/v2.0
+libvirt_vif_driver=nova.virt.libvirt.vif.LibvirtHybridOVSBridgeDriver
+linuxnet_interface_driver=nova.network.linux_net.LinuxOVSInterfaceDriver
+
+# NOVNC CONSOLE
+novncproxy_base_url=http://192.168.0.210:6080/vnc_auto.html
+# Change vncserver_proxyclient_address and vncserver_listen to match each compute host
+vncserver_proxyclient_address=192.168.0.210
+vncserver_listen=192.168.0.210
+
+# AUTHENTICATION
+auth_strategy=keystone
+[keystone_authtoken]
+auth_host = 127.0.0.1
+auth_port = 35357
+auth_protocol = http
+admin_tenant_name = service
+admin_user = nova
+admin_password = nova
+signing_dirname = /tmp/keystone-signing-nova
+---
+
+# stop nova-conductor
+# stop nova-network
+# stop nova-scheduler
+# stop nova-novncproxy
+# stop nova-compute
+```
+
+設定の同期
+```
+# nova-manage db sync
+# start nova-api
+# start nova-conductor
+# start nova-network
+# start nova-scheduler
+# start nova-novncproxy
+# start libvirt-bin
+# start nova-compute
+```
+
+### rabbitmq
+```
+# apt-get -y install rabbitmq-server
+```
+
+
 ネットワーク設定
 ```
 cp -p /etc/network/interfaces $BAK
