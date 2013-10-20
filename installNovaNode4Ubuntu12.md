@@ -29,7 +29,7 @@ kvm_intel             137899  0
 kvm                   455932  1 kvm_intel
 ```
 
-MySQLインストール
+### MySQLインストール
 ```
 # apt-get -y install mysql-server mysql-client
 ↑インストール時にパスワードを設定する
@@ -58,6 +58,7 @@ vi /etc/apt/sources.list.d/grizzly.list
 deb http://archive.gplhost.com/debian grizzly main
 deb http://archive.gplhost.com/debian grizzly-backports main
 ---
+
 ```
 
 GPGキーエラーとなるので、keyをimportする
@@ -66,12 +67,106 @@ apt-get -y update
 →GPGエラーが出力される。
 gpg --keyserver subkeys.pgp.net --recv 64AA94D00B849883
 gpg --export --armor 64AA94D00B849883 | apt-key add -
+gpg --keyserver subkeys.pgp.net --recv 5EDB1B62EC4926EA
+gpg --export --armor 5EDB1B62EC4926EA | apt-key add -
+
 ```
 
 最新版へアップデート
 ```
-apt-get install gplhost-archive-keyring
+apt-get -y install gplhost-archive-keyring
 apt-get -y update && apt-get -y upgrade
+```
+
+
+### cinder
+```
+# wget http://archive.ubuntu.com/ubuntu/pool/main/libr/librdmacm/librdmacm1_1.0.15-1_amd64.deb
+# dpkg -i librdmacm1_1.0.15-1_amd64.deb
+# apt-get -y install cinder-api cinder-scheduler cinder-volume python-cinderclient tgt open-iscsi
+```
+
+```
+# cp -raf /etc/cinder $BAK
+# vi /etc/cinder/api-paste.ini 
+---
+[filter:authtoken]
+paste.filter_factory = keystoneclient.middleware.auth_token:filter_factory
+service_protocol = http
+service_host = 192.168.0.200
+service_port = 5000
+auth_host = 192.168.0.200
+auth_port = 35357
+auth_protocol = http
+admin_tenant_name = service
+admin_user = cinder
+admin_password = password
+---
+
+# vi /etc/cinder/cinder.conf 
+--↓追記--
+# Ubuntu
+rabbit_host = 192.168.0.200 
+rabbit_port = 5672
+rabbit_userid = rabbit
+rabbit_password = password
+rabbit_virtual_host = /nova
+---
+```
+
+DB設定
+```
+# mysql -p
+
+CREATE DATABASE cinder;
+GRANT ALL PRIVILEGES ON cinder.* TO 'cinder'@'localhost' \
+IDENTIFIED BY 'password';
+FLUSH PRIVILEGES;
+¥q
+```
+
+iscsi設定？
+```
+cp -p /etc/tgt/conf.d/cinder_tgt.conf $BAK
+# state_path=/var/lib/cinder
+# volumes_dir=$state_path/volumes 
+# sudo sh -c "echo 'include $volumes_dir/*' >> /etc/tgt/conf.d/cinder.conf"
+```
+
+DB同期
+```
+# cinder-manage db sync
+```
+
+cinder-volume作成
+```
+# cd /var/lib/cinder
+# dd if=/dev/zero of=cinder-volumes bs=1 count=0 seek=2G
+# losetup /dev/loop2 cinder-volumes
+# pvcreate /dev/loop2
+# vgcreate cinder-volumes /dev/loop2
+# pvscan
+---
+  PV /dev/sda5    VG kinder-vg        lvm2 [223.33 GiB / 0    free]
+  PV /dev/loop2   VG cinder-volumes   lvm2 [2.00 GiB / 2.00 GiB free]
+↑loopbackデバイスが表示されればOK
+Total: 2 [225.32 GiB] / in use: 2 [225.32 GiB] / in no VG: 0 [0   ]
+---
+```
+
+```
+vi /etc/init.d/cinder-setup-backing-file
+---
+#!/bin/bash
+
+losetup /dev/loop2  /var/lib/cinder/cinder-volumes
+exit 0
+---
+# chmod 755 /etc/init.d/cinder-setup-backing-file
+# ln -s /etc/init.d/cinder-setup-backing-file /etc/rc2.d/S10cinder-setup-backing-file
+# service cinder-volume restart
+# service cinder-api restart
+# service cinder-scheduler restart
 ```
 
 ネットワーク設定
