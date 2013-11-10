@@ -41,6 +41,8 @@ MySQLユーザ、DB作成
 CREATE DATABASE nova;
 GRANT ALL ON nova.* TO 'nova'@'%' IDENTIFIED BY 'password';
 GRANT ALL ON nova.* TO 'nova'@'localhost' IDENTIFIED BY 'password';
+GRANT ALL PRIVILEGES ON quantum.* TO 'quantum'@'%' IDENTIFIED BY 'password';
+GRANT ALL PRIVILEGES ON quantum.* TO 'quantum'@'localhost' IDENTIFIED BY 'password';
 quit
 ```
 
