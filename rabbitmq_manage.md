@@ -16,5 +16,28 @@ PW: password
 
 Queueの状態を参照することができればOK。
 
-■rabbitmq初期化方法（要注意）
-rabbitmqの設定、キューを初期化するには、以下を実行する。
+
+■rabbitMQの初期化
+rabbitMQを初期化（設定＋データ）するには、以下を実行する
+# rabbitmqctl stop_app
+# rabbitmqctl reset
+# rabbitmqctl start_app
+※guestユーザのパスワードも初期化されるので、実行時は注意。
+http://stackoverflow.com/questions/6742938/deleting-queues-in-rabbitmq
+
+初期化後は、以下でアクセス可能。
+http://192.168.0.200:55672/
+ID: guest
+PW: guest
+
+OpenStackで利用できるように、guestのパスワードを変更する。
+# rabbitmqctl change_password guest password
+→http://192.168.0.200:55672/
+ ここへ新パスワードでログインできること。
+ 
+# nova-manage service list
+# nova list
+→いずれの項目でもHTTP(500)エラーが返ってこないこと。
+（項目が表示されるor空白表示であればOK）
+
+以上
