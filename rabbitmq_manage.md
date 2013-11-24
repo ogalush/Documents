@@ -34,11 +34,13 @@ PW: guest
 
 OpenStackで利用できるように、guestのパスワードを変更する。
 rabbitmqctl change_password guest password
+
 →http://192.168.0.200:55672/
  ここへ新パスワードでログインできること。
  
 nova-manage service list
 nova list
+
 →いずれの項目でもHTTP(500)エラーが返ってこないこと。
 （項目が表示されるor空白表示であればOK）
 
