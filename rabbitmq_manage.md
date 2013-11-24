@@ -15,3 +15,6 @@ ID: guest
 PW: password
 
 Queueの状態を参照することができればOK。
+
+■rabbitmq初期化方法（要注意）
+rabbitmqの設定、キューを初期化するには、以下を実行する。
