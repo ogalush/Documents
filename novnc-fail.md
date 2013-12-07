@@ -34,6 +34,7 @@ novncproxy_host = 192.168.0.200
 novncproxy_base_url = http://192.168.0.200:6080/vnc_auto.html
 vncserver_listen = 192.168.0.200
 vncserver_proxyclient_address = 192.168.0.200
+vnc_keymap=ja
 ---
 ```
 
@@ -58,3 +59,5 @@ vi /usr/share/novnc/include/rfb.js
 
 http://192.168.0.200/horizon/
 →インスタンスのコンソール画面を表示できればOK
+
+
