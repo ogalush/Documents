@@ -56,28 +56,35 @@ apt-get -y update && apt-get -y upgrade
 cp -p /etc/network/interfaces $BAK
 vi /etc/network/interfaces
 ---
-# The loopback network interface
-auto lo
-iface lo inet loopback
-
+...追加...
 # The primary network interface
 auto eth0
-iface eth0 inet static
+iface eth0 inet manual
+ up ip address add 0/0 dev $IFACE
+ up ip link set $IFACE up
+ down ip link set $IFACE down
+
+auto br-ex
+iface br-ex inet static
  address 192.168.0.200
  netmask 255.255.255.0
  network 192.168.0.0
- broadcast 192.168.0.255
  gateway 192.168.0.254
  dns-nameservers 192.168.0.254
  
 
+## Internal Network
 auto eth1
-iface eth1 inet static
- address 10.0.0.10
+iface eth1 inet manual
+ up ip address add 0/0 dev $IFACE
+ up ip link set $IFACE up
+ down ip link set $IFACE down
+
+auto br-eth1
+iface br-eth1 inet static
+ address 10.0.1.200
  netmask 255.255.255.0
- network 10.0.0.0
- broadcast 10.0.0.255
-# gateway 10.0.0.1
+ network 10.0.1.0
 ---
 ```
 
@@ -94,7 +101,7 @@ net.ipv4.conf.default.rp_filter = 0
 サービス再起動
 ```
 sysctl -e -p /etc/sysctl.conf
-→rp_filterが0と表示されればOK
+ →rp_filterが0と表示されればOK
 /etc/init.d/networking restart
 ```
 
@@ -115,27 +122,27 @@ mysql設定更新
 ```
 cp -p /etc/mysql/my.cnf $BAK
 sed -i 's/127.0.0.1/0.0.0.0/g' /etc/mysql/my.cnf
-→bind-addressが0.0.0.0へ変更できていればOK
+ →bind-addressが0.0.0.0へ変更できていればOK
 service mysql restart
 ```
 
 DB作成
 ```
+MySQLへアクセスを行うホストからの接続許可設定を追加する。
+(nova-computeがcontrollnodeのほとんどのサービスへアクセスするため開けておく。)
 mysql -u root -p <<EOF
 CREATE DATABASE nova;
-GRANT ALL PRIVILEGES ON nova.* TO 'nova'@'localhost' IDENTIFIED BY 'password';
+GRANT ALL PRIVILEGES ON nova.* TO 'nova'@'%' IDENTIFIED BY 'password';
 CREATE DATABASE cinder;
-GRANT ALL PRIVILEGES ON cinder.* TO 'cinder'@'localhost' IDENTIFIED BY 'password';
+GRANT ALL PRIVILEGES ON cinder.* TO 'cinder'@'%' IDENTIFIED BY 'password';
 CREATE DATABASE glance;
-GRANT ALL PRIVILEGES ON glance.* TO 'glance'@'localhost' IDENTIFIED BY 'password';
+GRANT ALL PRIVILEGES ON glance.* TO 'glance'@'%' IDENTIFIED BY 'password';
 CREATE DATABASE keystone;
-GRANT ALL PRIVILEGES ON keystone.* TO 'keystone'@'localhost' IDENTIFIED BY 'password';
+GRANT ALL PRIVILEGES ON keystone.* TO 'keystone'@'%' IDENTIFIED BY 'password';
 CREATE DATABASE quantum;
-GRANT ALL PRIVILEGES ON quantum.* TO 'quantum'@'localhost' IDENTIFIED BY 'password';
-GRANT ALL PRIVILEGES ON quantum.* TO 'quantum'@'10.0.0.10' IDENTIFIED BY 'password';
+GRANT ALL PRIVILEGES ON quantum.* TO 'quantum'@'%' IDENTIFIED BY 'password';
 FLUSH PRIVILEGES;
 EOF
-→ひとまず自ホストのみで設定。
 ```
 
 rabbitMQインストール
@@ -162,7 +169,7 @@ debug = True
 verbose = True
 ...
 [sql]
-connection = mysql://keystone:password@localhost/keystone
+connection = mysql://keystone:password@192.168.0.200/keystone
 ---
 ```
 
@@ -181,8 +188,8 @@ vi /root/.openrc
 export OS_TENANT_NAME=admin
 export OS_USERNAME=admin
 export OS_PASSWORD=password
-export OS_AUTH_URL="http://localhost:5000/v2.0/"
-export OS_SERVICE_ENDPOINT="http://localhost:35357/v2.0"
+export OS_AUTH_URL="http://192.168.0.200:5000/v2.0/"
+export OS_SERVICE_ENDPOINT="http://192.168.0.200:35357/v2.0"
 export OS_SERVICE_TOKEN=password
 ---
 source ~/.openrc
@@ -200,16 +207,16 @@ ADMIN_PASSWORD=${ADMIN_PASSWORD:-password}
 SERVICE_PASSWORD=${SERVICE_PASSWORD:-$ADMIN_PASSWORD}
 DEMO_PASSWORD=${DEMO_PASSWORD:-$ADMIN_PASSWORD}
 export OS_SERVICE_TOKEN="password"
-export OS_SERVICE_ENDPOINT="http://localhost:35357/v2.0"
+export OS_SERVICE_ENDPOINT="http://192.168.0.200:35357/v2.0"
 SERVICE_TENANT_NAME=${SERVICE_TENANT_NAME:-service}
 #
 MYSQL_USER=keystone
 MYSQL_DATABASE=keystone
-MYSQL_HOST=localhost
+MYSQL_HOST=192.168.0.200
 MYSQL_PASSWORD=password
 #
 KEYSTONE_REGION=RegionOne
-KEYSTONE_HOST=10.0.0.10
+KEYSTONE_HOST=192.168.0.200
 
 # Shortcut function to get a newly generated ID
 function get_field() {
