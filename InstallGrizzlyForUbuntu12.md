@@ -7,7 +7,7 @@ Copyright (c) Takehiko OGASAWARA 2013 All Rights Reserved.
 -->
 <div id='title'>　</div>    
 
-# Grizzlyをインストールする方法
+# ControllNodeをインストールする方法(OpenStack Grizzly)
 
 ### 準備
 バックアップディレクトリ作成
@@ -291,9 +291,12 @@ cp -ap /etc/glance $BAK
 vi /etc/glance/glance-api.conf
 ---
 [DEFAULT]
-sql_connection = mysql://glance:password@localhost/glance
+sql_connection = mysql://glance:password@192.168.0.200/glance
 ...
 [keystone_authtoken]
+auth_host = 192.168.0.200
+auth_port = 35357
+auth_protocol = http
 admin_tenant_name = service
 admin_user = glance
 admin_password = password
@@ -305,9 +308,12 @@ flavor=keystone
 vi /etc/glance/glance-registry.conf
 ---
 [DEFAULT]
-sql_connection = mysql://glance:password@localhost/glance
+sql_connection = mysql://glance:password@192.168.0.200/glance
 ...
 [keystone_authtoken]
+auth_host = 192.168.0.200
+auth_port = 35357
+auth_protocol = http
 admin_tenant_name = service
 admin_user = glance
 admin_password = password
@@ -319,10 +325,8 @@ flavor=keystone
 
 再起動
 ```
-service glance-api restart
-service glance-api status
-service glance-registry restart
-service glance-registry status
+ls -1 /etc/init.d/glance-*| while read LINE; do service `basename ${LINE}` restart; done
+ →glance-api, glance-registryが再起動されていること。
 ```
 
 初期設定
@@ -334,14 +338,14 @@ OSイメージのダウンロード
 ```
 cd /usr/local/src
 wget http://cloud-images.ubuntu.com/releases/quantal/release/ubuntu-12.10-server-cloudimg-amd64-disk1.img
-→ダウンロード完了後にimportする
+ →ダウンロード完了後にimportする
 glance image-create --is-public true --disk-format qcow2 --container-format bare --name "Ubuntu12.10" < ubuntu-12.10-server-cloudimg-amd64-disk1.img
 ```
 
 OSイメージのimport確認
 ```
 glance image-list
-→importされていればOK
+ →importされていればOK
 ```
 
 ### nova
@@ -350,9 +354,9 @@ glance image-list
 cd /usr/local/src
 wget http://mirror.pnl.gov/ubuntu/pool/universe/libj/libjs-swfobject/libjs-swfobject_2.2+dfsg-1_all.deb
 dpkg -i libjs-swfobject_2.2+dfsg-1_all.deb
-→libjs-swfobjectがエラーになるので、手動でPackage追加
+ →libjs-swfobjectがエラーになるため、手動でPackage追加
 
-apt-get install -y nova-api nova-cert nova-common nova-conductor nova-scheduler python-nova python-novaclient nova-consoleauth novnc nova-novncproxy nova-compute
+apt-get install -y nova-api nova-cert nova-common nova-compute nova-compute-kvm nova-conductor nova-consoleauth nova-network nova-novncproxy nova-scheduler python-nova python-novaclient novnc
 apt-get -y update
 apt-get -y upgrade
 ```
@@ -362,29 +366,41 @@ apt-get -y upgrade
 cp -p /etc/nova/api-paste.ini $BAK
 vi /etc/nova/api-paste.ini
 ---
+[filter:authtoken]
+paste.filter_factory = keystoneclient.middleware.auth_token:filter_factory
+auth_host = 192.168.0.200
+auth_port = 35357
+auth_protocol = http
 admin_tenant_name = service 
 admin_user = nova 
 admin_password = password
+auth_version = v2.0
 ---
 
 cp -p /etc/nova/nova.conf $BAK
 vi /etc/nova/nova.conf
-以下をdefaultセクションへ追記
+以下をdefaultセクションへ記載する
 ---
 [DEFAULT]
-sql_connection=mysql://nova:password@localhost/nova
-my_ip=10.0.0.10
+connection_type=libvirt
+sql_connection=mysql://nova:password@192.168.0.200/nova
+my_ip=192.168.0.200
 rabbit_password=password
 auth_strategy=keystone
+rabbit_host=192.168.0.200
+ec2_host=192.168.0.200
+ec2_url=http://192.168.0.200:8773/services/Cloud
+
 
 # Networking
+# Networking
 network_api_class=nova.network.quantumv2.api.API
-quantum_url=http://10.0.0.10:9696
+quantum_url=http://192.168.0.200:9696
 quantum_auth_strategy=keystone
 quantum_admin_tenant_name=service
 quantum_admin_username=quantum
 quantum_admin_password=password
-quantum_admin_auth_url=http://10.0.0.10:35357/v2.0
+quantum_admin_auth_url=http://192.168.0.200:35357/v2.0
 libvirt_vif_driver=nova.virt.libvirt.vif.LibvirtHybridOVSBridgeDriver
 linuxnet_interface_driver=nova.network.linux_net.LinuxOVSInterfaceDriver
 
@@ -395,22 +411,29 @@ security_group_api=quantum
 # Metadata
 quantum_metadata_proxy_shared_secret=password
 service_quantum_metadata_proxy=true
-metadata_listen = 10.0.0.10
+metadata_listen = 192.168.0.200
 metadata_listen_port = 8775
 
 # Cinder
 volume_api_class=nova.volume.cinder.API
 
 # Glance
-glance_api_servers=10.0.0.10:9292
+glance_api_servers=192.168.0.200:9292
 image_service=nova.image.glance.GlanceImageService
 
 # novnc
-novnc_enable=true
-novncproxy_port=6080
-novncproxy_host=10.0.0.10
-vncserver_listen=0.0.0.0
+novnc_enable = true
+novncproxy_port = 6080
+novncproxy_host = 192.168.0.200
+novncproxy_base_url = http://192.168.0.200:6080/vnc_auto.html
+vncserver_listen = 192.168.0.200
+vncserver_proxyclient_address = 192.168.0.200
+vnc_keymap=ja
 ---
+
+# Compute
+compute_driver=libvirt.LibvirtDriver
+connection_type=libvirt
 ```
 
 初期設定
@@ -420,19 +443,25 @@ nova-manage db sync
 
 再起動
 ```
-service nova-api restart
-service nova-api status
-service nova-cert restart
-service nova-cert status
-service nova-consoleauth restart
-service nova-consoleauth status
-service nova-scheduler restart
-service nova-scheduler status
-service nova-novncproxy restart
-service nova-novncproxy status
-service nova-compute restart
-service nova-compute status
+ls -1 /etc/init.d/nova-*| while read LINE; do service `basename ${LINE}` restart; done
+ → nova-api, nova-cert, nova-compute, nova-conductor, nova-consoleauth, nova-network, nova-novncproxy, nova-schedulerが再起動すること。
 ```
+
+サービス確認
+```
+nova-manage service list
+ → Stateがsmile「:-)」であればOK
+----
+Binary           Host                                 Zone             Status     State Updated_At
+nova-cert        ryunosuke                            internal         enabled    :-)   2013-12-22 17:59:05
+nova-consoleauth ryunosuke                            internal         enabled    :-)   2013-12-22 17:59:05
+nova-scheduler   ryunosuke                            internal         enabled    :-)   2013-12-22 17:59:05
+nova-conductor   ryunosuke                            internal         enabled    :-)   2013-12-22 17:59:05
+nova-compute     ryunosuke                            nova             enabled    :-)   2013-12-22 17:59:05
+nova-network     ryunosuke                            internal         enabled    :-)   2013-12-22 17:59:05
+----
+```
+
 
 ### cinder
 インストール
@@ -441,12 +470,12 @@ cd /usr/local/src
 wget http://ftp.jaist.ac.jp/pub/Linux/ubuntu//pool/main/libr/librdmacm/librdmacm1_1.0.15-1_amd64.deb
 wget http://ftp.jaist.ac.jp/pub/Linux/ubuntu//pool/main/libi/libibverbs/libibverbs1_1.1.5-1ubuntu1_amd64.deb
 dpkg -i librdmacm1_1.0.15-1_amd64.deb libibverbs1_1.1.5-1ubuntu1_amd64.deb
-→cinder-volumeエラーが出るので、先にインストールする。
+ →cinder-volumeエラーが出るので、先にインストールする。
 
-apt-get -y install cinder-api cinder-scheduler cinder-volume iscsitarget open-iscsi iscsitarget-dkms python-cinderclient linux-headers-`uname -r`
+apt-get -y install cinder-api cinder-common cinder-scheduler cinder-volume ython-cinder python-cinderclient iscsitarget open-iscsi iscsitarget-dkms  linux-headers-`uname -r`
 ```
 
-※iscsiは使用しないので、以下はスキップする。
+※iscsiは使用しないため、公式手順の以下はスキップする。
 ```
 ## sed -i 's/false/true/g' /etc/default/iscsitarget
 ## service iscsitarget start
@@ -459,21 +488,30 @@ cp -p /etc/cinder/cinder.conf $BAK
 vi /etc/cinder/cinder.conf
 ---
 [DEFAULT]
-sql_connection = mysql://cinder:password@localhost/cinder
+sql_connection = mysql://cinder:password@192.168.0.200/cinder
 rabbit_password = password
 ---
 
 cp -p /etc/cinder/api-paste.ini $BAK
 vi /etc/cinder/api-paste.ini
 ---
-admin_tenant_name = service
-admin_user = cinder 
+[filter:authtoken]
+paste.filter_factory = keystoneclient.middleware.auth_token:filter_factory
+service_protocol = http
+service_host = 192.168.0.200
+service_port = 5000
+auth_host = 192.168.0.200
+auth_port = 35357 
+auth_protocol = http
+admin_tenant_name = service 
+admin_user = cinder  
 admin_password = password
 ---
 ```
 
-cinderパーテーション作成
-※事前にUSBメモリやSDカード、別のストレージを用意する。
+cinder-volume割当て
+※事前にPertitionを取れるよう空き領域を確保しておく。
+ →Pertitionを取得できなければ、USBメモリやSDCard等を使用する。iSCSIで新たに確保した領域でも可。
 ```
 pvcreate /dev/sdb1
 vgcreate cinder-volumes /dev/sdb1
@@ -486,12 +524,8 @@ cinder-manage db sync
 
 再起動
 ```
-service cinder-api restart
-service cinder-api status
-service cinder-scheduler restart
-service cinder-scheduler status
-service cinder-volume restart
-service cinder-volume status
+ls -1 /etc/init.d/cinder-*| while read LINE; do service `basename ${LINE}` restart; done
+ → cinder-api, cinder-scheduler, cinder-volumeが再起動すること
 ```
 
 ### quantum
