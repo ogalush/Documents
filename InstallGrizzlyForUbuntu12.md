@@ -531,7 +531,7 @@ ls -1 /etc/init.d/cinder-*| while read LINE; do service `basename ${LINE}` resta
 ### quantum
 インストール
 ```
-apt-get -y install quantum-server
+apt-get -y install quantum-server quantum-common quantum-dhcp-agent quantum-l3-agent quantum-metadata-agent  quantum-plugin-openvswitch quantum-plugin-openvswitch-agent python-quantum python-quantumclient quantum-lbaas-agent 
 ```
 
 設定変更
@@ -542,9 +542,16 @@ vi /etc/quantum/quantum.conf
 [DEFAULT]
 verbose = True
 rabbit_password = password
+rabbit_host = 192.168.0.200
 ...
+service_plugins = quantum.plugins.services.agent_loadbalancer.plugin.LoadBalancerPlugin
+※LoadBalancer用設定
+
 [keystone_authtoken]
-admin_tenant_name = service
+auth_host = 127.0.0.1
+auth_port = 35357 
+auth_protocol = http
+admin_tenant_name = service 
 admin_user = quantum 
 admin_password = password
 ---
@@ -553,14 +560,20 @@ cp -p /etc/quantum/plugins/openvswitch/ovs_quantum_plugin.ini $BAK
 vi /etc/quantum/plugins/openvswitch/ovs_quantum_plugin.ini
 ---
 [DATABASE]
-sql_connection = mysql://quantum:password@localhost/quantum
+sql_connection = mysql://quantum:password@192.168.0.200/quantum
+reconnect_interval = 2
 ...
 [OVS]
-tenant_network_type = gre 
-tunnel_id_ranges = 1:1000
-enable_tunneling = True
-local_ip = 10.0.0.10
+tenant_network_type = vlan
+network_vlan_ranges = physnet1,physnet2:2:4000
+tunnel_id_ranges =
+integration_bridge = br-int
+bridge_mappings = physnet1:br-ex,physnet2:br-eth1
 ...
+※vlan経由でcompute nodeと通信する。通信ポートがbr-eth1(inner)。パケット送出時に表向きポート(br-ex)へマッピングする。
+
+[AGENT]
+polling_interval = 2
 [SECURITYGROUP]
 firewall_driver = quantum.agent.linux.iptables_firewall.OVSHybridIptablesFirewallDriver
 ---
@@ -574,14 +587,15 @@ ln -s /etc/quantum/plugins/openvswitch/ovs_quantum_plugin.ini /etc/quantum/plugi
 
 再起動
 ```
-service quantum-server restart
-service quantum-server status
+ls -1 /etc/init.d/quantum-*| while read LINE; do service `basename ${LINE}` restart; done
+ → quantum-dhcp-agent, quantum-l3-agent, quantum-lbaas-agent, quantum-metadata-agent, quantum-plugin-openvswitch-agent, quantum-serverを再起動できること。
+
 ```
 
 ### Horizon
 インストール
 ```
-apt-get -y install openstack-dashboard memcached python-memcache
+apt-get -y install openstack-dashboard python-django-horizon memcached python-memcache
 apt-get remove --purge openstack-dashboard-ubuntu-theme
 →Ubuntu独自のhorizonメニューを非表示とするためにremoveする。
  (NetworkMapが見えるようになる)
@@ -589,13 +603,11 @@ apt-get remove --purge openstack-dashboard-ubuntu-theme
 
 ブラウザ確認
 http://192.168.0.200/horizon
-→Login: admin/password
-
+→Login: admin/password  
+ ログインできればOK
 
 ## Network node
 ### quantum
-インストール
-→ sourcelistの登録はcontrollnodeで実施したのでスキップする。
 
 設定変更
 ```
@@ -614,8 +626,6 @@ net.ipv4.conf.default.rp_filter = 0
 sysctl -e -p /etc/sysctl.conf
 /etc/init.d/networking restart
 ```
-※ntpインストール、hosts設定共に重複してるので、スキップ
-
 
 OVSインストール
 ```
@@ -626,12 +636,16 @@ service openvswitch-switch restart
 仮想NIC追加
 ```
 ovs-vsctl add-br br-ex
-ovs-vsctl add-port br-ex eth1
+ovs-vsctl add-br br-eth1
 ovs-vsctl add-br br-int
+ovs-vsctl add-br br-tun
+ovs-vsctl add-port br-ex eth0
+ovs-vsctl add-port br-eth1 eth1
+ →br-ex(external), br-eth1(admin-network), br-int(internal(KVM))を作成し、物理NICを紐づける。
 
 cp -p /etc/network/interfaces $BAK/interfaces.2
 vi /etc/network/interfaces
-→eth0通信をbr-ex通信へ切替える
+→eth0にIPアドレスを持たせている場合は、br-exへ切替える
 ---
 # The loopback network interface
 auto lo
@@ -648,17 +662,23 @@ auto br-ex
 iface br-ex inet static
  address 192.168.0.200
  netmask 255.255.255.0
+ network 192.168.0.0
  gateway 192.168.0.254
  dns-nameservers 192.168.0.254
+ 
 
+## Internal Network
 auto eth1
-iface eth1 inet static
- address 10.0.0.10
- netmask 255.255.255.0
- network 10.0.0.0
- broadcast 10.0.0.255
-# gateway 10.0.0.1
+iface eth1 inet manual
+ up ip address add 0/0 dev $IFACE
+ up ip link set $IFACE up
+ down ip link set $IFACE down
 
+auto br-eth1
+iface br-eth1 inet static
+ address 10.0.1.200
+ netmask 255.255.255.0
+ network 10.0.1.0
 ---
 ```
 
@@ -667,54 +687,34 @@ iface eth1 inet static
 ```
 ip addr del 192.168.0.200/24 dev eth0
 ip addr add 192.168.0.200/24 dev br-ex
-→通信断になるので、コンソールで実施
+ →通信断になるので、コンソールで実施すること。
 ```
 
 再起動
 ```
 /etc/init.d/networking restart
-→可能であればrebootして通信設定できてる事を確認する
+ →可能であればrebootして/etc/network/interfacesの設定が反映されていることを確認する。
 ```
 
 内部→外部通信許可設定
 ```
-iptables -A FORWARD -i eth1 -o br-ex -s 10.0.0.0/24 -m conntrack --ctstate NEW -j ACCEPT
+iptables -A FORWARD -i br-eth1 -o br-ex -s 10.0.0.0/24 -m conntrack --ctstate NEW -j ACCEPT
 iptables -A FORWARD -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 iptables -A POSTROUTING -s 10.0.0.0/24 -t nat -j MASQUERADE
 iptables -L
-→追加した設定が入っていればOK
+ →追加した設定が入っていればOK。内部から外部へ通信させる必要がある場合のみ設定する。
 ```
 
 quantum設定
 ```
 vi /etc/quantum/quantum.conf
 ---
-[DEFAULT]
-verbose = True
-rabbit_password = password
-rabbit_host = 127.0.0.1
-~~~★自ホストなので127.0.0.1とする。別ホストにするなら変更
-[keystone_authtoken]
-auth_host = 127.0.0.1
-~~~★自ホストなので127.0.0.1とする。別ホストにするなら変更
-admin_tenant_name = service
-admin_user = quantum
-admin_password = password
+※Controll nodeの設定に合わせる
 ---
 
 vi /etc/quantum/plugins/openvswitch/ovs_quantum_plugin.ini
 ---
-[DATABASE]
-sql_connection = mysql://quantum:password@localhost/quantum
-...
-[OVS]
-tenant_network_type = gre
-tunnel_id_ranges = 1:1000
-enable_tunneling = True
-local_ip = 10.0.0.10
-...
-[securitygroup]
-firewall_driver = quantum.agent.linux.iptables_firewall.OVSHybridIptablesFirewallDriver
+※Controll nodeの設定に合わせる
 ---
 
 cp -p /etc/quantum/dhcp_agent.ini $BAK
@@ -727,27 +727,21 @@ enable_metadata_network = True
 cp -p /etc/quantum/metadata_agent.ini $BAK
 vi /etc/quantum/metadata_agent.ini
 ---
-# The Quantum user information for accessing the Quantum API.
-auth_url = http://localhost:35357/v2.0
+[DEFAULT]
+auth_url = http://192.168.0.200:35357/v2.0
 auth_region = RegionOne
 admin_tenant_name = service
 admin_user = quantum
 admin_password = password
-nova_metadata_ip = 127.0.0.1
+nova_metadata_ip = 192.168.0.200
 metadata_proxy_shared_secret = password
 ---
 ```
 
 再起動
 ```
-service quantum-plugin-openvswitch-agent restart
-service quantum-plugin-openvswitch-agent status
-service quantum-dhcp-agent restart
-service quantum-dhcp-agent status
-service quantum-metadata-agent restart
-service quantum-metadata-agent status
-service quantum-l3-agent restart
-service quantum-l3-agent status
+ls -1 /etc/init.d/quantum-*| while read LINE; do service `basename ${LINE}` restart; done
+ → quantum-dhcp-agent, quantum-l3-agent, quantum-lbaas-agent, quantum-metadata-agent, quantum-plugin-openvswitch-agent, quantum-serverを再起動できること。
 ```
 
 仮想Router作成
