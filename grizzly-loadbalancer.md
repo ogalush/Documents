@@ -25,10 +25,10 @@ cp -raf /usr/share/novnc $BAK
 
 設定
 ```
-# quantum net-create lb-segment
+# quantum net-create lb-segment --provider:network_type vlan --provider:physical_network physnet1
 # quantum subnet-create lb-segment 172.17.0.0/16
 # quantum subnet-list
-※ subnet-idを取得する
+ → lb-segmentを登録できていること。subnet-idを取得する
 # quantum lb-pool-create \
   --lb-method ROUND_ROBIN \
   --name lbnet --protocol HTTP  --subnet-id 6cc32c74-4fc6-4595-8fa2-da8a346d8dac
