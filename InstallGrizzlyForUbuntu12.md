@@ -854,8 +854,18 @@ signing_dirname = /tmp/keystone-signing-nova
 ```
 ls -1 /etc/init.d/nova-*| while read LINE; do service `basename ${LINE}` restart; done
  → nova-*が再起動すること。
-
 ```
+
+状態確認
+```
+root@kinder:/etc/quantum# nova-manage service list
+Binary           Host                                 Zone             Status     State Updated_At
+...
+nova-compute     kinder                               nova             enabled    :-)   2013-12-23 03:23:08
+nova-network     kinder                               internal         enabled    :-)   2013-12-23 03:23:03
+→ compute nodeの nova-compute, nova-networkが「:-)」であればOK
+```
+
 
 Networkインストール
 →OpenVswitch, br-exインストール済みのためスキップ
