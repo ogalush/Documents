@@ -549,7 +549,7 @@ service_plugins = quantum.plugins.services.agent_loadbalancer.plugin.LoadBalance
 ※LoadBalancer用設定
 
 [keystone_authtoken]
-auth_host = 127.0.0.1
+auth_host = 192.168.0.200
 auth_port = 35357 
 auth_protocol = http
 admin_tenant_name = service 
