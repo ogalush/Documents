@@ -529,7 +529,8 @@ ls -1 /etc/init.d/cinder-*| while read LINE; do service `basename ${LINE}` resta
 ```
 
 ### quantum
-インストール
+インストール  
+※Controller nodeとNetwork nodeを分ける場合は、quantum-serverのみで良い(NetworkNodeへほかを入れる)
 ```
 apt-get -y install quantum-server quantum-common quantum-dhcp-agent quantum-l3-agent quantum-metadata-agent  quantum-plugin-openvswitch quantum-plugin-openvswitch-agent python-quantum python-quantumclient quantum-lbaas-agent 
 ```
@@ -756,21 +757,22 @@ TENANT_SUBNET_NAME="${TENANT_NETWORK_NAME}-subnet"
 TENANT_ROUTER_NAME="demo-router"
 FIXED_RANGE="10.0.0.0/24"
 NETWORK_GATEWAY="10.0.0.1"
+DNS_SERVER="8.8.8.8"
 TENANT_ID=$(keystone tenant-list | grep " $TENANT_NAME " | awk '{print $2}')
 
-TENANT_NET_ID=$(quantum net-create --tenant_id $TENANT_ID $TENANT_NETWORK_NAME --provider:network_type gre  --provider:segmentation_id 1 | grep " id " | awk '{print $4}')
-TENANT_SUBNET_ID=$(quantum subnet-create --tenant_id $TENANT_ID --ip_version 4 --name $TENANT_SUBNET_NAME $TENANT_NET_ID $FIXED_RANGE --gateway $NETWORK_GATEWAY --dns_nameservers list=true 8.8.8.8 | grep " id " | awk '{print $4}')
+TENANT_NET_ID=$(quantum net-create --tenant_id $TENANT_ID $TENANT_NETWORK_NAME --provider:network_type vlan  --provider:segmentation_id 1 --provider:physical_network physnet2 | grep " id " | awk '{print $4}')
+TENANT_SUBNET_ID=$(quantum subnet-create --tenant_id $TENANT_ID --ip_version 4 --name $TENANT_SUBNET_NAME $TENANT_NET_ID $FIXED_RANGE --gateway $NETWORK_GATEWAY --dns_nameservers list=true $DNS_SERVER | grep " id " | awk '{print $4}')
 ROUTER_ID=$(quantum router-create --tenant_id $TENANT_ID $TENANT_ROUTER_NAME | grep " id " | awk '{print $4}')
 quantum router-interface-add $ROUTER_ID $TENANT_SUBNET_ID
 ---
 bash /usr/local/src/addvmnetwork.sh
-→Added Interface to router ...と出ればOK
+ →Added Interface to router ...と出ればOK
 ```
 
 外部Network設定
 ```
-quantum net-create public --router:external=True
-quantum subnet-create --ip_version 4 --gateway 192.168.0.254 public 192.168.0.0/24 --allocation-pool start=192.168.0.100,end=192.168.0.150 --disable-dhcp --name public-subnet
+quantum net-create public --router:external=True --provider:network_type vlan --provider:physical_network physnet1
+quantum subnet-create --name public-subnet --ip_version 4 --gateway 192.168.0.254 public 192.168.0.0/24 --allocation-pool start=192.168.0.100,end=192.168.0.150 --disable-dhcp
 ```
 
 仮想Routerのゲートウェイ設定
@@ -785,7 +787,7 @@ quantum router-gateway-set demo-router public
 
 インストール
 ```
-apt-get -y install nova-compute-kvm
+apt-get -y install nova-compute nova-common nova-compute-kvm nova-network python-nova python-novaclient
 ```
 
 設定
@@ -794,46 +796,168 @@ cp -ap /etc/nova $BAK
 vi /etc/nova/api-paste.ini
 ---
 [filter:authtoken]
-auth_host = 127.0.0.1
-~~~★controller nodeのIP
+paste.filter_factory = keystoneclient.middleware.auth_token:filter_factory
+auth_host = 192.168.0.200
+~~~★ControllerノードのIPアドレス
+auth_port = 35357
+auth_protocol = http
 admin_tenant_name = service 
 admin_user = nova 
 admin_password = password
+auth_version = v2.0
 ---
 
 vi /etc/nova/nova.conf
 ---
 [DEFAULT]
-sql_connection=mysql://nova:password@localhost/nova
-my_ip=10.0.0.10
-rabbit_password=password
-auth_strategy=keystone
-rabbit_host=10.0.0.10
-ec2_host=10.0.0.10
-ec2_url=http://10.0.0.10:8773/services/Cloud
 ...
-
-↓URLと実機の設定差分を比べて追記する
-rabbit_host=10.0.0.10
-ec2_host=10.0.0.10
-ec2_url=http://10.0.0.10:8773/services/Cloud
-novncproxy_base_url=http://10.0.0.10:6080/vnc_auto.html
-
-# Compute
-compute_driver=libvirt.LibvirtDriver
-connection_type=libvirt 
-↑ここまで
+sql_connection = mysql://nova:password@192.168.0.200/nova
+my_ip=192.168.0.210
+connection_type=libvirt
+libvirt_type = kvm
+...
+ec2_dmz_host = 192.168.0.200
+s3_host = 192.168.0.200
+enabled_apis = ec2,osapi_compute,metadata
+rabbit_host=192.168.0.200
+rabbit_password=password
+image_service = nova.image.glance.GlanceImageService
+glance_api_servers = 192.168.0.200:9292
+network_api_class = nova.network.quantumv2.api.API
+quantum_url = http://192.168.0.200:9696
+quantum_auth_strategy = keystone
+quantum_admin_tenant_name = service
+quantum_admin_username = quantum
+quantum_admin_password = password
+quantum_admin_auth_url = http://192.168.0.200:35357/v2.0
+libvirt_vif_driver = nova.virt.libvirt.vif.LibvirtHybridOVSBridgeDriver
+linuxnet_interface_driver = nova.network.linux_net.LinuxOVSInterfaceDriver
+novnc_enable=true
+novncproxy_port=6080
+novncproxy_base_url = http://192.168.0.200:6080/vnc_auto.html
+vncserver_listen = 0.0.0.0
+vncserver_proxyclient_address = 192.168.0.210
+auth_strategy = keystone
+...
+[keystone_authtoken]
+auth_host = 192.168.0.200
+auth_port = 35357
+auth_protocol = http
+admin_tenant_name = service
+admin_user = nova
+admin_password = nova
+signing_dirname = /tmp/keystone-signing-nova
 ---
 ```
 
 再起動
 ```
-service nova-compute restart
-service nova-compute status
+ls -1 /etc/init.d/nova-*| while read LINE; do service `basename ${LINE}` restart; done
+ → nova-*が再起動すること。
+
 ```
 
 Networkインストール
 →OpenVswitch, br-exインストール済みのためスキップ
+
+quantum.conf
+```
+vi /etc/quantum/quantum.conf
+---
+[DEFAULT]
+verbose = True
+rabbit_password = password
+rabbit_host = 192.168.0.200
+~~~~★Controller node
+lock_path = $state_path/lock
+bind_host = 0.0.0.0
+bind_port = 9696
+core_plugin = quantum.plugins.openvswitch.ovs_quantum_plugin.OVSQuantumPluginV2
+service_plugins = quantum.plugins.services.agent_loadbalancer.plugin.LoadBalancerPlugin
+api_paste_config = /etc/quantum/api-paste.ini
+control_exchange = quantum
+notification_driver = quantum.openstack.common.notifier.rpc_notifier
+default_notification_level = INFO
+notification_topics = notifications
+[QUOTAS]
+[DEFAULT_SERVICETYPE]
+[AGENT]
+root_helper = sudo quantum-rootwrap /etc/quantum/rootwrap.conf
+[keystone_authtoken]
+auth_host = 192.168.0.200
+~~~~★Controller node
+auth_port = 35357
+auth_protocol = http
+admin_tenant_name = service
+admin_user = quantum 
+admin_password = password
+signing_dir = /var/lib/quantum/keystone-signing
+---
+```
+
+ovs_quantum_plugin.ini(重要)
+```
+vi /etc/quantum/plugins/openvswitch/ovs_quantum_plugin.ini
+(vi /etc/quantum/plugin.ini)
+---
+[DATABASE]
+sql_connection = mysql://quantum:password@192.168.0.200/quantum
+~~~★Controller node
+reconnect_interval = 2
+[OVS]
+tenant_network_type = vlan
+network_vlan_ranges = physnet1,physnet2:2:4000
+~~~使用するインターフェイスをのせる。
+tunnel_id_ranges =
+integration_bridge = br-int
+bridge_mappings = physnet1:br-ex,physnet2:br-eth1
+~~~★physnet1, physnet2(Inner)をマッピングする。quantum net-createした時の設定と合わせる。
+[AGENT]
+polling_interval = 2
+[SECURITYGROUP]
+firewall_driver = quantum.agent.linux.iptables_firewall.OVSHybridIptablesFirewallDriver
+---
+```
+
+NIC設定
+```
+ovs-vsctl add-br br-eth1
+ovs-vsctl add-br br-ex
+ovs-vsctl add-br br-int
+ovs-vsctl add-br br-tun
+
+ovs-vsctl add-ports br-eth1 eth1
+ovs-vsctl add-ports br-ex eth0
+```
+
+NIC設定(Interfaces)
+```
+vi /etc/network/interfaces
+---
+auto br-ex
+iface br-ex inet static
+ address 192.168.0.210
+ netmask 255.255.255.0
+ gateway 192.168.0.254
+ dns-nameservers 192.168.0.254
+ 
+## Internal Network
+auto eth1
+iface eth1 inet manual
+ up ip address add 0/0 dev $IFACE
+ up ip link set $IFACE up
+ down ip link set $IFACE down
+
+auto br-eth1
+iface br-eth1 inet static
+ address 10.0.1.210
+ network 10.0.1.0
+ netmask 255.255.255.0
+ broadcast 10.0.1.255
+---
+
+/etc/init.d/networking restart
+```
 
 ## 初回起動前に
 
