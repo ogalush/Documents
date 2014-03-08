@@ -281,14 +281,15 @@ admin_password = password
 ---
 
 keystone設定
-keystone service-create --name=nova --type=compute --description="Nova Compute service"
-keystone endpoint-create --service-id=bdf676442a544c19b4d4fe524fb2ac5e --publicurl=http://192.168.0.200:8774/v2/%\(tenant_id\)s --internalurl=http://192.168.0.200:8774/v2/%\(tenant_id\)s  --adminurl=http://192.168.0.200:8774/v2/%\(tenant_id\)s
+# keystone service-create --name=nova --type=compute --description="Nova Compute service"
+# keystone endpoint-create --service-id=bdf676442a544c19b4d4fe524fb2ac5e --publicurl=http://192.168.0.200:8774/v2/%\(tenant_id\)s --internalurl=http://192.168.0.200:8774/v2/%\(tenant_id\)s  --adminurl=http://192.168.0.200:8774/v2/%\(tenant_id\)s
 ~~~登録できればOK
 
-ls -1 /etc/init.d/nova-*| while read LINE; do service `basename ${LINE}` restart; done
+サービス再起動
+# ls -1 /etc/init.d/nova-*| while read LINE; do service `basename ${LINE}` restart; done
 
-### 確認
-nova image-list
+確認
+# nova image-list
 ---
 +--------------------------------------+-------------+--------+--------+
 | ID                                   | Name        | Status | Server |
@@ -299,13 +300,13 @@ nova image-list
 ~~~表示されればOK
 
 ### install
-apt-get install -y nova-compute-kvm python-guestfs
+# apt-get install -y nova-compute-kvm python-guestfs
 ~~~superminのインストールが促されたら、yesと答える。
 
-chmod 0644 /boot/vmlinuz*
+# chmod 0644 /boot/vmlinuz*
 ~~~python-guestfsのbug対応
 
-vi /etc/nova/nova.conf
+# vi /etc/nova/nova.conf
 ---
 my_ip=192.168.0.200
 vnc_enabled=True
@@ -316,13 +317,13 @@ novncproxy_base_url=http://192.168.0.200:6080/vnc_auto.html
 glance_host=192.168.0.200
 ---
 
-service nova-compute restart
-rm /var/lib/nova/nova.sqlite
+# service nova-compute restart
+# rm /var/lib/nova/nova.sqlite
 
 ### nova-network
-apt-get install -y nova-network
+# apt-get install -y nova-network
 
-vi /etc/nova/nova.conf
+# vi /etc/nova/nova.conf
 ----
 network_manager=nova.network.manager.FlatDHCPManager
 firewall_driver=nova.virt.libvirt.firewall.IptablesFirewallDriver
@@ -341,11 +342,11 @@ nova network-create vmnet --fixed-range-v4=10.0.0.0/24 --bridge-interface=br100 
 ~~~★br100は存在しないnetwork。あとで解析する。
 
 ### sshkey登録
-ssh-keygen
-cd ~/.ssh
-nova-manage db sync
-nova keypair-add --pub_key id_rsa.pub mykey
-nova keypair-list
+# ssh-keygen
+# cd ~/.ssh
+# nova-manage db sync
+# nova keypair-add --pub_key id_rsa.pub mykey
+# nova keypair-list
 ---
 +-------+-------------------------------------------------+
 | Name  | Fingerprint                                     |
@@ -354,7 +355,7 @@ nova keypair-list
 +-------+-------------------------------------------------+
 ---
 
-nova flavor-list
+# nova flavor-list
 ----
 +----+-----------+-----------+------+-----------+------+-------+-------------+-----------+
 | ID | Name      | Memory_MB | Disk | Ephemeral | Swap | VCPUs | RXTX_Factor | Is_Public |
@@ -368,7 +369,7 @@ nova flavor-list
 ----
 ~~~表示されればOK
 
-nova image-list
+# nova image-list
 ---
 +--------------------------------------+-------------+--------+--------+
 | ID                                   | Name        | Status | Server |
@@ -377,7 +378,334 @@ nova image-list
 +--------------------------------------+-------------+--------+--------+
 ---
 
-nova secgroup-add-rule default tcp 22 22 0.0.0.0/0
-nova secgroup-add-rule default icmp -1 -1 0.0.0.0/0
-
+# nova secgroup-add-rule default tcp 22 22 0.0.0.0/0
+# nova secgroup-add-rule default icmp -1 -1 0.0.0.0/0
 ```
+
+### horizon
+```
+# apt-get install -y memcached libapache2-mod-wsgi openstack-dashboard
+# apt-get remove --purge -y openstack-dashboard-ubuntu-theme
+~~~ubuntu独自のテーマを削除する
+
+# cp -raf /etc/openstack-dashboard $BAK
+# vi /etc/openstack-dashboard/local_settings.py 
+---
+CACHES = {
+   'default': {
+       'BACKEND' : 'django.core.cache.backends.memcached.MemcachedCache',
+       'LOCATION' : '127.0.0.1:11211',
+   }
+}
+...
+OPENSTACK_HOST = "192.168.0.200"
+---
+~~~ /etc/memcached.confのhost, portと合っていることを確認する。
+~~~ OPENSTACK_HOSTは、書き換える
+
+# service apache2 restart
+# service memcached restart
+```
+
+### cinder
+```
+# apt-get install -y cinder-api cinder-scheduler
+# cp -raf /etc/cinder $BAK
+# vi /etc/cinder/cinder.conf
+---
+...
+sql_connection = mysql://cinder:password@192.168.0.200/cinder
+...
+---
+
+# mysql -u root -p
+ CREATE DATABASE cinder;
+ GRANT ALL PRIVILEGES ON cinder.* TO 'cinder'@'%' IDENTIFIED BY 'password';
+ \q
+
+# cinder-manage db sync
+# keystone user-create --name=cinder --pass=password --email=cinder@example.com
+# keystone user-role-add --user=cinder --tenant=service --role=admin
+# vi /etc/cinder/api-paste.ini
+---
+...
+[filter:authtoken]
+paste.filter_factory = keystoneclient.middleware.auth_token:filter_factory
+auth_host = 192.168.0.200
+auth_port = 35357
+auth_protocol = http
+admin_tenant_name = service
+admin_user = cinder
+admin_password = password
+...
+---
+
+# vi /etc/cinder/cinder.conf
+---
+...
+rpc_backend = cinder.openstack.common.rpc.impl_kombu
+rabbit_host = 192.168.0.200
+rabbit_port = 5672
+rabbit_userid = guest
+rabbit_password = password
+...
+---
+
+# keystone service-create --name=cinder --type=volume --description="Cinder Volume Service"
+# keystone endpoint-create  --service-id=61f1d98e0da54093a5d0dc3d300dd560  --publicurl=http://192.168.0.200:8776/v1/%\(tenant_id\)s  --internalurl=http://192.168.0.200:8776/v1/%\(tenant_id\)s  --adminurl=http://192.168.0.200:8776/v1/%\(tenant_id\)s
+~~~ service-idは、keystone service-createのIDを入力する
+
+# keystone service-create --name=cinderv2 --type=volumev2 --description="Cinder Volume Service V2"
+# keystone endpoint-create  --service-id=d83270c3d807421081b8eb72a9607641 --publicurl=http://192.168.0.200:8776/v2/%\(tenant_id\)s  --internalurl=http://192.168.0.200:8776/v2/%\(tenant_id\)s  --adminurl=http://192.168.0.200:8776/v2/%\(tenant_id\)s
+~~~ service-idは、keystone service-createのIDを入力する
+
+# service cinder-scheduler restart
+# service cinder-api restart
+
+# apt-get install lvm2
+# pvcreate /dev/sdb
+# vgcreate cinder-volumes /dev/sdb
+~~~事前にcinder-volumeを確保しておくこと。
+
+# pvcreate /dev/sdb1
+# vgcreate cinder-volumes /dev/sdb1
+
+## Add a filter entry to the devices section /etc/lvm/lvm.conf to keep LVM from scanning devices used by virtual machines:
+## これは保留で。
+
+# apt-get install -y cinder-volume
+# service cinder-volume restart
+# service tgt restart
+```
+
+### 8. Add Object Storage
+```
+ひとまずスキップ
+```
+
+### neutron
+```
+# mysql -u root -p
+mysql> CREATE DATABASE neutron;
+mysql> GRANT ALL PRIVILEGES ON neutron.* TO 'neutron'@'%' IDENTIFIED BY 'password';
+mysql> FLUSH PRIVILEGES;
+
+# keystone tenant-list
+# keystone role-list
+~~~一覧をひとまず取得しておくだけでOK(admin, serviceがあるかどうかだけ)
+
+# keystone user-create --name=neutron --pass=password --email=neutron@example.com
+# keystone user-role-add --user=neutron --tenant=service --role=admin
+# keystone service-create --name=neutron --type=network --description="OpenStack Networking Service"
+# keystone endpoint-create  --service-id 90f117c0031149dd9454054ee8cdc729 --publicurl http://192.168.0.200:9696  --adminurl http://192.168.0.200:9696 --internalurl http://192.168.0.200:9696
+~~~service_idへは、keystone service-list のneutronのidを入力する。
+
+
+###Install Networking services on a dedicated network node
+# apt-get install -y neutron-server neutron-dhcp-agent neutron-plugin-openvswitch-agent neutron-l3-agent
+# apt-get install openvswitch-datapath-dkms
+
+# BAK='/root/MAINTENANCE/20140113/bak'
+# NEW='/root/MAINTENANCE/20140113/new'
+# mkdir -p $BAK
+# cp -p /etc/sysctl.conf $BAK
+# vi /etc/sysctl.conf 
+---
+net.ipv4.ip_forward=1
+net.ipv4.conf.all.rp_filter=0
+net.ipv4.conf.default.rp_filter=0
+---
+# sysctl -p
+# service networking restart
+
+# cp -raf /etc/neutron $BAK
+# vi /etc/neutron/neutron.conf
+---
+[DEFAULT]
+auth_strategy = keystone
+rabbit_host = 192.168.0.200
+rabbit_userid = guest
+rabbit_password = password
+...
+[keystone_authtoken]
+auth_host = 192.168.0.200
+auth_port = 35357
+auth_protocol = http
+admin_tenant_name = service
+admin_user = neutron
+admin_password = password
+signing_dir = $state_path/keystone-signing
+
+[database]
+connection = mysql://neutron:password@192.168.0.200/neutron
+---
+
+# vi /etc/neutron/api-paste.ini 
+---
+[filter:authtoken]
+paste.filter_factory = keystoneclient.middleware.auth_token:filter_factory
+auth_host = 192.168.0.200
+auth_uri = http://192.168.0.200:5000
+admin_tenant_name = service
+admin_user = neutron
+admin_password = password
+---
+
+## install openvswitch plugin
+# apt-get -y install neutron-plugin-openvswitch-agent openvswitch-switch
+# vi /etc/neutron/plugins/openvswitch/ovs_neutron_plugin.ini
+---
+[ovs]
+tenant_network_type = gre
+tunnel_id_ranges = 1:1000
+enable_tunneling = True
+integration_bridge = br-int
+tunnel_bridge = br-tun
+local_ip = 192.168.0.200
+---
+
+# ovs-vsctl add-br br-int
+# ovs-vsctl add-br br-ex
+# ovs-vsctl add-br br-tun
+# ovs-vsctl add-port br-ex eth0
+# cp -p /etc/network/interfaces $BAK
+# vi /etc/network/interfaces
+---
+# The loopback network interface
+auto lo
+iface lo inet loopback
+
+# The primary network interface
+auto eth0
+iface eth0 inet manual
+ up ip address add 0/0 dev $IFACE
+ up ip link set $IFACE up
+ down ip link set $IFACE down
+
+auto br-ex
+iface br-ex inet static
+ address 192.168.0.200
+ netmask 255.255.255.0
+ network 192.168.0.0
+ gateway 192.168.0.254
+ dns-nameservers 192.168.0.254
+---
+
+# vi /etc/neutron/l3_agent.ini
+----
+interface_driver = neutron.agent.linux.interface.OVSInterfaceDriver
+use_namespaces = True
+----
+
+# vi /etc/neutron/dhcp_agent.ini 
+----
+interface_driver = neutron.agent.linux.interface.OVSInterfaceDriver
+use_namespaces = True
+----
+
+# vi /etc/neutron/neutron.conf
+----
+core_plugin = neutron.plugins.openvswitch.ovs_neutron_plugin.OVSNeutronPluginV2
+----
+
+# vi /etc/neutron/plugins/openvswitch/ovs_neutron_plugin.ini
+----
+firewall_driver = neutron.agent.linux.iptables_firewall.OVSHybridIptablesFirewallDriver
+----
+
+# vi /etc/neutron/dhcp_agent.ini
+----
+[default]
+dhcp_driver = neutron.agent.linux.dhcp.Dnsmasq
+----
+
+# vi /etc/nova/nova.conf
+----
+neutron_metadata_proxy_shared_secret = password
+service_neutron_metadata_proxy = true
+----
+# service nova-api restart
+
+# vi /etc/neutron/metadata_agent.ini 
+----
+auth_url = http://192.168.0.200:5000/v2.0
+auth_region = regionOne
+admin_tenant_name = service
+admin_user = neutron
+admin_password = password
+nova_metadata_ip = 192.168.0.200
+metadata_proxy_shared_secret = password
+----
+
+# service neutron-server restart
+# service neutron-dhcp-agent restart
+# service neutron-l3-agent restart
+# service neutron-metadata-agent restart
+# service neutron-plugin-openvswitch-agent restart
+
+#-- create subnet
+# neutron net-create ext-net -- --router:external=True
+# neutron subnet-create ext-net 192.168.0.0/24 --allocation-pool start=192.168.0.100,end=192.168.0.150  --gateway=192.168.0.254 --enable_dhcp=False
+
+#-- for DEMO
+# keystone tenant-create --name demo
+# keystone tenant-list | grep demo | awk '{print $2;}'
+
+# keystone user-create --name=demo --pass=password --email=demo@example.com
+# keystone role-create --name=demo
+# keystone user-role-add --user=demo --tenant=demo --role=demo
+
+# neutron router-create ext-to-int --tenant-id 951d41b536124106958dad93ef99d319
+~~~tenant-idは、keystone-tenant-listで出力したID
+
+# neutron router-gateway-set 57c8f6a5-3c10-4c0b-82b7-de8913f291d4  be932ed7-63da-427b-a3e4-8836f4ba9d86
+~~~ neutron router-createのid, neutron net-listのID
+
+#-- create demo-net
+# neutron net-create --tenant-id 951d41b536124106958dad93ef99d319 demo-net
+~~~keystone tenant-listのID
+
+# neutron subnet-create --tenant-id 951d41b536124106958dad93ef99d319 demo-net 10.5.5.0/24 --gateway 10.5.5.1 --dns_nameservers list=true 192.168.0.254
+
+# neutron router-interface-add 57c8f6a5-3c10-4c0b-82b7-de8913f291d4 96edee0c-86d5-47e8-8188-49e4076a15ef 
+~~~neutron router-createのid, neutron subnet-list のdemonetのID
+
+
+#--  Install networking support on a dedicated controller node
+# apt-get -y install neutron-server
+# vi /etc/neutron/neutron.conf
+----
+auth_url = http://192.168.0.200:35357/v2.0
+rpc_backend = neutron.openstack.common.rpc.impl_kombu
+rabbit_host = 192.168.0.200
+rabbit_port = 5672
+rabbit_password = password
+----
+
+# vi /etc/nova/nova.conf
+----
+network_api_class=nova.network.neutronv2.api.API
+neutron_url=http://192.168.0.200:9696
+neutron_auth_strategy=keystone
+neutron_admin_tenant_name=service
+neutron_admin_username=neutron
+neutron_admin_password=password
+neutron_admin_auth_url=http://192.168.0.200:35357/v2.0
+linuxnet_interface_driver = nova.network.linux_net.LinuxOVSInterfaceDriver
+firewall_driver=nova.virt.firewall.NoopFirewallDriver
+security_group_api=neutron
+----
+# service neutron-server restart
+
+#--  GRE tunneling network options
+# vi /etc/neutron/l3_agent.ini
+---
+gateway_external_network_id = be932ed7-63da-427b-a3e4-8836f4ba9d86
+router_id = 57c8f6a5-3c10-4c0b-82b7-de8913f291d4
+---
+~~~ gateway_external_network_id  は、neutron net-listのext-netのid
+~~~ router_idは、neutron router-list のid
+
+# service neutron-l3-agent restart
+```
+
