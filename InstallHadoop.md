@@ -81,3 +81,25 @@ export HADOOP_CONF_DIR=$HADOOP_INSTALL/etc/hadoop
 $ source ~/.bashrc
 $ echo $JAVA_HOME
 ```
+
+# Hadoopインストール
+## ダウンロード
+```
+$ sudo su -
+# cd /usr/local/src
+# wget http://ftp.meisei-u.ac.jp/mirror/apache/dist/hadoop/common/hadoop-2.3.0/hadoop-2.3.0.tar.gz
+# tar -xvzf /usr/local/src/hadoop-2.3.0.tar.gz
+# mv hadoop-2.3.0 /usr/local/.
+# ln -s /usr/local/hadoop-2.3.0 /usr/local/hadoop
+# ls -al /usr/local
+# chown -R hduser:hduser /usr/local/hadoop/
+```
+
+## データストア向けディレクトリ作成
+```
+# sudo mkdir -p /usr/local/hadoop-datastore; chown hduser:hduser /usr/local/hadoop-datastore
+```
+
+## 初期設定
+```
+```
