@@ -131,9 +131,11 @@ $ sudo su -
 # vi /usr/local/hadoop/etc/hadoop/mapred-site.xml
 ```
 
-## 最初の起動
+## daemonの起動
 ```
 hduser@name-node$ hdfs namenode -format test
 hduser@name-node$ hadoop-daemon.sh --config $HADOOP_CONF_DIR --script hdfs start namenode
-root@data-node# HADOOP_SECURE_DN_USER=hdfs $HADOOP_PREFIX/sbin/hadoop-daemon.sh --config $HADOOP_CONF_DIR --script hdfs start datanode 
+root@data-node# HADOOP_SECURE_DN_USER=hdfs  /usr/local/hadoop/sbin/hadoop-daemon.sh --config $HADOOP_CONF_DIR --script hdfs start datanode
+hduser@name-node$ /usr/local/hadoop/sbin/mr-jobhistory-daemon.sh start historyserver --config $HADOOP_CONF_DIR
+
 ```
