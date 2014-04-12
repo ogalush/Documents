@@ -129,6 +129,9 @@ $ sudo su -
 ## データストア向けディレクトリ作成
 ```
 # sudo mkdir -p /usr/local/hadoop-datastore; chown hduser:hduser /usr/local/hadoop-datastore
+→ hadoopのhdfs出力先ディレクトリとして使用する。
+  hadoopのデフォルト(core-site.xml:hadoop.tmp.dir)はOS再起同時にデータストアが消えてしまう。
+  (/tmp/hadoop〜であるため)
 ```
 
 ## 初期設定(config)
