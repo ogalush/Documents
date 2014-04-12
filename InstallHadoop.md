@@ -102,4 +102,13 @@ $ sudo su -
 
 ## 初期設定
 ```
+# mkdir -p /tmp/hadoop
+# cd /usr/local/hadoop/etc/
+# cp -p /usr/local/hadoop/share/hadoop/hadoop-yarn/hadoop-yarn-common/yarn-default.xml /usr/local/hadoop/etc/hadoop/yarn-site.xml
+# cp -p /usr/local/hadoop/share/hadoop/hadoop-project-dist/hadoop-hdfs/hdfs-default.xml /usr/local/hadoop/etc/hadoop/hdfs-site.xml
+# cp -p /usr/local/hadoop/share/hadoop/hadoop-project-dist/hadoop-common/core-default.xml /usr/local/hadoop/etc/hadoop/core-site.xml
+
+# vi /usr/local/hadoop/etc/hadoop/core-site.xml
+# vi /usr/local/hadoop/etc/hadoop/yarn-site.xml
+# vi /usr/local/hadoop/etc/hadoop/core-site.xml
 ```
