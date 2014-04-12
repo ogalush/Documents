@@ -139,5 +139,11 @@ hduser@name-node$ hdfs namenode -format test
 hduser@name-node$ hadoop-daemon.sh --config $HADOOP_CONF_DIR --script hdfs start namenode
 root@data-node# HADOOP_SECURE_DN_USER=hdfs  /usr/local/hadoop/sbin/hadoop-daemon.sh --config $HADOOP_CONF_DIR --script hdfs start datanode
 hduser@name-node$ /usr/local/hadoop/sbin/mr-jobhistory-daemon.sh start historyserver --config $HADOOP_CONF_DIR
+```
+
+## daemonnの停止
+```
+hduser@name-node$ $HADOOP_PREFIX/sbin/hadoop-daemon.sh --config $HADOOP_CONF_DIR --script hdfs stop namenode
+root@data-node# $HADOOP_PREFIX/sbin/hadoop-daemon.sh --config $HADOOP_CONF_DIR --script hdfs stop datanode
 
 ```
