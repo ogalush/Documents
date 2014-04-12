@@ -30,13 +30,12 @@ $ sudo tar xvzf server-jre-7u51-linux-x64.tar.gz
 $ sudo chown -R root:root jdk1.7.0_51
 $ sudo mkdir /usr/lib/jvm
 $ sudo mv jdk1.7.0_51 /usr/lib/jvm/.
-$ ln -s /usr/lib/jvm/jdk1.7.0_51 /usr/lib/jvm/jdk
+$ sudo ln -s /usr/lib/jvm/jdk1.7.0_51 /usr/lib/jvm/jdk
 $ ls -al /usr/lib/jvm/jdk/bin/java
-$ ogalush@name-node:/usr/local/src$ /usr/lib/jvm/jdk/bin/java -version
+$ /usr/lib/jvm/jdk/bin/java -version
 java version "1.7.0_51"
 Java(TM) SE Runtime Environment (build 1.7.0_51-b13)
 Java HotSpot(TM) 64-Bit Server VM (build 24.51-b03, mixed mode)
-ogalush@name-node:/usr/local/src$ 
 ```
 
 ## Hadoopユーザを入れる
@@ -60,6 +59,7 @@ $ ssh hduser@localhost
 ```
 # sudo echo '10.5.5.11 name-node' >> /etc/hosts
 # sudo echo '10.5.5.12 data-node' >> /etc/hosts
+# cat /etc/hosts
 ```
 
 ## 環境変数設定
@@ -77,7 +77,6 @@ export HADOOP_HDFS_HOME=$HADOOP_INSTALL
 export YARN_HOME=$HADOOP_INSTALL
 export HADOOP_CONF_DIR=$HADOOP_INSTALL/etc/hadoop
 ----
-
 $ source ~/.bashrc
 $ echo $JAVA_HOME
 ```
@@ -103,12 +102,16 @@ $ sudo su -
 ## 初期設定
 ```
 # mkdir -p /tmp/hadoop
+# chown hduser:hduser /tmp/hadoop
 # cd /usr/local/hadoop/etc/
 # cp -p /usr/local/hadoop/share/hadoop/hadoop-yarn/hadoop-yarn-common/yarn-default.xml /usr/local/hadoop/etc/hadoop/yarn-site.xml
 # cp -p /usr/local/hadoop/share/hadoop/hadoop-project-dist/hadoop-hdfs/hdfs-default.xml /usr/local/hadoop/etc/hadoop/hdfs-site.xml
 # cp -p /usr/local/hadoop/share/hadoop/hadoop-project-dist/hadoop-common/core-default.xml /usr/local/hadoop/etc/hadoop/core-site.xml
+# cp -p /usr/local/hadoop/share/hadoop/hadoop-mapreduce-client/hadoop-mapreduce-client-core/mapred-default.xml /usr/local/hadoop/etc/hadoop/mapred-site.xml
 
 # vi /usr/local/hadoop/etc/hadoop/core-site.xml
 # vi /usr/local/hadoop/etc/hadoop/yarn-site.xml
 # vi /usr/local/hadoop/etc/hadoop/core-site.xml
+# vi /usr/local/hadoop/etc/hadoop/mapred-site.xml
 ```
+
