@@ -40,3 +40,44 @@ ogalush@name-node:/usr/local/src$
 ```
 
 ## Hadoopユーザを入れる
+```
+$ sudo adduser hduser
+ →パスワードは適当に入れる。
+```
+
+## sshkey 作成
+```
+$ sudo su - hduser
+$ ssh-keygen -t rsa -P ""
+ →パスワードは空で。（ノーパスログインを期待している）
+$ cat .ssh/id_rsa.pub >> .ssh/authorized_keys
+$ chmod 600 .ssh/authorized_keys
+$ ssh hduser@localhost
+ → ノーパスでログインできること
+```
+
+## ホスト名解決
+```
+# sudo echo '10.5.5.11 name-node' >> /etc/hosts
+# sudo echo '10.5.5.12 data-node' >> /etc/hosts
+```
+
+## 環境変数設定
+```
+$ vi ~/.bashrc
+----
+#Hadoop variables
+export JAVA_HOME=/usr/lib/jvm/jdk
+export HADOOP_INSTALL=/usr/local/hadoop
+export PATH=$PATH:$HADOOP_INSTALL/bin
+export PATH=$PATH:$HADOOP_INSTALL/sbin
+export HADOOP_MAPRED_HOME=$HADOOP_INSTALL
+export HADOOP_COMMON_HOME=$HADOOP_INSTALL
+export HADOOP_HDFS_HOME=$HADOOP_INSTALL
+export YARN_HOME=$HADOOP_INSTALL
+export HADOOP_CONF_DIR=$HADOOP_INSTALL/etc/hadoop
+----
+
+$ source ~/.bashrc
+$ echo $JAVA_HOME
+```
