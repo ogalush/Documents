@@ -139,12 +139,12 @@ $ sudo su -
 ```
 hduser@name-node$ hdfs namenode -format test
 hduser@name-node$ hadoop-daemon.sh --config $HADOOP_CONF_DIR --script hdfs start namenode
-root@data-node# hadoop-daemon.sh --config $HADOOP_CONF_DIR --script hdfs start datanode
+hduser@data-node$ hadoop-daemon.sh --config $HADOOP_CONF_DIR --script hdfs start datanode
 hduser@name-node$ mr-jobhistory-daemon.sh start historyserver --config $HADOOP_CONF_DIR
 ```
 
 ## daemonの停止
 ```
 hduser@name-node$ hadoop-daemon.sh --config $HADOOP_CONF_DIR --script hdfs stop namenode
-root@data-node# hadoop-daemon.sh --config $HADOOP_CONF_DIR --script hdfs stop datanode
+hduser@data-node$ hadoop-daemon.sh --config $HADOOP_CONF_DIR --script hdfs stop datanode
 ```
