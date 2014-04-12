@@ -8,7 +8,7 @@ Copyright (c) Takehiko OGASAWARA 2014 All Rights Reserved.
 ************************************************************
 -->
 
-# hadoopインストール手順（まずはhdfsを使用できるように)
+# hadoopインストール手順（hdfsを使用できるように)
 
 ## 構成
 ```
@@ -177,6 +177,6 @@ hduser@[name|data]-node$ hdfs-sites.xml: dfs.hostの指定ファイルへホス�
 hduser@name-node$ hdfs hadoop dfsadmin -refreshNodes
 
 (2) GUI管理画面
- http://name-node(IPアドレス):50070/dfshealth.html
+ http://name-node(IPアドレス):50070/
 ```
 
