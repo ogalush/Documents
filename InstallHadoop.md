@@ -3,6 +3,7 @@
 Hadoopインストール手順
 参照元: http://www.kkaneko.com/rinkou/cloudcomputing/hadoopinstall.html
         http://codesfusion.blogspot.jp/2013/10/setup-hadoop-2x-220-on-ubuntu.html?m=1
+        http://metasearch.sourceforge.jp/wiki/index.php?Hadoop%B1%BF%CD%D1
 Copyright (c) Takehiko OGASAWARA 2014 All Rights Reserved.
 ************************************************************
 -->
