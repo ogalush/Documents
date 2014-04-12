@@ -167,3 +167,15 @@ hduser@data-node$ hadoop-daemon.sh --config $HADOOP_CONF_DIR --script hdfs start
 hduser@name-node$ hadoop-daemon.sh --config $HADOOP_CONF_DIR --script hdfs stop namenode
 hduser@data-node$ hadoop-daemon.sh --config $HADOOP_CONF_DIR --script hdfs stop datanode
 ```
+
+## その他コマンド
+```
+(1) hadoopへノード追加後、同期させるコマンド
+hduser@[name|data]-node$ hdfs-sites.xml: dfs.hostの指定ファイルへホストを追加
+ ※今回の場合は/usr/local/hadoop/etc/hadoop/datanode.conf
+hduser@name-node$ hdfs hadoop dfsadmin -refreshNodes
+
+(2) GUI管理画面
+ http://name-node(IPアドレス):50070/dfshealth.html
+```
+
