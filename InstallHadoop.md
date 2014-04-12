@@ -78,6 +78,7 @@ export HADOOP_COMMON_HOME=$HADOOP_INSTALL
 export HADOOP_HDFS_HOME=$HADOOP_INSTALL
 export YARN_HOME=$HADOOP_INSTALL
 export HADOOP_CONF_DIR=$HADOOP_INSTALL/etc/hadoop
+export HADOOP_SECURE_DN_USER=hdfs
 ----
 $ source ~/.bashrc
 $ echo $JAVA_HOME
@@ -96,6 +97,7 @@ export HADOOP_COMMON_HOME=$HADOOP_INSTALL
 export HADOOP_HDFS_HOME=$HADOOP_INSTALL
 export YARN_HOME=$HADOOP_INSTALL
 export HADOOP_CONF_DIR=$HADOOP_INSTALL/etc/hadoop
+export HADOOP_SECURE_DN_USER=hdfs
 ----
 ```
 
@@ -137,13 +139,12 @@ $ sudo su -
 ```
 hduser@name-node$ hdfs namenode -format test
 hduser@name-node$ hadoop-daemon.sh --config $HADOOP_CONF_DIR --script hdfs start namenode
-root@data-node# HADOOP_SECURE_DN_USER=hdfs  /usr/local/hadoop/sbin/hadoop-daemon.sh --config $HADOOP_CONF_DIR --script hdfs start datanode
-hduser@name-node$ /usr/local/hadoop/sbin/mr-jobhistory-daemon.sh start historyserver --config $HADOOP_CONF_DIR
+root@data-node# hadoop-daemon.sh --config $HADOOP_CONF_DIR --script hdfs start datanode
+hduser@name-node$ mr-jobhistory-daemon.sh start historyserver --config $HADOOP_CONF_DIR
 ```
 
-## daemonnの停止
+## daemonの停止
 ```
-hduser@name-node$ $HADOOP_PREFIX/sbin/hadoop-daemon.sh --config $HADOOP_CONF_DIR --script hdfs stop namenode
-root@data-node# $HADOOP_PREFIX/sbin/hadoop-daemon.sh --config $HADOOP_CONF_DIR --script hdfs stop datanode
-
+hduser@name-node$ hadoop-daemon.sh --config $HADOOP_CONF_DIR --script hdfs stop namenode
+root@data-node# hadoop-daemon.sh --config $HADOOP_CONF_DIR --script hdfs stop datanode
 ```
