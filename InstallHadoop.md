@@ -80,6 +80,21 @@ export HADOOP_CONF_DIR=$HADOOP_INSTALL/etc/hadoop
 ----
 $ source ~/.bashrc
 $ echo $JAVA_HOME
+
+# vi /root/.bashrc
+----
+#Hadoop variables
+export JAVA_HOME=/usr/lib/jvm/jdk
+export PATH=$PATH:$JAVA_HOME/bin
+export HADOOP_INSTALL=/usr/local/hadoop
+export PATH=$PATH:$HADOOP_INSTALL/bin
+export PATH=$PATH:$HADOOP_INSTALL/sbin
+export HADOOP_MAPRED_HOME=$HADOOP_INSTALL
+export HADOOP_COMMON_HOME=$HADOOP_INSTALL
+export HADOOP_HDFS_HOME=$HADOOP_INSTALL
+export YARN_HOME=$HADOOP_INSTALL
+export HADOOP_CONF_DIR=$HADOOP_INSTALL/etc/hadoop
+----
 ```
 
 # Hadoopインストール
@@ -116,3 +131,9 @@ $ sudo su -
 # vi /usr/local/hadoop/etc/hadoop/mapred-site.xml
 ```
 
+## 最初の起動
+```
+hduser@name-node$ hdfs namenode -format test
+hduser@name-node$ hadoop-daemon.sh --config $HADOOP_CONF_DIR --script hdfs start namenode
+root@data-node# HADOOP_SECURE_DN_USER=hdfs $HADOOP_PREFIX/sbin/hadoop-daemon.sh --config $HADOOP_CONF_DIR --script hdfs start datanode 
+```
