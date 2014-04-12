@@ -68,6 +68,7 @@ $ vi ~/.bashrc
 ----
 #Hadoop variables
 export JAVA_HOME=/usr/lib/jvm/jdk
+export PATH=$PATH:$JAVA_HOME/bin
 export HADOOP_INSTALL=/usr/local/hadoop
 export PATH=$PATH:$HADOOP_INSTALL/bin
 export PATH=$PATH:$HADOOP_INSTALL/sbin
