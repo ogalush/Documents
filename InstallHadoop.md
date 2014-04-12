@@ -58,7 +58,10 @@ $ ssh-keygen -t rsa -P ""
 $ cat .ssh/id_rsa.pub >> .ssh/authorized_keys
 $ chmod 600 .ssh/authorized_keys
 $ ssh hduser@localhost
- → ノーパスでログインできること
+$ ssh hduser@name-node
+$ ssh hduser@data-node
+$ ssh hduser@data-node2
+ → namenode, data-nodeの各ホストで、相互にsshノーパスでログインできること
 ```
 
 ## ホスト名解決
