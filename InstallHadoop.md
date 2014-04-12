@@ -128,7 +128,7 @@ $ sudo su -
 # sudo mkdir -p /usr/local/hadoop-datastore; chown hduser:hduser /usr/local/hadoop-datastore
 ```
 
-## 初期設定
+## 初期設定(config)
 ```
 # mkdir -p /tmp/hadoop
 # chown hduser:hduser /tmp/hadoop
@@ -144,12 +144,16 @@ $ sudo su -
 # vi /usr/local/hadoop/etc/hadoop/mapred-site.xml
 ```
 
-## daemonの起動
+## 初期設定(namenode)
 ```
 hduser@name-node$ hdfs namenode -format test
+```
+
+## daemonの起動
+```
 hduser@name-node$ hadoop-daemon.sh --config $HADOOP_CONF_DIR --script hdfs start namenode
-hduser@data-node$ hadoop-daemon.sh --config $HADOOP_CONF_DIR --script hdfs start datanode
 hduser@name-node$ mr-jobhistory-daemon.sh start historyserver --config $HADOOP_CONF_DIR
+hduser@data-node$ hadoop-daemon.sh --config $HADOOP_CONF_DIR --script hdfs start datanode
 ```
 
 ## daemonの停止
