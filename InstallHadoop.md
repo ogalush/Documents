@@ -9,6 +9,12 @@ Copyright (c) Takehiko OGASAWARA 2014 All Rights Reserved.
 
 # ノードをインストールする準備
 
+## 構成
+```
+namenode:  name-node(10.5.5.11)
+datanode:  data-node(10.5.5.12, 10.5.5.13)
+```
+
 ## 準備
 バックアップディレクトリ作成
 ```
@@ -57,8 +63,9 @@ $ ssh hduser@localhost
 
 ## ホスト名解決
 ```
-# sudo echo '10.5.5.11 name-node' >> /etc/hosts
-# sudo echo '10.5.5.12 data-node' >> /etc/hosts
+# echo '10.5.5.11 name-node' >> /etc/hosts
+# echo '10.5.5.12 data-node' >> /etc/hosts
+# echo '10.5.5.13 data-node2' >> /etc/hosts
 # cat /etc/hosts
 ```
 
@@ -99,6 +106,8 @@ export YARN_HOME=$HADOOP_INSTALL
 export HADOOP_CONF_DIR=$HADOOP_INSTALL/etc/hadoop
 export HADOOP_SECURE_DN_USER=hdfs
 ----
+# source ~/.bashrc
+# echo $JAVA_HOME
 ```
 
 # Hadoopインストール
