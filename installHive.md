@@ -23,7 +23,7 @@ $ sudo mkdir -p /root/MAINTENANCE/`date "+%Y%m%d"`/{bak,new}
 $ BAK=/root/MAINTENANCE/`date "+%Y%m%d"`/bak
 ```
 
-## ダウンロード
+## ダウンロード, 展開
 ```
 $ cd /usr/local/src
 $ sudo wget http://ftp.tsukuba.wide.ad.jp/software/apache/hive/stable/apache-hive-0.13.0-bin.tar.gz
@@ -31,4 +31,42 @@ $ sudo tar xvzf apache-hive-0.13.0-bin.tar.gz
 $ sudo chown -R hduser:hduser apache-hive-0.13.0-bin
 $ sudo mv apache-hive-0.13.0-bin /usr/local/
 $ sudo ln -s /usr/local/apache-hive-0.13.0-bin /usr/local/hive
+```
+
+## 環境変数設定
+```
+$ sudo vi /home/hduser/.bashrc
+---
+#-- for hive
+HIVE_HOME=/usr/local/hive
+PATH=$HIVE_HOME/bin:$PATH
+---
+
+$ sudo vi /root/.bashrc
+---
+#-- for hive
+HIVE_HOME=/usr/local/hive
+PATH=$HIVE_HOME/bin:$PATH
+---
+
+source /home/hduser/.bashrc
+```
+
+## ログディレクトリ作成
+```
+$ sudo mkdir /var/log/hive
+$ sudo chmod 666 /var/log/hive
+$ ls -al /var/log/hive
+```
+
+## 設定
+```
+$ cd /usr/local/hive/conf/
+$ ls -1 | sed 's/.template//g'| awk '{print "cp -p "$1".template " $1}' |bash
+ → 末尾の.templateを除いてconfを作成
+$ vi hive-log4j.properties
+---
+##hive.log.dir=${java.io.tmpdir}/${user.name}
+hive.log.dir=/var/log/hive
+---
 ```
