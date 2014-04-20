@@ -70,3 +70,11 @@ $ vi hive-log4j.properties
 hive.log.dir=/var/log/hive
 ---
 ```
+
+## 実行
+```
+$ /usr/local/hive/bin/hive
+ → hive> というコンソールが表示されればOK
+$ hive> show databases;
+ → 一覧が何かしら表示されればOK
+```
