@@ -180,3 +180,8 @@ hduser@name-node$ hdfs hadoop dfsadmin -refreshNodes
  http://name-node(IPアドレス):50070/
 ```
 
+## レプリケーション数
+```
+hduser$ hadoop fs -setrep -W 2 -R /data
+→特定ディレクトリ配下のレプリケーション数を変更する。
+```
