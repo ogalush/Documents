@@ -8,7 +8,7 @@ Copyright (c) Takehiko OGASAWARA 2014 All Rights Reserved.
 ************************************************************
 -->
 
-# hadoopインストール手順（hdfsを使用できるように)
+# hadoopインストール手順（hdfs, MapReduce)
 
 ## 構成
 ```
@@ -184,4 +184,22 @@ hduser@name-node$ hdfs hadoop dfsadmin -refreshNodes
 ```
 hduser$ hadoop fs -setrep -W 2 -R /data
 →特定ディレクトリ配下のレプリケーション数を変更する。
+```
+
+## MapReduceの起動
+```
+hduser@name-node$ yarn-daemon.sh --config $HADOOP_CONF_DIR start resourcemanager
+hduser@name-node$ mr-jobhistory-daemon.sh start historyserver --config $HADOOP_CONF_DIR
+
+hduser@data-node$ yarn-daemon.sh --config $HADOOP_CONF_DIR start nodemanager
+hduser@data-node$ mr-jobhistory-daemon.sh start historyserver --config $HADOOP_CONF_DIR
+```
+
+## MapReduceの停止
+```
+hduser@name-node$ yarn-daemon.sh --config $HADOOP_CONF_DIR stop resourcemanager
+hduser@name-node$ mr-jobhistory-daemon.sh stop historyserver --config $HADOOP_CONF_DIR
+
+hduser@data-node$ yarn-daemon.sh --config $HADOOP_CONF_DIR stop nodemanager
+hduser@data-node$ mr-jobhistory-daemon.sh stop historyserver --config $HADOOP_CONF_DIR
 ```
