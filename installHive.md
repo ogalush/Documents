@@ -55,8 +55,15 @@ source /home/hduser/.bashrc
 ## ログディレクトリ作成
 ```
 $ sudo mkdir /var/log/hive
-$ sudo chmod 666 /var/log/hive
+$ sudo chmod 777 /var/log/hive
+$ touch /var/log/hive/hive.log
+$ chown hduser:hduser /var/log/hive/hive.log
 $ ls -al /var/log/hive
+```
+
+## workディレクトリの権限変更
+```
+$ chmod 777 /usr/local/hive/bin/metastore_db
 ```
 
 ## 設定
@@ -77,4 +84,11 @@ $ /usr/local/hive/bin/hive
  → hive> というコンソールが表示されればOK
 $ hive> show databases;
  → 一覧が何かしら表示されればOK
+```
+
+## memo
+hiveでエラーになったときは、lockファイルを削除する。
+```
+# find /usr/local/hive/bin/metastore_db -name "*.lck"
+# find /usr/local/hive/bin/metastore_db -name "*.lck" -exec rm -f {} \;
 ```
