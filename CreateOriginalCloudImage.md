@@ -61,7 +61,7 @@ $ sudo su -
  作成する一般ユーザのパスワード: ubuntu
    → パスワードは何でもOK
  HOMEディレクトリの暗号化: No
- パーティションの作成方法:   Guided - use entire disk
+ パーティションの作成方法:   Manual
   → ■重要■
     設定内容は後述。
  Configuring discove: No automatic updates
@@ -76,7 +76,7 @@ $ sudo su -
 
 ### パーティションの作成方法
 仮想ゲストでOSをインストールする時に、パーティションを1パーティションにする必要がある。
-(cloud-init-ramfs...が書換えることが出来るのがsingleパーティションのみであるため)
+(cloud-init-ramfs...が書換えることが出来るのがsingleパーティションのみのため)
 ```
 Partition disks
  → Manual -> 「Virtual disk 1 (vda) - 10.7 GB Virtio Block Device」を開く
@@ -103,10 +103,47 @@ Partition disks
 
  「 Done setting up the partition」で設定を終了する。
  「 Finish partitioning and write changes to disk」で書込む。
-  → その後、swapを選ぶか？(Do you want to return to the partitioning menu?)
+  → その後、swapを作るか？(Do you want to return to the partitioning menu?)
     と表示されるので、Noとする。
   → Write the changes to disks? : YES
-  ■重要■
-  cloud-init-ramfsでパーティションサイズを調整できるのが、1パーティションまで。
-  そのため、/boot, swap領域を無くして、/で1パーティションとするのがポイント。
+
+パーティションが作成される。
+```
+
+### 仮想ゲストのセットアップ
+仮想ゲストへログインできるようになるので、必要なパッケージを入れる。
+
+#### OSアップデート
+```
+$ sudo apt-get -y update
+$ sudo apt-get -y upgrade
+```
+
+#### Cloud イメージ用のインストール
+ディスクのresizeやホスト名変更に使用するモジュールを入れる。
+```
+$ sudo apt-get -y install cloud-init
+$ sudo dpkg-reconfigure cloud-init
+ → EC2にチェックを入れる。OpenStackはEC2互換形式で設定する。
+ → cloud-initを入れることで、インスタンス作成時にhostname変更をしてくれる。
+
+ $ sudo apt-get -y install cloud-initramfs-growroot
+  → 仮想ゲストのDiskサイズをresizeしてくれる。
+
+ $ sudo apt-get -y install cloud-initramfs-rescuevol
+  → いざというときに役立ちそう。 " boot off a rescue volume rather than root filesystem"
+```
+
+#### 仮想ゲスト設定
+仮想ゲスト間で共通する設定を入れる
+```
+$ sudo adduser ogalush
+$ sudo adduser tendo
+※その他sshキー(authorized_keys)等を入れる
+```
+
+#### 仮想ゲスト終了
+仮想ゲストのOSイメージをexportするため、shutdownする。
+```
+$ sudo sync;sync;sync; shutdown -h now
 ```
