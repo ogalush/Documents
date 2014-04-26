@@ -147,3 +147,68 @@ $ sudo adduser tendo
 ```
 $ sudo sync;sync;sync; shutdown -h now
 ```
+
+### 仮想ゲストのOSイメージ編集
+#### CD-ROM確認
+```
+# virsh dumpxml test
+----
+ <disk type='block' device='cdrom'>
+  <driver name='qemu' type='raw'/>
+  <target dev='hdc' bus='ide'/>
+  <readonly/>
+  <address type='drive' controller='0' bus='1' target='0' unit='0'/>
+   ~~~★この状態であればOK
+</disk>
+----
+
+※ cdromにISOがマウントされている場合は、以下でunmountする。
+ # virsh start test --paused
+ # virsh attach-disk --type cdrom --mode readonly test "" hdc
+ # virsh resume test
+ # virsh console test
+```
+
+#### 仮想ゲストのMACアドレス消去(logなども)
+```
+# apt-get -y install libguestfs-tools guestmount
+# virt-sysprep -d test
+---
+ W: kvm binary is deprecated, please use qemu-system-x86_64 instead
+ W: kvm binary is deprecated, please use qemu-system-x86_64 instead
+---
+上記の表示で終わればOK
+
+→ virt-sysprepを実行することで、MACアドレスの固有設定が消える。
+  消去する情報(参考): http://www.slideshare.net/moriwaka/virtsysprep
+```
+
+### 仮想イメージの圧縮
+OSイメージは、そのままだと大容量のため、整理して圧縮する。
+```
+# qemu-img convert -c /home/ogalush/ubuntu_mini.qcow2 -O qcow2 /home/ogalush/ubuntu_compress.qcow2
+→ 1.8GB--> 633MBへ圧縮された。
+```
+
+### OpenStackへ登録
+```
+ # glance image-create --is-public true --disk-format qcow2 --container-format bare --name "Ubuntu12.04_oga" < /home/ogalush/ubuntu_compress.qcow2
+```
+
+### OpenStackからインスタンス起動
+Horizonからインスタンスを起動する。
+イメージ選択欄から、作成したオリジナルイメージを選択する。
+★k起動したインスタンスで以下を確認できればOK
+ (1) ホスト名が変わっていること。
+ (2) df -h の/の容量が、インスタンス作成時の容量(20GBなど)となること。
+ (3) 外部へ通信できること。apt-get -y updateなど。
+ (4) sshログインできること。 ip netns ...か、floatingIPを付けた後、外部からインスタンスへsshする。
+
+ 
+### 仮想ゲストの削除 ※実施しない(ゴールデンイメージが不要な場合に実施)
+qemu上から仮想ゲストを削除する。
+```
+# virsh undefine test
+→ /home/ogalush/ubuntu_mini.qcow2は残るが、virshからOSイメージが消える。
+★ゴールデンイメージで残すなら、実行しなくて良い？
+```
