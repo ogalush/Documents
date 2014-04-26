@@ -192,7 +192,9 @@ OSイメージは、そのままだと大容量のため、整理して圧縮す
 
 ### OpenStackへ登録
 ```
- # glance image-create --is-public true --disk-format qcow2 --container-format bare --name "Ubuntu12.04_oga" < /home/ogalush/ubuntu_compress.qcow2
+# glance image-list
+ → 登録するイメージが無い事(二重登録防止)
+# glance image-create --is-public true --disk-format qcow2 --container-format bare --name "Ubuntu12.04_oga" < /home/ogalush/ubuntu_compress.qcow2
 ```
 
 ### OpenStackからインスタンス起動
