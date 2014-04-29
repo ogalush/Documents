@@ -29,7 +29,7 @@ $ sudo apt-get -y install virtinst
 ```
 $ sudo su -
 # qemu-img create -f qcow2 /home/ogalush/ubuntu_mini.qcow2 10G
-# # virt-install --connect qemu:///system \
+# virt-install --connect qemu:///system \
              --name test \
              --ram=1024 \
              --hvm \
@@ -201,7 +201,7 @@ OSイメージは、そのままだと大容量のため、整理して圧縮す
 Horizonからインスタンスを起動する。
 ```
 イメージ選択欄から、作成したオリジナルイメージを選択する。
-★k起動したインスタンスで以下を確認できればOK
+★起動したインスタンスで以下を確認できればOK
  (1) ホスト名が変わっていること。
  (2) df -h の/の容量が、インスタンス作成時の容量(20GBなど)となること。
  (3) 外部へ通信できること。apt-get -y updateなど。
