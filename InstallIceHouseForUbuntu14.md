@@ -353,4 +353,112 @@ virt_type=qemu
 ```
 
 
+### neutronインストール
+```
+#-- MySQLユーザ追加
+# mysql -u root -p
+mysql> CREATE DATABASE neutron;
+mysql> GRANT ALL PRIVILEGES ON neutron.* TO 'neutron'@'%' IDENTIFIED BY 'password';
+mysql> FLUSH PRIVILEGES;
+mysql> ¥q
 
+#-- KeyStoneユーザ作成
+# keystone user-create --name neutron --pass password --email neutron@192.168.0.200
+# keystone service-create --name neutron --type network --description "OpenStack Networking"
+# keystone endpoint-create \
+  --service-id $(keystone service-list | awk '/ network / {print $2}') \
+  --publicurl http://192.168.0.200:9696 \
+  --adminurl http://192.168.0.200:9696 \
+  --internalurl http://192.168.0.200:9696
+
+#-- パッケージインストール
+# apt-get -y install neutron-server neutron-plugin-ml2
+```
+
+neutron設定
+```
+# cp -raf /etc/neutron $BAK
+# vi /etc/neutron/neutron.conf
+----
+[DEFAULT]
+...
+auth_strategy = keystone
+rpc_backend = neutron.openstack.common.rpc.impl_kombu
+rabbit_host = 192.168.0.200
+rabbit_password = admin!
+...
+
+notify_nova_on_port_status_changes = True
+notify_nova_on_port_data_changes = True
+nova_url = http://controller:8774/v2
+nova_admin_username = nova
+nova_admin_tenant_id = 5b22bf7cb4e34e23bc60e2f23248747b
+~~~★ keystone tenant-get serviceのID
+nova_admin_password = password
+nova_admin_auth_url = http://192.168.0.200:35357/v2.0
+...
+###core_plugin = neutron.plugins.ml2.plugin.Ml2Plugin
+core_plugin = ml2
+~~~★書き換える
+service_plugins = router
+allow_overlapping_ips = True
+...
+[database]
+##connection = sqlite:////var/lib/neutron/neutron.sqlite
+connection = mysql://neutron:password@192.168.0.200/neutron1
+...
+[keystone_authtoken]
+auth_uri = http://192.168.0.200:5000
+auth_host = 192.168.0.200
+auth_protocol = http
+auth_port = 35357
+admin_tenant_name = service
+admin_user = neutron
+admin_password = password
+signing_dir = $state_path/keystone-signing
+----
+
+#-- ml2 plugin設定
+# vi /etc/neutron/plugins/ml2/ml2_conf.ini
+----
+[ml2]
+type_drivers = gre
+tenant_network_types = gre
+mechanism_drivers = openvswitch
+...
+[ml2_type_gre]
+tunnel_id_ranges = 1:1000
+...
+[securitygroup]
+firewall_driver = neutron.agent.linux.iptables_firewall.OVSHybridIptablesFirewallDriver
+enable_security_group = True
+...
+----
+
+#-- nova側の設定更新
+# vi /etc/nova/nova.conf
+----
+[DEFAULT]
+...
+network_api_class = nova.network.neutronv2.api.API
+neutron_url = http://192.168.0.200:9696
+neutron_auth_strategy = keystone
+neutron_admin_tenant_name = service
+neutron_admin_username = neutron
+neutron_admin_password = password
+neutron_admin_auth_url = http://192.168.0.200:35357/v2.0
+linuxnet_interface_driver = nova.network.linux_net.LinuxOVSInterfaceDriver
+firewall_driver = nova.virt.firewall.NoopFirewallDriver
+security_group_api = neutron
+----
+
+#-- サービス再起動
+# service nova-api restart
+# service nova-scheduler restart
+# service nova-conductor restart
+# service neutron-server restart
+```
+
+newtron設定2 (for Network node)
+```
+```
