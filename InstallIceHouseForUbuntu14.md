@@ -364,7 +364,7 @@ mysql> ¥q
 
 #-- KeyStoneユーザ作成
 # keystone user-create --name neutron --pass password --email neutron@192.168.0.200
-# keystone user-role-add --user=nova --tenant=service --role=admin
+# keystone user-role-add --user=neutron --tenant=service --role=admin
 # keystone service-create --name neutron --type network --description "OpenStack Networking"
 # keystone endpoint-create \
   --service-id $(keystone service-list | awk '/ network / {print $2}') \
