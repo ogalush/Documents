@@ -125,8 +125,42 @@ echo '@hourly /usr/bin/keystone-manage token_flush >/var/log/keystone/keystone-t
 #-- Serviceテナント
 # keystone tenant-create --name=service --description="Service Tenant"
 
+#-- サービス作成
+# keystone service-create --name=keystone --type=identity --description="OpenStack Identity"
+# keystone endpoint-create \
+  --service-id=$(keystone service-list | awk '/ identity / {print $2}') \
+  --publicurl=http://192.168.0.200:5000/v2.0 \
+  --internalurl=http://192.168.0.200:5000/v2.0 \
+  --adminurl=http://192.168.0.200:35357/v2.0
 
+#-- KeyStoneインストール確認
+# unset OS_SERVICE_TOKEN OS_SERVICE_ENDPOINT
+# keystone --os-username=admin --os-password=password --os-auth-url=http://192.168.0.200:35357/v2.0 token-get
+→ tokenが表示されればOK
 
+# keystone --os-username=admin --os-password=password --os-tenant-name=admin --os-auth-url=http://192.168.0.200:35357/v2.0 token-get
+→ tokenが表示されればOK
+
+#-- 環境変数設定
+# vi ~/.admin-openrc.sh
+----
+export OS_USERNAME=admin
+export OS_PASSWORD=password
+export OS_TENANT_NAME=admin
+export OS_AUTH_URL=http://192.168.0.200:35357/v2.0
+----
+# echo 'source ~/.admin-openrc.sh' >> ~/.bashrc
+# source ~/.bashrc
+
+#-- 環境変数設定後の確認
+# keystone token-get
+→ tokenが表示されればOK
+
+# keystone user-list
+→ admin,demoが表示されればOK
+
+# keystone user-role-list --user admin --tenant admin
+→ admin, _member_が表示されればOK
 ```
 
 
