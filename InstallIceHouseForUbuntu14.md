@@ -348,7 +348,7 @@ dpkg-statoverride --update --add root root 0644 /boot/vmlinuz-${version}
 # vi /etc/nova/nova-compute.conf 
 ----
 [libvirt]
-virt_type=qemu
+virt_type=kvm
 ~~~★変更する
 ----
 
