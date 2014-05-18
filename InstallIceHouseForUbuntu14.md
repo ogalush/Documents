@@ -604,3 +604,37 @@ iface br-ex inet static
 # neutron router-interface-add demo-router demo-subnet
 # neutron router-gateway-set demo-router ext-net
 ```
+
+### Horizonインストール
+```
+# apt-get -y install apache2 memcached libapache2-mod-wsgi openstack-dashboard
+# apt-get -y remove --purge openstack-dashboard-ubuntu-theme
+```
+
+Horizon設定
+```
+# cp -raf /etc/openstack-dashboard $BAK
+# vi /etc/openstack-dashboard/local_settings.py
+----
+CACHES = {
+'default': {
+'BACKEND' : 'django.core.cache.backends.memcached.MemcachedCache',
+'LOCATION' : '192.168.0.200:11211'
+~~~★変更する
+}
+...
+OPENSTACK_HOST = "192.168.0.200"
+~~~★変更する
+----
+```
+
+Horizon反映
+```
+# service apache2 restart
+# service memcached restart
+
+#-- アクセス確認
+http://192.168.0.200/horizon/
+```
+
+
