@@ -242,6 +242,83 @@ mysql> ¥q
 # cd /usr/local/src
 # wget http://cloud-images.ubuntu.com/releases/14.04/release/ubuntu-14.04-server-cloudimg-amd64-disk1.img
 # glance image-create --name="ubuntu14.04" --disk-format=qcow2 --container-format=bare --is-public=true --progress < /usr/local/src/ubuntu-14.04-server-cloudimg-amd64-disk1.img
-
+# glance image-list
+→イメージが表示されればOK
 ```
 
+### novaインストール
+```
+# apt-get -y install nova-api nova-cert nova-conductor nova-consoleauth nova-novncproxy nova-scheduler python-novaclient
+```
+nova設定
+```
+# cp -raf /etc/nova $BAK
+# vi /etc/nova/nova.conf
+----
+[DEFAULT]
+...
+rpc_backend = rabbit
+rabbit_host = 192.168.0.200
+rabbit_password = password
+...
+my_ip = 192.168.0.200
+vncserver_listen = 192.168.0.200
+vncserver_proxyclient_address = 192.168.0.200
+...
+auth_strategy = keystone
+...
+[database]
+connection = mysql://nova:password@192.168.0.200/nova
+...
+[keystone_authtoken]
+auth_uri = http://192.168.0.200:5000
+auth_host = 192.168.0.200
+auth_port = 35357
+auth_protocol = http
+admin_tenant_name = service
+admin_user = nova
+admin_password = password
+----
+
+#-- 使用しないDBファイルの削除
+# rm /var/lib/nova/nova.sqlite
+
+#-- DBユーザ作成
+$ mysql -u root -p
+mysql> CREATE DATABASE nova;
+mysql> GRANT ALL PRIVILEGES ON nova.* TO 'nova'@'%' IDENTIFIED BY 'password';
+mysql> FLUSH PRIVILEGES;
+mysql> ¥q
+
+#-- DB初期化
+# su -s /bin/sh -c "nova-manage db sync" nova
+
+#-- KeyStoneユーザ作成
+# keystone user-create --name=nova --pass=password --email=nova@192.168.0.200
+# keystone user-role-add --user=nova --tenant=service --role=admin
+
+#-- KeyStoneサービス作成
+$ keystone service-create --name=nova --type=compute --description="OpenStack Compute"
+$ keystone endpoint-create  \
+  --service-id=$(keystone service-list | awk '/ compute / {print $2}') \
+  --publicurl=http://192.168.0.200:8774/v2/%\(tenant_id\)s \
+  --internalurl=http://192.168.0.200:8774/v2/%\(tenant_id\)s \
+  --adminurl=http://192.168.0.200:8774/v2/%\(tenant_id\)s
+
+#-- サービス再起動
+# service nova-api restart
+# service nova-cert restart
+# service nova-consoleauth restart
+# service nova-scheduler restart
+# service nova-conductor restart
+# service nova-novncproxy restart
+
+#-- 確認
+# nova image-list
+→ glance登録時のイメージ（ubuntu14.04）が表示されればOK
+```
+
+nova設定(2)
+```
+# 
+```
