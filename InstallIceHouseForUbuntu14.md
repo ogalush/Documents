@@ -163,4 +163,79 @@ export OS_AUTH_URL=http://192.168.0.200:35357/v2.0
 → admin, _member_が表示されればOK
 ```
 
+Python Clientのインストール
+```
+# apt-get -y install python-pip
+```
+
+
+Glanceインストール
+```
+# apt-get -y install glance python-glanceclient
+```
+
+Glance設定
+```
+# cp -raf /etc/glance $BAK
+# vi /etc/glance/glance-api.conf
+----
+[DEFAULT]
+rpc_backend = rabbit
+rabbit_host = 192.168.0.200
+rabbit_userid = guest
+rabbit_password = admin!
+...
+[database]
+connection = mysql://glance:password@192.168.0.200/glance
+##sqlite_db = /var/lib/glance/glance.sqlite
+...
+[keystone_authtoken]
+auth_uri = http://192.168.0.200:5000
+auth_host = 192.168.0.200
+auth_port = 35357
+auth_protocol = http
+admin_tenant_name = service
+admin_user = glance
+admin_password = password
+...
+[paste_deploy]
+flavor = keystone
+...
+----
+
+# vi /etc/glance/glance-registry.conf
+----
+[database]
+connection = mysql://glance:password@192.168.0.200/glance
+##sqlite_db = /var/lib/glance/glance.sqlite
+----
+
+#-- 使用しないDBファイル削除
+# rm /var/lib/glance/glance.sqlite
+
+#-- glanceユーザ作成
+# mysql -u root -p
+mysql> CREATE DATABASE glance;
+mysql> GRANT ALL PRIVILEGES ON glance.* TO 'glance'@'%' IDENTIFIED BY 'password';
+mysql> FLUSH PRIVILEGES;
+mysql> ¥q
+
+#-- DB初期化
+# su -s /bin/sh -c "glance-manage db_sync" glance
+
+#-- KeyStoneユーザ作成
+# keystone user-create --name=glance --pass=password --email=glance@192.168.0.200
+# keystone user-role-add --user=glance --tenant=service --role=admin
+
+#-- KeyStoneサービス作成
+# keystone service-create --name=glance --type=image --description="OpenStack Image Service"
+# keystone endpoint-create \
+  --service-id=$(keystone service-list | awk '/ image / {print $2}') \
+  --publicurl=http://192.168.0.200:9292 \
+  --internalurl=http://192.168.0.200:9292 \
+  --adminurl=http://192.168.0.200:9292
+
+# service glance-registry restart
+# service glance-api restart
+```
 
