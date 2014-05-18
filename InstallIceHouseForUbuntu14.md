@@ -237,5 +237,11 @@ mysql> ¥q
 
 # service glance-registry restart
 # service glance-api restart
+
+#-- イメージの登録 (ubuntu14.04 cloud image)
+# cd /usr/local/src
+# wget http://cloud-images.ubuntu.com/releases/14.04/release/ubuntu-14.04-server-cloudimg-amd64-disk1.img
+# glance image-create --name="ubuntu14.04" --disk-format=qcow2 --container-format=bare --is-public=true --progress < /usr/local/src/ubuntu-14.04-server-cloudimg-amd64-disk1.img
+
 ```
 
