@@ -262,8 +262,13 @@ rabbit_host = 192.168.0.200
 rabbit_password = admin!
 ...
 my_ip = 192.168.0.200
+novnc_enable = true
+novncproxy_port = 6080
+novncproxy_host = 192.168.0.200
+novncproxy_base_url = http://192.168.0.200:6080/vnc_auto.html
 vncserver_listen = 192.168.0.200
 vncserver_proxyclient_address = 192.168.0.200
+vnc_keymap=ja
 ...
 auth_strategy = keystone
 glance_host = 192.168.0.200
