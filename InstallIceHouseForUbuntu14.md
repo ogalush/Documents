@@ -385,6 +385,7 @@ neutron設定
 auth_strategy = keystone
 rpc_backend = neutron.openstack.common.rpc.impl_kombu
 rabbit_host = 192.168.0.200
+rabbit_user = guest
 rabbit_password = admin!
 ...
 
@@ -461,4 +462,98 @@ security_group_api = neutron
 
 newtron設定2 (for Network node)
 ```
+#-- sysctl変更
+# cp -p /etc/sysctl.conf $BAK
+# vi /etc/sysctl.conf $BAK
+----
+net.ipv4.ip_forward=1
+net.ipv4.conf.all.rp_filter=0
+net.ipv4.conf.default.rp_filter=0
+----
+# sysctl -p
+
+#-- Network node向けパッケージのインストール
+# apt-get -y install neutron-plugin-ml2 neutron-plugin-openvswitch-agent openvswitch-datapath-dkms neutron-l3-agent neutron-dhcp-agent
+
+#-- Plug-in設定
+# vi /etc/neutron/l3_agent.ini 
+----
+[DEFAULT]
+...
+interface_driver = neutron.agent.linux.interface.OVSInterfaceDriver
+use_namespaces = True
+...
+----
+
+# vi /etc/neutron/dhcp_agent.ini
+----
+[DEFAULT]
+....
+interface_driver = neutron.agent.linux.interface.OVSInterfaceDriver
+dhcp_driver = neutron.agent.linux.dhcp.Dnsmasq
+use_namespaces = True
+----
+
+# vi /etc/neutron/metadata_agent.ini
+----
+auth_url = http://192.168.0.200:5000/v2.0
+~~~★置き換える
+auth_region = regionOne
+admin_tenant_name = service
+admin_user = neutron
+admin_password = password
+nova_metadata_ip = 192.168.0.200
+metadata_proxy_shared_secret = password
+...
+verbose = True
+----
+
+# vi /etc/nova/nova.conf
+----
+service_neutron_metadata_proxy = true
+neutron_metadata_proxy_shared_secret = password
+----
+
+#-- nova-api反映
+# service nova-api restart
+```
+
+ml2プラグイン設定
+```
+# vi /etc/neutron/plugins/ml2/ml2_conf.ini
+----
+...
+[ovs]
+local_ip = 192.168.0.200
+tunnel_type = gre
+enable_tunneling = True
+...
+----
+
+#-- サービス再起動
+# service openvswitch-switch restart
+# service openvswitch-switch status
+```
+
+NIC設定
+```
+# ovs-vsctl add-br br-int
+# ovs-vsctl add-br br-ex
+# ovs-vsctl add-port br-ex p1p1
+→ 外部ネットワーク向けの通信 192.168.0.0/24のセグメント
+# ethtool -K INTERFACE_NAME gro off
+```
+
+neutronサービス反映
+```
+# service neutron-plugin-openvswitch-agent restart
+# service neutron-l3-agent restart
+# service neutron-dhcp-agent restart
+# service neutron-metadata-agent restart
+```
+
+外部/内部ネットワーク作成
+```
+# neutron net-create ext-net --shared --router:external=True
+
 ```
