@@ -364,6 +364,7 @@ mysql> ¥q
 
 #-- KeyStoneユーザ作成
 # keystone user-create --name neutron --pass password --email neutron@192.168.0.200
+# keystone user-role-add --user=nova --tenant=service --role=admin
 # keystone service-create --name neutron --type network --description "OpenStack Networking"
 # keystone endpoint-create \
   --service-id $(keystone service-list | awk '/ network / {print $2}') \
@@ -586,6 +587,20 @@ iface br-ex inet static
 
 外部/内部ネットワーク作成
 ```
+#-- 外部ネットワーク
 # neutron net-create ext-net --shared --router:external=True
+# neutron net-list
+→ 表示されればOK
+# neutron subnet-create ext-net --name ext-subnet \
+  --allocation-pool start=192.168.0.100,end=192.168.0.149 \
+  --disable-dhcp --gateway 192.168.0.254 192.168.0.0/24
 
+#-- 内部ネットワーク
+# neutron net-create demo-net
+# neutron subnet-create demo-net --name demo-subnet  --gateway 10.0.0.1 10.0.0.0/24
+
+#-- 内部ネットワーク用Router
+# neutron router-create demo-router
+# neutron router-interface-add demo-router demo-subnet
+# neutron router-gateway-set demo-router ext-net
 ```
