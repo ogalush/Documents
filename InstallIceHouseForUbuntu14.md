@@ -57,7 +57,7 @@ RabbitMQインストール
 ```
 
 
-KeyStoneインストール
+### KeyStoneインストール
 ```
 # apt-get -y install keystone
 ```
@@ -163,13 +163,13 @@ export OS_AUTH_URL=http://192.168.0.200:35357/v2.0
 → admin, _member_が表示されればOK
 ```
 
-Python Clientのインストール
+### Python Clientのインストール
 ```
 # apt-get -y install python-pip
 ```
 
 
-Glanceインストール
+### Glanceインストール
 ```
 # apt-get -y install glance python-glanceclient
 ```
