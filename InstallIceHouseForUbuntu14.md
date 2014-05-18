@@ -54,6 +54,79 @@ RabbitMQインストール
 ```
 # apt-get install -y rabbitmq-server
 # rabbitmqctl change_password guest admin!
+```
+
+
+KeyStoneインストール
+```
+# apt-get -y install keystone
+```
+
+KeyStone設定
+```
+# cp -raf /etc/keystone $BAK
+# vi /etc/keystone/keystone.conf
+----
+### connection = sqlite:////var/lib/keystone/keystone.db
+connection = mysql://keystone:password@192.168.0.200/keystone
+----
+
+#-- sqliteファイル削除
+# rm /var/lib/keystone/keystone.db
+
+#-- keystoneユーザ作成
+# mysql -u root -p
+
+mysql> CREATE DATABASE keystone;
+mysql> GRANT ALL PRIVILEGES ON keystone.* TO 'keystone'@'%' IDENTIFIED BY 'password';
+mysql> FLUSH PRIVILEGES;
+mysql> ¥q
+
+#-- keystoneDB初期化
+# su -s /bin/sh -c "keystone-manage db_sync" keystone
+
+#-- keystoneパスワード反映
+# vi /etc/keystone/keystone.conf
+----
+[default]
+# admin_token=ADMIN
+admin_token=password
+...
+log_dir = /var/log/keystone
+----
+
+#-- 設定反映
+# service keystone restart
+# service keystone status
+
+#-- 有効期限が切れたtokenの掃除スクリプト
+# (crontab -l 2>&1 | grep -q token_flush) || \
+echo '@hourly /usr/bin/keystone-manage token_flush >/var/log/keystone/keystone-tokenflush.log 2>&1' >> /var/spool/cron/crontabs/root
+
+# cat /var/spool/cron/crontabs/root 
+→設定が追加されていること。
+
+#-- テナント作成
+# export OS_SERVICE_TOKEN=password
+# export OS_SERVICE_ENDPOINT=http://192.168.0.200:35357/v2.0
+
+#-- adminテナント
+# keystone user-create --name=admin --pass=password --email=admin@192.168.0.200
+# keystone role-create --name=admin
+# keystone tenant-create --name=admin --description="Admin Tenant"
+# keystone user-role-add --user=admin --tenant=admin --role=admin
+# keystone user-role-add --user=admin --role=_member_ --tenant=admin
+
+#-- demoテナント
+# keystone user-create --name=demo --pass=password --email=demo@192.168.0.200
+# keystone tenant-create --name=demo --description="Demo Tenant"
+# keystone user-role-add --user=demo --role=_member_ --tenant=demo
+
+#-- Serviceテナント
+# keystone tenant-create --name=service --description="Service Tenant"
+
 
 
 ```
+
+
