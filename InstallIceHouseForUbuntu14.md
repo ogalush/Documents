@@ -259,7 +259,7 @@ nova設定
 ...
 rpc_backend = rabbit
 rabbit_host = 192.168.0.200
-rabbit_password = password
+rabbit_password = admin!
 ...
 my_ip = 192.168.0.200
 vncserver_listen = 192.168.0.200
@@ -616,12 +616,13 @@ Horizon設定
 # cp -raf /etc/openstack-dashboard $BAK
 # vi /etc/openstack-dashboard/local_settings.py
 ----
-CACHES = {
-'default': {
-'BACKEND' : 'django.core.cache.backends.memcached.MemcachedCache',
-'LOCATION' : '192.168.0.200:11211'
-~~~★変更する
-}
+SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
+CACHES = {   
+  'default': {
+  'BACKEND': 'django.core.cache.backends.memcached.MemcachedCache'
+  'LOCATION': '192.168.0.200:11211',
+  }
+} 
 ...
 OPENSTACK_HOST = "192.168.0.200"
 ~~~★変更する
@@ -635,6 +636,15 @@ Horizon反映
 
 #-- アクセス確認
 http://192.168.0.200/horizon/
+
+#-- memcached設定
+# cp -p /etc/memcached.conf $BAK
+# vi /etc/memcached.conf
+----
+## -l 127.0.0.1
+-l 0.0.0.0
+----
+# service memcached restart
 ```
 
 
