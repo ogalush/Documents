@@ -266,6 +266,7 @@ vncserver_listen = 192.168.0.200
 vncserver_proxyclient_address = 192.168.0.200
 ...
 auth_strategy = keystone
+glance_host = 192.168.0.200
 ...
 [database]
 connection = mysql://nova:password@192.168.0.200/nova
@@ -320,5 +321,36 @@ $ keystone endpoint-create  \
 
 nova設定(2)
 ```
-# 
+# apt-get -y install nova-compute-kvm python-guestfs
+
+# dpkg-statoverride  --update --add root root 0644 /boot/vmlinuz-$(uname -r)
+→ 一般ユーザがKernelファイルへアクセスできるよう、権限を緩くする.
+  https://bugs.launchpad.net/ubuntu/+source/linux/+bug/759725
+
+# touch /etc/kernel/postinst.d/statoverride
+# chmod +x /etc/kernel/postinst.d/statoverride
+# vi /etc/kernel/postinst.d/statoverride
+----
+#!/bin/sh
+version="$1"
+# passing the kernel version is required
+[ -z "${version}" ] && exit 0
+dpkg-statoverride --update --add root root 0644 /boot/vmlinuz-${version}
+----
+→ Kernel version up後も適用できるようにしている。
+
+#-- compute設定
+# vi /etc/nova/nova-compute.conf 
+----
+[libvirt]
+virt_type=qemu
+~~~★変更する
+----
+
+#-- compute再起動
+# service nova-compute restart
+# service nova-compute status
 ```
+
+
+
