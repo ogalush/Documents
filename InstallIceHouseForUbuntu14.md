@@ -406,7 +406,7 @@ allow_overlapping_ips = True
 ...
 [database]
 ##connection = sqlite:////var/lib/neutron/neutron.sqlite
-connection = mysql://neutron:password@192.168.0.200/neutron1
+connection = mysql://neutron:password@192.168.0.200/neutron
 ...
 [keystone_authtoken]
 auth_uri = http://192.168.0.200:5000
@@ -550,6 +550,38 @@ neutronサービス反映
 # service neutron-l3-agent restart
 # service neutron-dhcp-agent restart
 # service neutron-metadata-agent restart
+```
+
+NIC設定
+```
+openvswitchを有効にすると物理NIC(p1p1)から接続できなくなるため、br-exにIPアドレスを当てる。
+# vi /etc/network/interfaces
+----
+# The loopback network interface
+auto lo
+iface lo inet loopback
+
+# The primary network interface
+#-- for Physical Interface
+auto p1p1
+iface p1p1 inet manual
+ up ip address add 0/0 dev $IFACE
+ up ip link set $IFACE up
+ down ip link set $IFACE down
+
+#-- for Virtual Interface(OVS)
+auto br-ex
+iface br-ex inet static
+ address 192.168.0.200
+ netmask 255.255.255.0
+ network 192.168.0.0
+ gateway 192.168.0.254
+ dns-nameservers 218.176.253.97
+----
+
+#-- IPアドレス設定反映
+# sync;sync;sync; shutdown -r now
+→ 再起動まで待つ。
 ```
 
 外部/内部ネットワーク作成
