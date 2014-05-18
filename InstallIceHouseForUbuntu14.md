@@ -392,7 +392,7 @@ rabbit_password = admin!
 
 notify_nova_on_port_status_changes = True
 notify_nova_on_port_data_changes = True
-nova_url = http://controller:8774/v2
+nova_url = http://192.168.0.200:8774/v2
 nova_admin_username = nova
 nova_admin_tenant_id = 5b22bf7cb4e34e23bc60e2f23248747b
 ~~~★ keystone tenant-get serviceのID
