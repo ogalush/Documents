@@ -611,7 +611,7 @@ iface br-ex inet static
 
 # neutron net-create --tenant-id=461247d27c674fff9f1decb6330a2513 demo-net
 ~~~★tenant-id=demoユーザのtenant-idとする。
-# neutron subnet-create --tenant-id=461247d27c674fff9f1decb6330a2513 demo-net --name demo-subnet  --gateway 10.0.0.1 10.0.0.0/24
+# neutron subnet-create --tenant-id=461247d27c674fff9f1decb6330a2513 demo-net --name demo-subnet --dns_nameservers list=true 8.8.8.8  --gateway 10.0.0.1 10.0.0.0/24
 
 #-- 内部ネットワーク用Router
 # neutron router-create --tenant-id=461247d27c674fff9f1decb6330a2513 demo-router
