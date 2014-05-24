@@ -124,6 +124,7 @@ auth_strategy = keystone
 ...
 rpc_backend = neutron.openstack.common.rpc.impl_kombu
 rabbit_host = 192.168.0.200
+rabbit_user = guest
 rabbit_password = admin!
 ...
 [keystone_authtoken]
@@ -156,6 +157,9 @@ enable_security_group = True
 local_ip = 192.168.0.210
 tunnel_type = gre
 enable_tunneling = True
+...
+[database]
+connection = mysql://neutron:password@192.168.0.200/neutron
 ----
 
 neutron再起動
