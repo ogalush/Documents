@@ -140,7 +140,7 @@ signing_dir = $state_path/keystone-signing
 [service_providers]
 ###service_provider=LOADBALANCER:Haproxy:neutron.services.loadbalancer.drivers.haproxy.plugin_driver.HaproxyOnHostPluginDriver:default
 ###service_provider=VPN:openswan:neutron.services.vpn.service_drivers.ipsec.IPsecVPNDriver:default
-~~~★ServiceProviderセクションの設定値をすべてコメントアウトする（重要。行っていないとcompute controller間で通信できない）
+~~~★ServiceProviderセクションの設定値をすべてコメントアウトする
 ----
 
 #-- ml2 plugin設定
