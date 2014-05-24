@@ -45,34 +45,28 @@ dpkg-statoverride --update --add root root 0644 /boot/vmlinuz-${version}
 ----
 # chmod +x /etc/kernel/postinst.d/statoverride
 
-
 nova.conf設定
-```
-
-nova設定
-```
-# cp -raf /etc/nova $BAK
-# vi /etc/nova/nova.conf
+# vi /etc/nova/nova.conf 
 ----
 [DEFAULT]
 ...
-rpc_backend = rabbit
-rabbit_host = 192.168.0.200
-rabbit_password = admin!
+auth_strategy = keystone
 ...
-my_ip = 192.168.0.200
-novnc_enable = true
-novncproxy_port = 6080
-novncproxy_host = 192.168.0.200
+rpc_backend = rabbit
+rabbit_host = controller
+rabbit_password = RABBIT_PASS
+...
+my_ip = 192.168.0.210
+vnc_enabled = True
+vncserver_listen = 0.0.0.0
+vncserver_proxyclient_address = 192.168.0.210
 novncproxy_base_url = http://192.168.0.200:6080/vnc_auto.html
-vncserver_listen = 192.168.0.200
-vncserver_proxyclient_address = 192.168.0.200
 vnc_keymap=ja
 ...
-auth_strategy = keystone
 glance_host = 192.168.0.200
-...
+
 [database]
+# The SQLAlchemy connection string used to connect to the database
 connection = mysql://nova:password@192.168.0.200/nova
 ...
 [keystone_authtoken]
@@ -85,75 +79,18 @@ admin_user = nova
 admin_password = password
 ----
 
-#-- 使用しないDBファイルの削除
-# rm /var/lib/nova/nova.sqlite
-
-#-- DBユーザ作成
-$ mysql -u root -p
-mysql> CREATE DATABASE nova;
-mysql> GRANT ALL PRIVILEGES ON nova.* TO 'nova'@'%' IDENTIFIED BY 'password';
-mysql> FLUSH PRIVILEGES;
-mysql> ¥q
-
-#-- DB初期化
-# su -s /bin/sh -c "nova-manage db sync" nova
-
-#-- KeyStoneユーザ作成
-# keystone user-create --name=nova --pass=password --email=nova@192.168.0.200
-# keystone user-role-add --user=nova --tenant=service --role=admin
-
-#-- KeyStoneサービス作成
-$ keystone service-create --name=nova --type=compute --description="OpenStack Compute"
-$ keystone endpoint-create  \
-  --service-id=$(keystone service-list | awk '/ compute / {print $2}') \
-  --publicurl=http://192.168.0.200:8774/v2/%\(tenant_id\)s \
-  --internalurl=http://192.168.0.200:8774/v2/%\(tenant_id\)s \
-  --adminurl=http://192.168.0.200:8774/v2/%\(tenant_id\)s
-
-#-- サービス再起動
-# service nova-api restart
-# service nova-cert restart
-# service nova-consoleauth restart
-# service nova-scheduler restart
-# service nova-conductor restart
-# service nova-novncproxy restart
-
-#-- 確認
-# nova image-list
-→ glance登録時のイメージ（ubuntu14.04）が表示されればOK
-```
-
-nova設定(2)
-```
-# apt-get -y install nova-compute-kvm python-guestfs
-
-# dpkg-statoverride  --update --add root root 0644 /boot/vmlinuz-$(uname -r)
-→ 一般ユーザがKernelファイルへアクセスできるよう、権限を緩くする.
-  https://bugs.launchpad.net/ubuntu/+source/linux/+bug/759725
-
-# touch /etc/kernel/postinst.d/statoverride
-# chmod +x /etc/kernel/postinst.d/statoverride
-# vi /etc/kernel/postinst.d/statoverride
-----
-#!/bin/sh
-version="$1"
-# passing the kernel version is required
-[ -z "${version}" ] && exit 0
-dpkg-statoverride --update --add root root 0644 /boot/vmlinuz-${version}
-----
-→ Kernel version up後も適用できるようにしている。
-
-#-- compute設定
-# vi /etc/nova/nova-compute.conf 
+# /etc/nova/nova-compute.conf f
 ----
 [libvirt]
 virt_type=kvm
-~~~★変更する
 ----
 
-#-- compute再起動
+不要ファイル削除
+# rm /var/lib/nova/nova.sqlite
+
+再起動
 # service nova-compute restart
-# service nova-compute status
+
 ```
 
 
