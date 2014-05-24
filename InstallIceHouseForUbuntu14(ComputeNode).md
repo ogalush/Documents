@@ -259,3 +259,16 @@ enable_tunneling = True
 # service openvswitch-switch status
 ```
 
+環境設定ファイル作成
+```
+#-- 環境変数設定
+# vi ~/.admin-openrc.sh
+----
+export OS_USERNAME=admin
+export OS_PASSWORD=password
+export OS_TENANT_NAME=admin
+export OS_AUTH_URL=http://192.168.0.200:35357/v2.0
+----
+# echo 'source ~/.admin-openrc.sh' >> ~/.bashrc
+# source ~/.bashrc
+```
