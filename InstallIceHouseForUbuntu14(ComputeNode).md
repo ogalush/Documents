@@ -96,25 +96,17 @@ virt_type=kvm
 
 ### neutronインストール
 ```
-#-- MySQLユーザ追加
-# mysql -u root -p
-mysql> CREATE DATABASE neutron;
-mysql> GRANT ALL PRIVILEGES ON neutron.* TO 'neutron'@'%' IDENTIFIED BY 'password';
-mysql> FLUSH PRIVILEGES;
-mysql> ¥q
+# cp -p /etc/network/interfaces $BAK
+# cp -p /etc/sysctl.conf $BAK
+# vi /etc/sysctl.conf
+----
+net.ipv4.conf.all.rp_filter=0
+net.ipv4.conf.default.rp_filter=0
+----
+# sysctl -p
 
-#-- KeyStoneユーザ作成
-# keystone user-create --name neutron --pass password --email neutron@192.168.0.200
-# keystone user-role-add --user=neutron --tenant=service --role=admin
-# keystone service-create --name neutron --type network --description "OpenStack Networking"
-# keystone endpoint-create \
-  --service-id $(keystone service-list | awk '/ network / {print $2}') \
-  --publicurl http://192.168.0.200:9696 \
-  --adminurl http://192.168.0.200:9696 \
-  --internalurl http://192.168.0.200:9696
-
-#-- パッケージインストール
-# apt-get -y install neutron-server neutron-plugin-ml2
+パッケージインストール
+# apt-get -y install neutron-common neutron-plugin-ml2 neutron-plugin-openvswitch-agent openvswitch-datapath-dkms
 ```
 
 neutron設定
@@ -124,31 +116,15 @@ neutron設定
 ----
 [DEFAULT]
 ...
-auth_strategy = keystone
-rpc_backend = neutron.openstack.common.rpc.impl_kombu
-rabbit_host = 192.168.0.200
-rabbit_user = guest
-rabbit_password = admin!
-...
-
-notify_nova_on_port_status_changes = True
-notify_nova_on_port_data_changes = True
-nova_url = http://192.168.0.200:8774/v2
-nova_admin_username = nova
-nova_admin_tenant_id = 5b22bf7cb4e34e23bc60e2f23248747b
-~~~★ keystone tenant-get serviceのID
-nova_admin_password = password
-nova_admin_auth_url = http://192.168.0.200:35357/v2.0
-...
-###core_plugin = neutron.plugins.ml2.plugin.Ml2Plugin
 core_plugin = ml2
-~~~★書き換える
 service_plugins = router
 allow_overlapping_ips = True
 ...
-[database]
-##connection = sqlite:////var/lib/neutron/neutron.sqlite
-connection = mysql://neutron:password@192.168.0.200/neutron
+auth_strategy = keystone
+...
+rpc_backend = neutron.openstack.common.rpc.impl_kombu
+rabbit_host = 192.168.0.200
+rabbit_password = admin!
 ...
 [keystone_authtoken]
 auth_uri = http://192.168.0.200:5000
@@ -176,7 +152,15 @@ tunnel_id_ranges = 1:1000
 firewall_driver = neutron.agent.linux.iptables_firewall.OVSHybridIptablesFirewallDriver
 enable_security_group = True
 ...
+[ovs]
+local_ip = 192.168.0.210
+tunnel_type = gre
+enable_tunneling = True
 ----
+
+neutron再起動
+# service openvswitch-switch restart
+# ovs-vsctl add-br br-int
 
 #-- nova側の設定更新
 # vi /etc/nova/nova.conf
@@ -196,10 +180,8 @@ security_group_api = neutron
 ----
 
 #-- サービス再起動
-# service nova-api restart
-# service nova-scheduler restart
-# service nova-conductor restart
-# service neutron-server restart
+# service nova-compute restart
+# service neutron-plugin-openvswitch-agent restart
 ```
 
 newtron設定2 (for Network node)
@@ -276,125 +258,4 @@ enable_tunneling = True
 # service openvswitch-switch restart
 # service openvswitch-switch status
 ```
-
-NIC設定
-```
-# ovs-vsctl add-br br-int
-# ovs-vsctl add-br br-ex
-# ovs-vsctl add-port br-ex p1p1
-→ 外部ネットワーク向けの通信 192.168.0.0/24のセグメント
-# ethtool -K INTERFACE_NAME gro off
-```
-
-neutronサービス反映
-```
-# service neutron-plugin-openvswitch-agent restart
-# service neutron-l3-agent restart
-# service neutron-dhcp-agent restart
-# service neutron-metadata-agent restart
-```
-
-NIC設定
-```
-openvswitchを有効にすると物理NIC(p1p1)から接続できなくなるため、br-exにIPアドレスを当てる。
-# vi /etc/network/interfaces
-----
-# The loopback network interface
-auto lo
-iface lo inet loopback
-
-# The primary network interface
-#-- for Physical Interface
-auto p1p1
-iface p1p1 inet manual
- up ip address add 0/0 dev $IFACE
- up ip link set $IFACE up
- down ip link set $IFACE down
-
-#-- for Virtual Interface(OVS)
-auto br-ex
-iface br-ex inet static
- address 192.168.0.200
- netmask 255.255.255.0
- network 192.168.0.0
- gateway 192.168.0.254
- dns-nameservers 218.176.253.97
-----
-
-#-- IPアドレス設定反映
-# sync;sync;sync; shutdown -r now
-→ 再起動まで待つ。
-```
-
-外部/内部ネットワーク作成
-```
-#-- 外部ネットワーク
-# neutron net-create ext-net --shared --router:external=True
-# neutron net-list
-→ 表示されればOK
-# neutron subnet-create ext-net --name ext-subnet \
-  --allocation-pool start=192.168.0.100,end=192.168.0.149 \
-  --disable-dhcp --gateway 192.168.0.254 192.168.0.0/24
-
-#-- 内部ネットワーク
-# keystone tenant-list
-+----------------------------------+---------+---------+
-|                id                |   name  | enabled |
-+----------------------------------+---------+---------+
-| 461247d27c674fff9f1decb6330a2513 |   demo  |   True  |
-...
-+----------------------------------+---------+---------+
-
-# neutron net-create --tenant-id=461247d27c674fff9f1decb6330a2513 demo-net
-~~~★tenant-id=demoユーザのtenant-idとする。
-# neutron subnet-create --tenant-id=461247d27c674fff9f1decb6330a2513 demo-net --name demo-subnet --dns_nameservers list=true 8.8.8.8  --gateway 10.0.0.1 10.0.0.0/24
-
-#-- 内部ネットワーク用Router
-# neutron router-create --tenant-id=461247d27c674fff9f1decb6330a2513 demo-router
-# neutron router-interface-add demo-router demo-subnet
-# neutron router-gateway-set demo-router ext-net
-```
-
-### Horizonインストール
-```
-# apt-get -y install apache2 memcached libapache2-mod-wsgi openstack-dashboard
-# apt-get -y remove --purge openstack-dashboard-ubuntu-theme
-```
-
-Horizon設定
-```
-# cp -raf /etc/openstack-dashboard $BAK
-# vi /etc/openstack-dashboard/local_settings.py
-----
-SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
-CACHES = {   
-  'default': {
-  'BACKEND': 'django.core.cache.backends.memcached.MemcachedCache'
-  'LOCATION': '192.168.0.200:11211',
-  }
-} 
-...
-OPENSTACK_HOST = "192.168.0.200"
-~~~★変更する
-----
-```
-
-Horizon反映
-```
-# service apache2 restart
-# service memcached restart
-
-#-- アクセス確認
-http://192.168.0.200/horizon/
-
-#-- memcached設定
-# cp -p /etc/memcached.conf $BAK
-# vi /etc/memcached.conf
-----
-## -l 127.0.0.1
--l 0.0.0.0
-----
-# service memcached restart
-```
-
 
