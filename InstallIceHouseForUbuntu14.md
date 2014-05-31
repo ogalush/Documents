@@ -550,6 +550,27 @@ NIC設定
 # ethtool -K INTERFACE_NAME gro off
 ```
 
+MTU変更
+```
+GREのパケットを載せられるよう、パケットサイズを変更する。
+
+# vi /etc/neutron/dhcp_agent.ini
+----
+dnsmasq_config_file=/etc/dnsmasq.d/dnsmasq.conf
+~~~追記
+----
+
+# vi /etc/dnsmasq.d/dnsmasq.conf
+----
+dhcp-option=26,1454
+----
+※参考:
+http://openstack.redhat.com/forum/discussion/302/quantumneutron-and-ip-packet-mtus-questions-answers-and-suggestions/p1
+
+# sync;sync;sync; shutdown -r now
+```
+
+
 neutronサービス反映
 ```
 # service neutron-plugin-openvswitch-agent restart
