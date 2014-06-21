@@ -40,4 +40,11 @@ http://192.168.0.103:8080/
 → Jenkinsおじさんが見えればOK
 ```
 
+### github plugin
+```
+Jenkinsの管理 -> Pluginの管理 -> GIT Plugin を入れる
+```
+
+
+
 
