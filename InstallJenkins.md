@@ -71,3 +71,14 @@ Jenkins プロジェクト作成
 プロジェクト作成 -> 設定 -> github url, user, sshkeyを登録する。
 ```
 
+Pythonモジュール(テストのため)
+```
+apt-get -y install python3-pip
+pip3 install mock
+pip3 install nose
+pip3 install unittest-xml-reporting
+pip3 install coverage
+
+Jenkinsの管理から「Cobertura Plugin」をインストールする
+
+```
