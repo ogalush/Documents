@@ -2,6 +2,9 @@
 ************************************************************
 Jenkins インストール
 参照元: http://ameblo.jp/smeokano/entry-11817079759.html
+        http://blog.codefirst.org/post/32735379873/cf-devenv-07
+        http://www.buildinsider.net/enterprise/jenkins/01
+        http://mia-0032.hatenablog.jp/entry/2014/04/13/124227
 Copyright (c) Takehiko OGASAWARA 2014 All Rights Reserved.
 ************************************************************
 -->
