@@ -34,6 +34,10 @@ echo 'deb http://pkg.jenkins-ci.org/debian binary/' >> /etc/apt/sources.list
 sudo apt-get -y update && sudo apt-get -y install jenkins
 ```
 
-
+### アクセス
+```
+http://192.168.0.103:8080/
+→ Jenkinsおじさんが見えればOK
+```
 
 
