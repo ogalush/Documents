@@ -29,7 +29,11 @@ cp -raf /etc/apt $BAK
 echo 'deb http://pkg.jenkins-ci.org/debian binary/' >> /etc/apt/sources.list
 ```
 
-Jenkinsインストール
+### Jenkinsインストール
 ```
 sudo apt-get -y update && sudo apt-get -y install jenkins
 ```
+
+
+
+
