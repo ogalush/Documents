@@ -33,8 +33,15 @@ sudo -u ogalush consul --help
 ### 設定
 consulは、server/clientの2モードがある。
 server: 3〜5台程度推奨
+bootstrapオプションは1台のみ。2台目以降はbootstrapオプションを外して実行する。
 ```
-consul agent -server -bootstrap -bind=0.0.0.0 -dc=groupA -client=0.0.0.0 -syslog -pid-file=/var/run/consul.pid -data-dir /tmp/consul
+sudo mkdir /etc/consul.d
+
+[1台目(10.0.0.47)]
+consul agent -server -bootstrap -bind=0.0.0.0 -dc=groupA -client=0.0.0.0 -syslog -pid-file=/var/run/consul.pid -data-dir /tmp/consul -config-dir /etc/consul.d
+
+[2台目以降(10.0.0.48,49)]
+consul agent -server -bind=0.0.0.0 -dc=groupA -client=0.0.0.0 -syslog -pid-file=/var/run/consul.pid -data-dir /tmp/consul -config-dir /etc/consul.d -join=10.0.0.47
 ```
 ※ role, dc keysで識別しているので、同じクラスタにする場合はあわせる
 
@@ -63,4 +70,11 @@ serv3  10.0.0.49:8301  left    server  0.3.0  2
 ~~~★落としたときはleftとなる
 serv2  10.0.0.48:8301  alive   server  0.3.0  2
 ogalush@serv1:~$ 
+```
+
+### サービス登録
+JSON形式で登録する
+```
+echo '{"service": {"name": "web", "tags": ["rails"], "port": 80, "check": {"script": "curl localhost:80 >/dev/null 2>&1", "interval": "10s"}}}' > /etc/consul.d/web.json
+~~~consulを再起動して「agent: Synced service 'web'」と表示されればOK
 ```
