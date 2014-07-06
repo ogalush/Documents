@@ -75,8 +75,20 @@ ogalush@serv1:~$
 ノード登録確認
 ```
 ogalush@serv1:~$ dig @127.0.0.1 -p 8600 serv3.node.consul
+;; ANSWER SECTION:
+serv3.node.consul.      0       IN      A       10.0.0.49
 ```
 ※登録されているノードはdnsで正引き可能
+
+サービス確認
+```
+ogalush@serv1:~$ dig @localhost -p 8600 web.service.consul
+...
+;; ANSWER SECTION:
+web.service.consul.     0       IN      A       10.0.0.49
+web.service.consul.     0       IN      A       10.0.0.48
+```
+※ 正引き結果として、生きているノードが返却される
 
 
 ### サービス登録
