@@ -3,6 +3,7 @@
 Serfインストール
 参照元: http://www.serfdom.io/intro/getting-started/install.html
         http://blog.livedoor.jp/sonots/archives/35397486.html
+        http://blog.glidenote.com/blog/2013/10/30/serf-haproxy/
 Copyright (c) Takehiko OGASAWARA 2014 All Rights Reserved.
 ************************************************************
 -->
