@@ -34,6 +34,7 @@ sudo -u ogalush serf --help
 ```
 serf agent -bind=0.0.0.0:7946 --rpc-addr=0.0.0.0:7373
 ~~~★agentが起動すればOK
+※rpc-addrがデフォルトだとlocalhostとなる。外部と通信させたいのでrpc-addrを追加する。
 ```
 
 ### agentの組み込み
