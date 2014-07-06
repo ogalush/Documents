@@ -2,6 +2,7 @@
 ************************************************************
 Serfインストール
 参照元: http://www.serfdom.io/intro/getting-started/install.html
+        http://blog.livedoor.jp/sonots/archives/35397486.html
 Copyright (c) Takehiko OGASAWARA 2014 All Rights Reserved.
 ************************************************************
 -->
@@ -55,3 +56,4 @@ serv2  10.0.0.48:7946  alive
 ~~~★対象ホストがmemberに入ればOK
 root@serv1:~# 
 ```
+
