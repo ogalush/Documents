@@ -30,6 +30,15 @@ sudo -u ogalush consul --help
 ~~~★ヘルプが表示されればOK
 ```
 
+### web UI インストール
+```
+cd /usr/local/src
+sudo wget https://dl.bintray.com/mitchellh/consul/0.3.0_web_ui.zip
+sudo unzip 0.3.0_web_ui.zip
+sudo mv /usr/local/src/dist /usr/local/consul-ui
+ls -al /usr/local/consul-ui
+```
+
 ### 設定
 consulは、server/clientの2モードがある。
 server: 3〜5台程度推奨
@@ -38,10 +47,10 @@ bootstrapオプションは1台のみ。2台目以降はbootstrapオプション
 sudo mkdir /etc/consul.d
 
 [1台目(10.0.0.47)]
-consul agent -server -bootstrap -bind=0.0.0.0 -dc=groupA -client=0.0.0.0 -syslog -pid-file=/var/run/consul.pid -data-dir /tmp/consul -config-dir /etc/consul.d
+consul agent -server -bootstrap -bind=0.0.0.0 -dc=groupA -client=0.0.0.0 -syslog -pid-file=/var/run/consul.pid -data-dir /tmp/consul -config-dir /etc/consul.d -ui-dir /usr/local/consul-ui
 
 [2台目以降(10.0.0.48,49)]
-consul agent -server -bind=0.0.0.0 -dc=groupA -client=0.0.0.0 -syslog -pid-file=/var/run/consul.pid -data-dir /tmp/consul -config-dir /etc/consul.d -join=10.0.0.47
+consul agent -server -bind=0.0.0.0 -dc=groupA -client=0.0.0.0 -syslog -pid-file=/var/run/consul.pid -data-dir /tmp/consul -config-dir /etc/consul.d -join=10.0.0.47 -ui-dir /usr/local/consul-ui
 ```
 ※ role, dc keysで識別しているので、同じクラスタにする場合はあわせる
 
@@ -91,7 +100,6 @@ web.service.consul.     0       IN      A       10.0.0.48
 ```
 
 
-
 ### サービス登録
 JSON形式で登録する
 ```
@@ -103,3 +111,9 @@ echo '{"service": {"name": "web", "tags": ["rails"], "port": 80, "check": {"scri
 apt-get -y install apache2
 ```
 
+### web ui
+```
+http://192.168.0.104:8500
+※ IPアドレスはconsul起動ホストを示す。
+  webUIが表示されればOK
+```
