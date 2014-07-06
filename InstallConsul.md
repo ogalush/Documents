@@ -72,6 +72,13 @@ serv2  10.0.0.48:8301  alive   server  0.3.0  2
 ogalush@serv1:~$ 
 ```
 
+ノード登録確認
+```
+ogalush@serv1:~$ dig @127.0.0.1 -p 8600 serv3.node.consul
+```
+※登録されているノードはdnsで正引き可能
+
+
 ### サービス登録
 JSON形式で登録する
 ```
@@ -82,3 +89,4 @@ echo '{"service": {"name": "web", "tags": ["rails"], "port": 80, "check": {"scri
 ```
 apt-get -y install apache2
 ```
+
