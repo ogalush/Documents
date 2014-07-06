@@ -57,3 +57,12 @@ serv2  10.0.0.48:7946  alive
 root@serv1:~# 
 ```
 
+agentが停止している場合
+```
+root@serv1:~# serf members
+serv1  10.0.0.47:7946  alive  
+serv2  10.0.0.48:7946  left   
+~~~★落ちてる。障害の場合はfailed
+serv3  10.0.0.49:7946  alive
+root@serv1:~# 
+```
