@@ -75,6 +75,10 @@ ogalush@serv1:~$
 ### サービス登録
 JSON形式で登録する
 ```
-echo '{"service": {"name": "web", "tags": ["rails"], "port": 80, "check": {"script": "curl localhost:80 >/dev/null 2>&1", "interval": "10s"}}}' > /etc/consul.d/web.json
+echo '{"service": {"name": "web", "tags": ["rails"], "port": 80, "check": {"script": "curl localhost:80 >/dev/null 2>&1", "interval": "5s"}}}' > /etc/consul.d/web.json
 ~~~consulを再起動して「agent: Synced service 'web'」と表示されればOK
+```
+上記サービスは、Port80を見てるので、該当するdaemonを登録しておく
+```
+apt-get -y install apache2
 ```
