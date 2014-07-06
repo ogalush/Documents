@@ -20,9 +20,13 @@ BAK=/root/MAINTENANCE/`date "+%Y%m%d"`/bak
 apt-get -y install unzip
 ```
 
-パッケージインストール  
+### serfインストール
 ```
 cd /usr/local/src
 sudo wget https://dl.bintray.com/mitchellh/serf/0.6.2_linux_amd64.zip
 unzip /usr/local/src/0.6.2_linux_amd64.zip
+cp -p serf /usr/local/bin/serf
+sudo -u ogalush serf --help
+~~~★ヘルプが表示されればOK
 ```
+
