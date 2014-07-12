@@ -86,3 +86,43 @@ Heat再起動
 # service heat-api-cfn restart
 # service heat-engine restart
 ```
+
+Heat Template作成
+# vi /root/heattemplate.yml
+```
+---
+heat_template_version: 2013-05-23
+
+description: Test Template
+
+parameters:
+  ImageID:
+    type: string
+    description: Image use to boot a server
+  NetID:
+    type: string
+    description: Network ID for the server
+
+resources:
+  server1:
+    type: OS::Nova::Server
+    properties:
+      name: "Test server"
+      image: { get_param: ImageID }
+      flavor: "m1.tiny"
+      networks:
+      - network: { get_param: NetID }
+
+outputs:
+  server1_private_ip:
+    description: IP address of the server in the private network
+    value: { get_attr: [ server1, first_address ] }
+---
+```
+Heatでサーバ作成
+```
+# NET_ID=$(nova net-list | awk '/ demo-net / { print $2 }'); echo $NET_ID
+# IMG_ID=$(glance image-list | grep -i 'ubuntu14.04'  | awk -F\| '{print $3}' | sed 's/ //g'|head -n 1); echo $IMG_ID
+↑horizon経由で登録する際に必要。
+```
+Horizonから登録する(スタック→スタックの起動)
