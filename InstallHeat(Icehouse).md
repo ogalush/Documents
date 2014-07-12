@@ -58,6 +58,8 @@ DB作成
 mysql> CREATE DATABASE heat;
 mysql> GRANT ALL PRIVILEGES ON heat.* TO 'heat'@'%' IDENTIFIED BY 'password';
 mysql> FLUSH PRIVILEGES;
+# su -s /bin/sh -c "heat-manage db_sync" heat
+
 ```
 
 KeyStone作成
