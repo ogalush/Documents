@@ -59,7 +59,6 @@ mysql> CREATE DATABASE heat;
 mysql> GRANT ALL PRIVILEGES ON heat.* TO 'heat'@'%' IDENTIFIED BY 'password';
 mysql> FLUSH PRIVILEGES;
 # su -s /bin/sh -c "heat-manage db_sync" heat
-
 ```
 
 KeyStone作成
@@ -88,8 +87,8 @@ Heat再起動
 ```
 
 Heat Template作成
-# vi /root/heattemplate.yml
 ```
+# vi /root/heattemplate.yml
 ---
 heat_template_version: 2013-05-23
 
