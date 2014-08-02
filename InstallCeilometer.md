@@ -94,8 +94,11 @@ os_password = password
 ---
 
 keystone登録
-$ keystone service-create --name=ceilometer --type=metering --description="Telemetry"
-$ keystone endpoint-create  --service-id=$(keystone service-list | awk '/ metering / {print $2}')  --publicurl=http://192.168.0.200:8777 --internalurl=http://192.168.0.200:8777 --adminurl=http://192.168.0.200:8777
+# keystone service-create --name=ceilometer --type=metering --description="Telemetry"
+# keystone endpoint-create  --service-id=$(keystone service-list | awk '/ metering / {print $2}')  --publicurl=http://192.168.0.200:8777 --internalurl=http://192.168.0.200:8777 --adminurl=http://192.168.0.200:8777
+# keystone user-create --name=ceilometer --pass=password --email=ceilometer@192.168.0.200
+# keystone user-role-add --user=ceilometer --tenant=service --role=admin
+
 
 再起動
 # service ceilometer-agent-central restart
