@@ -106,5 +106,55 @@ $ keystone endpoint-create  --service-id=$(keystone service-list | awk '/ meteri
 # service ceilometer-alarm-notifier restart
 ```
 
+### agent(compute node)
+#### インストール
+```
+# apt-get -y install ceilometer-agent-compute
+```
 
+#### 設定
+```
+# cp -raf /etc/nova $BAK
+# vi /etc/nova/nova.conf
+---
+instance_usage_audit = True
+instance_usage_audit_period = hour
+notify_on_state_change = vm_and_task_state
+notification_driver = nova.openstack.common.notifier.rpc_notifier
+notification_driver = ceilometer.compute.nova_notifier
+---
+
+# service nova-compute restart
+
+# vi /etc/ceilometer/ceilometer.conf
+---
+metering_secret = password
+---
+
+# vi /etc/ceilometer/ceilometer.conf
+---
+rabbit_host=192.168.0.200
+rabbig_password=admin!
+...
+[keystone_authtoken]
+auth_host = 192.168.0.200
+auth_port = 35357
+auth_protocol = http 
+auth_uri = http://192.168.0.200:5000
+admin_tenant_name = service
+admin_user = ceilometer
+admin_password = password
+...
+
+[service_credentials]
+os_auth_url = http://192.168.0.200:5000/v2.0
+os_username = ceilometer
+os_tenant_name = service
+os_password = password
+
+log_dir = /var/log/ceilometer
+---
+
+# service ceilometer-agent-compute restart
+```
 
