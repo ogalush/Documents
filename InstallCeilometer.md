@@ -157,4 +157,16 @@ log_dir = /var/log/ceilometer
 
 # service ceilometer-agent-compute restart
 ```
+#### glance設定
+```
+# vi /etc/glance/glance-api.conf
+---
+notification_driver = messaging
+rpc_backend = rabbit
+rabbit_host = 192.168.0.200
+rabbit_password = admin!
+---
 
+# service glance-registry restart
+# service glance-api restart
+```
