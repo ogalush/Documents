@@ -70,7 +70,7 @@ connecting to: 192.168.0.200:27017/test
 connection = mongodb://ceilometer:password@192.168.0.200:27017/ceilometer
 ...
 rabbit_host=192.168.0.200
-rabbig_password=admin!
+rabbit_password=admin!
 log_dir = /var/log/ceilometer
 auth_strategy = keystone
 ...
@@ -134,7 +134,7 @@ metering_secret = password
 # vi /etc/ceilometer/ceilometer.conf
 ---
 rabbit_host=192.168.0.200
-rabbig_password=admin!
+rabbit_password=admin!
 ...
 [keystone_authtoken]
 auth_host = 192.168.0.200
@@ -169,4 +169,10 @@ rabbit_password = admin!
 
 # service glance-registry restart
 # service glance-api restart
+```
+※ cinder,swift向けモジュールは、本体をインストールしていないため、見送り
+
+### 確認
+```
+# ceilometer meter-list
 ```
