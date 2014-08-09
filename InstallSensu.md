@@ -34,6 +34,12 @@ $ sudo wget http://www.rabbitmq.com/rabbitmq-signing-key-public.asc
 $ sudo apt-key add rabbitmq-signing-key-public.asc
 $ sudo apt-get -y update
 $ sudo apt-get -y install rabbitmq-server
+$ sudo rabbitmqctl add_vhost /sensu
+$ sudo rabbitmqctl add_user sensu password
+$ sudo rabbitmqctl set_permissions -p /sensu sensu ".*" ".*" ".*"
+$ sudo rabbitmqctl list_permissions -p /sensu
+$ sudo rabbitmq-plugins enable rabbitmq_management
+$ sudo service rabbitmq-server restart
 ```
 
 ## Redis
@@ -64,10 +70,6 @@ $ sudo vi /etc/sensu/conf.d/rabbitmq.json
 ---
 {
   "rabbitmq": {
-    "ssl": {
-      "cert_chain_file": "/etc/sensu/ssl/cert.pem",
-      "private_key_file": "/etc/sensu/ssl/key.pem"
-    },
     "host": "sensu.localdomain",
     "port": 5672,
     "vhost": "/sensu",
