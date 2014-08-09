@@ -32,7 +32,6 @@ $ sudo apt-get -y install erlang-nox
 $ cd /usr/local/src
 $ sudo wget http://www.rabbitmq.com/rabbitmq-signing-key-public.asc
 $ sudo apt-key add rabbitmq-signing-key-public.asc
-$ echo "deb     http://www.rabbitmq.com/debian/ testing main" | sudo tee /etc/apt/sources.list.d/rabbitmq.list
 $ sudo apt-get -y update
 $ sudo apt-get -y install rabbitmq-server
 ```
@@ -55,7 +54,7 @@ $ apt-get -y install sensu
 ## 設定
 ```
 $ sudo mkdir -p /etc/sensu/ssl
-$ sudo cp -p  /usr/local/src/ssl_certs/client/{cert.pem,key.pem} /etc/sensu/ssl 
+$ sudo cp -p  /usr/local/src/ssl_certs/client/{cert.pem,key.pem} /etc/sensu/ssl
 $ ls -al /etc/sensu/ssl
 ```
 
@@ -70,7 +69,7 @@ $ sudo vi /etc/sensu/conf.d/rabbitmq.json
       "private_key_file": "/etc/sensu/ssl/key.pem"
     },
     "host": "sensu.localdomain",
-    "port": 5671,
+    "port": 5672,
     "vhost": "/sensu",
     "user": "sensu",
     "password": "password"
@@ -82,7 +81,7 @@ $ sudo vi /etc/sensu/conf.d/redis.json
 ---
 {
   "redis": {
-    "host": "sensu.localdomain",
+    "host": "localhost",
     "port": 6379
   }
 }
