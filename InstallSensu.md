@@ -16,7 +16,22 @@ Copyright (c) Takehiko OGASAWARA 2014 All Rights Reserved.
 $ sudo apt-get -y update && sudo apt-get -y upgrade
 ```
 
-## インストール
+## 証明書作成
+```
+$ openssl version
+$ cd /usr/local/src
+$ sudo wget http://sensuapp.org/docs/0.13/tools/ssl_certs.tar
+$ sudo tar -xvf ssl_certs.tar
+$ cd /usr/local/src/ssl_certs
+$ sudo ./ssl_certs.sh generate
+```
+
+## rabbitMQ
+```
+```
+
+
+## Sensuインストール
 ```
 $ cd /usr/local/src
 $ sudo wget -q http://repos.sensuapp.org/apt/pubkey.gpg -O- | sudo apt-key add -
