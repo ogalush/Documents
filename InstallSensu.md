@@ -54,7 +54,7 @@ $ sudo wget -q http://repos.sensuapp.org/apt/pubkey.gpg -O- | sudo apt-key add -
 $ echo "deb     http://repos.sensuapp.org/apt sensu main" | sudo tee /etc/apt/sources.list.d/sensu.list
 $ echo "deb     http://repos.sensuapp.org/apt sensu unstable" | sudo tee /etc/apt/sources.list.d/sensu.list
 $ sudo apt-get -y update
-$ apt-get -y install sensu
+$ sudo apt-get -y install sensu
 ```
 
 ## 設定
