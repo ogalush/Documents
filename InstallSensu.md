@@ -123,6 +123,66 @@ $ sudo /etc/init.d/sensu-client start
 $ sudo /etc/init.d/sensu-api start
 ```
 
+簡単な監視ジョブ
+```
+$ sudo apt-get -y install ruby1.9.1-dev make
+$ sudo gem install sensu-plugin --no-rdoc --no-ri
+$ cd /usr/local/src
+$ sudo wget -O /etc/sensu/plugins/check-procs.rb https://raw.github.com/sensu/sensu-community-plugins/master/plugins/processes/check-procs.rb
+$ sudo chmod 755 /etc/sensu/plugins/check-procs.rb
+
+$ sudo vi /etc/sensu/conf.d/check_cron.json
+---
+{
+  "checks": {
+    "cron_check": {
+      "handlers": ["default"],
+      "command": "/etc/sensu/plugins/check-procs.rb -p crond -C 1 ",
+      "interval": 60,
+      "subscribers": [ "webservers" ]
+    }
+  }
+}
+---
+
+反映
+$ sudo /etc/init.d/sensu-server restart
+$ sudo /etc/init.d/sensu-client restart
+```
+
+## dashboard
+```
+$ sudo apt-get -y install uchiwa
+$ sudo vi /etc/sensu/uchiwa.json
+---
+{
+    "sensu": [
+        {
+            "name": "Sensu",
+            "host": "127.0.0.1",
+            "ssl": false,
+            "port": 4567,
+            "user": "",
+            "pass": "",
+            "path": "",
+            "timeout": 5000
+        }
+    ],
+    "uchiwa": {
+        "user": "",
+        "pass": "",
+        "port": 3000,
+        "stats": 10,
+        "refresh": 10000
+    }
+}
+---
+$ sudo update-rc.d uchiwa defaults
+$ sudo /etc/init.d/uchiwa start
+http://192.168.0.109:3000/
+
+```
+
 ## まめ知識
 ```
 (1) デバッグ開始
