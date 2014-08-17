@@ -183,6 +183,11 @@ $ sudo vi /etc/sensu/uchiwa.json
 ---
 $ sudo update-rc.d uchiwa defaults
 $ sudo /etc/init.d/uchiwa start
+
+■ sensu dashboard
+http://192.168.0.109:8080/
+
+■ uchiwa
 http://192.168.0.109:3000/
 
 ```
