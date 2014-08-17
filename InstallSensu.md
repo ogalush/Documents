@@ -206,7 +206,7 @@ $ sudo vi /etc/sensu/conf.d/client.json
 {
   "client": {
     "name": "ryunosuke",
-    "address": "192.168.0.109",
+    "address": "192.168.0.200",
     "subscriptions": [ "all" ]
   }
 }
