@@ -139,7 +139,7 @@ $ sudo vi /etc/sensu/conf.d/check_cron.json
   "checks": {
     "cron_check": {
       "handlers": ["default"],
-      "command": "/etc/sensu/plugins/check-procs.rb -p crond -C 1 ",
+      "command": "/etc/sensu/plugins/check-procs.rb -p cron -C 1",
       "interval": 60,
       "subscribers": [ "webservers" ]
     }
