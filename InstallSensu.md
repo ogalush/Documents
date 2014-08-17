@@ -107,7 +107,7 @@ $ sudo vi /etc/sensu/conf.d/client.json
   "client": {
     "name": "sensu",
     "address": "sensu.localdomain",
-    "subscriptions": [ "all" ]
+    "subscriptions": [ "all","webservers" ]
   }
 }
 ---
@@ -140,7 +140,7 @@ $ sudo vi /etc/sensu/conf.d/check_cron.json
     "cron_check": {
       "handlers": ["default"],
       "command": "/etc/sensu/plugins/check-procs.rb -p cron -C 1",
-      "interval": 60,
+      "interval": 30,
       "subscribers": [ "webservers" ]
     }
   }
