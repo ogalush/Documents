@@ -192,6 +192,26 @@ http://192.168.0.109:3000/
 
 ```
 
+## sensu-client単独
+```
+$ echo 'deb     http://repos.sensuapp.org/apt sensu main' | sudo tee /etc/apt/sources.list.d/sensu.list
+$ sudo apt-get -y update
+$ sudo apt-get -y install sensu
+$ sudo update-rc.d sensu-client defaults
+$ sudo /etc/init.d/sensu-client start
+$ sudo /etc/init.d/sensu-client status
+$ sudo vi /etc/sensu/conf.d/client.json
+---
+{
+  "client": {
+    "name": "ryunosuke",
+    "address": "192.168.0.109",
+    "subscriptions": [ "all" ]
+  }
+}
+---
+```
+
 ## まめ知識
 ```
 (1) デバッグ開始
