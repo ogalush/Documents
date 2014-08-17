@@ -166,8 +166,8 @@ $ sudo vi /etc/sensu/uchiwa.json
             "host": "127.0.0.1",
             "ssl": false,
             "port": 4567,
-            "user": "",
-            "pass": "",
+            "user": "admin",
+            "pass": "password",
             "path": "",
             "timeout": 5000
         }
