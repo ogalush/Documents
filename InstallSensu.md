@@ -192,7 +192,8 @@ http://192.168.0.109:3000/
 
 ```
 
-## sensu-client単独
+## sensu-client
+監視対象サーバ  
 ```
 $ echo 'deb     http://repos.sensuapp.org/apt sensu main' | sudo tee /etc/apt/sources.list.d/sensu.list
 $ sudo apt-get -y update
