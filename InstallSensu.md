@@ -52,9 +52,9 @@ $ sudo apt-get -y install redis-server
 $ cd /usr/local/src
 $ sudo wget -q http://repos.sensuapp.org/apt/pubkey.gpg -O- | sudo apt-key add -
 $ echo "deb     http://repos.sensuapp.org/apt sensu main" | sudo tee /etc/apt/sources.list.d/sensu.list
-$ echo "deb     http://repos.sensuapp.org/apt sensu unstable" | sudo tee /etc/apt/sources.list.d/sensu.list
 $ sudo apt-get -y update
-$ sudo apt-get -y install sensu
+$ sudo apt-get -y install sensu=0.12.6-5
+~~~ Ubuntu14.04.1ではsensu0.13のインストールが失敗するので、1つ前のバージョンをインストールする
 ```
 
 ## 設定
@@ -118,9 +118,11 @@ $ sudo vi /etc/sensu/conf.d/client.json
 $ sudo update-rc.d sensu-server defaults
 $ sudo update-rc.d sensu-client defaults
 $ sudo update-rc.d sensu-api defaults
+$ sudo update-rc.d sensu-dashboard defaults
 $ sudo /etc/init.d/sensu-server start
 $ sudo /etc/init.d/sensu-client start
 $ sudo /etc/init.d/sensu-api start
+$ sudo /etc/init.d/sensu-service dashboard start
 ```
 
 簡単な監視ジョブ
@@ -153,6 +155,8 @@ $ sudo /etc/init.d/sensu-client restart
 ## dashboard
 ```
 $ sudo apt-get -y install uchiwa
+$ sudo mkdir -p /root/MAINTENANCE/20140817/bak
+$ sudo cp -p uchiwa.js*  /root/MAINTENANCE/20140817/bak
 $ sudo vi /etc/sensu/uchiwa.json
 ---
 {
