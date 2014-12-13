@@ -709,3 +709,131 @@ router_id = 57c8f6a5-3c10-4c0b-82b7-de8913f291d4
 # service neutron-l3-agent restart
 ```
 
+### cinder
+```
+apt-get -y install cinder-api cinder-scheduler
+cp -raf /etc/cinder /root/backup
+vi /etc/cinder/cinder.conf
+---
+...
+connection = mysql://cinder:password@192.168.0.200/cinder
+...
+---
+# mysql -u root -p
+mysql> CREATE DATABASE cinder;
+mysql> GRANT ALL PRIVILEGES ON cinder.* TO 'cinder'@'%' IDENTIFIED BY 'password';
+mysql> FLUSH PRIVILEGES;
+
+su -s /bin/sh -c "cinder-manage db sync" cinder
+keystone user-create --name=cinder --pass=password --email=cinder@`hostname`
+keystone user-role-add --user=cinder --tenant=service --role=admin
+
+vi /etc/cinder/cinder.conf
+---
+[DEFAULT]
+...
+rpc_backend = rabbit
+rabbit_host = 192.168.0.200
+rabbit_port = 5672
+rabbit_userid = guest
+rabbit_password = admin!
+...
+[keystone_authtoken]
+auth_uri = http://192.168.0.200:5000
+auth_host = 192.168.0.200
+auth_port = 35357
+auth_protocol = http
+admin_tenant_name = service
+admin_user = cinder
+admin_password = password
+---
+
+keystone service-create --name=cinder --type=volume --description="OpenStack Block Storage"
+keystone endpoint-create --service-id=$(keystone service-list | awk '/ volume / {print $2}') --publicurl=http://192.168.0.200:8776/v1/%\(tenant_id\)s  --internalurl=http://192.168.0.200:8776/v1/%\(tenant_id\)s  --adminurl=http://192.168.0.200:8776/v1/%\(tenant_id\)s
+
+keystone service-create --name=cinderv2 --type=volumev2 --description="OpenStack Block Storage v2"
+keystone endpoint-create --service-id=$(keystone service-list | awk '/ volumev2 / {print $2}')   --publicurl=http://192.168.0.200:8776/v2/%\(tenant_id\)s --internalurl=http://192.168.0.200:8776/v2/%\(tenant_id\)s   --adminurl=http://192.168.0.200:8776/v2/%\(tenant_id\)s
+
+service cinder-scheduler restart
+service cinder-api restart
+
+
+apt-get -y install lvm2
+### ファイルをマウントするために、loopbackデバイスへ登録する
+### /dev/sdb*のパーティションを使用できればなお良い。
+dd if=/dev/zero of=/var/lib/cinder/cinder-volume.img bs=1024 count=51200000
+~~50GByte
+chown cinder:cinder /var/lib/cinder/cinder-volume.img
+ls -al /var/lib/cinder/cinder-volume.img
+losetup /dev/loop0 /var/lib/cinder/cinder-volume.img
+losetup /dev/loop0 
+/dev/loop0: [0801]:10092844 (/var/lib/cinder/cinder-volume.img)
+~~~関連付けができていればOK
+
+vi /etc/init.d/cinder-volume.sh
+---
+#! /bin/bash
+
+losetup /dev/loop0 /var/lib/cinder/cinder-volume.img
+---
+chmod 755 /etc/init.d/cinder-volume.sh
+ls -al /etc/init.d/cinder-volume.sh
+ln -s /etc/init.d/cinder-volume.sh /etc/rc2.d/S20cinder-volume
+ls -al /etc/rc2.d/S20cinder-volume
+
+pvcreate /dev/loop0
+vgcreate cinder-volumes /dev/loop0
+root@ryunosuke:~# vgdisplay
+----
+  --- Volume group ---
+  VG Name               cinder-volumes
+  System ID             
+  Format                lvm2
+  Metadata Areas        1
+  Metadata Sequence No  1
+  VG Access             read/write
+  VG Status             resizable
+  MAX LV                0
+  Cur LV                0
+  Open LV               0
+  Max PV                0
+  Cur PV                1
+  Act PV                1
+  VG Size               48.82 GiB
+  PE Size               4.00 MiB
+  Total PE              12499
+  Alloc PE / Size       0 / 0   
+  Free  PE / Size       12499 / 48.82 GiB
+  VG UUID               tKot0o-n35X-yiiK-xI8y-xnwB-P1sP-JSXRW3
+----
+
+apt-get -y install cinder-volume
+vi /etc/cinder/cinder.conf
+----
+[DEFAULT]
+...
+my_ip = 192.168.0.200
+glance_host = 192.168.0.200
+...
+----
+service cinder-volume restart
+service tgt restart
+service cinder-api stop
+service cinder-api start
+service cinder-api status
+service cinder-scheduler stop
+service cinder-scheduler start
+service cinder-scheduler status
+service cinder-volume stop
+service cinder-volume start
+service cinder-volume status
+
+試し作成
+cinder create --display-name myVolume 1
+
+```
+cinder list
+cinder create --display-name myVolume 1
+cinder list
+~~ボリュームを作成できればOK
+cinder delete 
