@@ -830,10 +830,10 @@ service cinder-volume status
 
 試し作成
 cinder create --display-name myVolume 1
-
-```
 cinder list
-cinder create --display-name myVolume 1
 cinder list
 ~~ボリュームを作成できればOK
-cinder delete 
+cinder delete a018ca84-3df1-445d-a40e-6f27a057e242
+cinder list
+~~~削除できればOK
+```
