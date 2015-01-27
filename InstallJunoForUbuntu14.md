@@ -135,29 +135,13 @@ Cron設定
 $ (sudo crontab -l -u keystone 2>&1 | grep -q token_flush) || echo '@hourly /usr/bin/keystone-manage token_flush  /var/log/keystone/keystone-tokenflush.log 2>&1' |sudo tee /var/spool/cron/crontabs/keystone
 $ sudo chown keystone:keystone /var/spool/cron/crontabs/keystone
 $ sudo ls -al /var/spool/cron/crontabs/keystone
+$ sudo cat /var/spool/cron/crontabs/keystone
 ```
 
-.keystone設定
+環境変数（一時使用）
 ```
-$ vi ~/.keystonerc
----
-#!/bin/bash
-
-export OS_TENANT_NAME=admin
-export OS_USERNAME=admin
-export OS_PASSWORD=password
-export OS_AUTH_URL=http://192.168.0.200:35357/v2.0
-export OS_SERVICE_TOKEN=token
-export OS_SERVICE_ENDPOINT=http://192.168.0.200:35357/v2.0
----
-
-$ vi ~/.bashrc
----
-...
-source ~/.keystonerc
----
-
-$ source ~/.bashrc
+$ export OS_SERVICE_TOKEN=password
+$ export OS_SERVICE_ENDPOINT=http://192.168.0.200:35357/v2.0
 ```
 
 テナント・ユーザ作成
@@ -175,6 +159,31 @@ $ keystone tenant-create --name service --description "Service Tenant"
 ```
 $ keystone service-create --name keystone --type identity --description "OpenStack Identity"
 $ keystone endpoint-create --service-id $(keystone service-list | awk '/ identity / {print $2}') --publicurl http://192.168.0.200:5000/v2.0 --internalurl http://192.168.0.200:5000/v2.0 --adminurl http://192.168.0.200:35357/v2.0 --region regionOne
+```
+
+環境変数解除
+```
+$ unset OS_SERVICE_TOKEN OS_SERVICE_ENDPOINT
+```
+
+.keystone設定
+```
+$ vi ~/.keystonerc
+---
+#!/bin/bash
+
+export OS_TENANT_NAME=admin
+export OS_USERNAME=admin
+export OS_PASSWORD=password
+export OS_AUTH_URL=http://192.168.0.200:35357/v2.0
+---
+
+$ vi ~/.bashrc
+---
+...
+source ~/.keystonerc
+---
+$ source ~/.bashrc
 ```
 
 確認
