@@ -7,13 +7,14 @@ Copyright (c) Takehiko OGASAWARA 2015 All Rights Reserved.
 -->
 
 # OpenStack(Juno)をインストールする
+[公式インストール手順](http://docs.openstack.org/juno/install-guide/install/apt/content/)
 
 ## Controller node
 ### 準備
 バックアップディレクトリ作成
 ```
 $ sudo mkdir -p /root/MAINTENANCE/`date "+%Y%m%d"`/{bak,new}
-BAK=/root/MAINTENANCE/`date "+%Y%m%d"`/bak
+$ BAK=/root/MAINTENANCE/`date "+%Y%m%d"`/bak
 ```
 
 ### Basicインストール
@@ -30,7 +31,7 @@ $ cat /etc/apt/sources.list.d/cloudarchive-juno.list
 $ sudo apt-get -y update && sudo apt-get -y dist-upgrade
 ```
 
-MariaDB(MySQL)インストール
+MariaDB(MySQL)
 ```
 $ sudo apt-get -y install mariadb-server python-mysqldb
 → パスワード: admin!
@@ -79,14 +80,14 @@ Reload privilege tables now? [Y/n] y
 ---
 ```
 
-RabbitMQインストール
+RabbitMQ
 ```
 $ sudo apt-get -y install rabbitmq-server
 $ sudo rabbitmqctl change_password guest admin!
 ```
 
 
-### KeyStoneインストール
+### KeyStone
 
 DB作成
 ```
@@ -193,3 +194,5 @@ $ keystone user-list
 $ keystone role-list
 $ keystone tenant-list
 ```
+
+### Glance
