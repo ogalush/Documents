@@ -196,3 +196,82 @@ $ keystone tenant-list
 ```
 
 ### Glance
+DB設定
+```
+$ mysql -u root -p
+MariaDB [(none)]> CREATE DATABASE glance;
+MariaDB [(none)]> GRANT ALL PRIVILEGES ON glance.* TO 'glance'@'%' IDENTIFIED BY 'password';
+MariaDB [(none)]> FLUSH PRIVILEGES;
+MariaDB [(none)]> ¥q
+```
+
+keystone設定
+```
+$ keystone user-create --name glance --pass password
+$ keystone user-role-add --user glance --tenant service --role admin
+$ keystone service-create --name glance --type image --description "OpenStack Image Service"
+$ keystone endpoint-create --service-id $(keystone service-list | awk '/ image / {print $2}') --publicurl http://192.168.0.200:9292 --internalurl http://192.168.0.200:9292 --adminurl http://192.168.0.200:9292 --region regionOne
+```
+
+glanceパッケージ
+```
+$ sudo apt-get -y install glance python-glanceclient
+```
+
+glance設定
+```
+$ sudo cp -raf /etc/glance $BAK
+$ sudo vi /etc/glance/glance-api.conf
+---
+[database]
+...
+connection = mysql://glance:password@192.168.0.200/glance
+...
+[keystone_authtoken]
+auth_uri = http://192.168.0.200:5000/v2.0
+identity_uri = http://192.168.0.200:35357
+admin_tenant_name = service
+admin_user = glance
+admin_password = password
+...
+[paste_deploy]
+...
+flavor = keystone
+...
+[glance_store]
+default_store = file
+filesystem_store_datadir = /var/lib/glance/images/
+---
+
+$ sudo vi /etc/glance/glance-registry.conf
+---
+[database]
+connection = mysql://glance:password@192.168.0.200/glance
+...
+[keystone_authtoken]
+auth_uri = http://192.168.0.200:5000/v2.0
+identity_uri = http://192.168.0.200:35357
+admin_tenant_name = service
+admin_user = glance
+admin_password = password
+...
+[paste_deploy]
+flavor = keystone
+...
+---
+
+$ sudo su -s /bin/sh -c "glance-manage db_sync" glance
+```
+
+glance再起動
+```
+$ sudo service glance-registry restart
+$ sudo service glance-api restart
+$ rm -f /var/lib/glance/glance.sqlite
+```
+
+OSイメージインポート
+```
+$ sudo wget -P /usr/local/src http://cloud-images.ubuntu.com/releases/14.04/release/ubuntu-14.04-server-cloudimg-amd64-disk1.img
+
+```
