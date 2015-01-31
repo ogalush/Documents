@@ -739,4 +739,56 @@ Created a new router:
 $ neutron router-interface-add demo-router demo-subnet
 $ neutron router-gateway-set demo-router ext-net
 
+$ sudo cp /etc/network/interfaces $BAK
+$ sudo vi /etc/network/interfaces
+---
+auto lo
+iface lo inet loopback
+
+# for OpenStack
+auto p1p1
+iface p1p1 inet manual
+  up ip link set dev $IFACE up
+  down ip link set dev $IFACE down
+
+# The primary network interface
+auto br-ex
+iface br-ex inet static
+  address 192.168.0.200
+  netmask 255.255.255.0
+  network 192.168.0.0
+  gateway 192.168.0.254
+  dns-nameservers 192.168.0.254
+---
+$ sudo reboot
+→ 再起動後、sshログインできればOK.
 ```
+
+### horizon
+horizon本体
+```
+$ sudo apt-get -y install openstack-dashboard apache2 libapache2-mod-wsgi memcached python-memcache
+```
+
+horizon設定
+```
+$ sudo cp -raf /etc/openstack-dashboard $BAK
+$ sudo vi /etc/openstack-dashboard/local_settings.py 
+---
+...
+OPENSTACK_HOST = "192.168.0.200"
+...
+ALLOWED_HOSTS = ['*']
+...
+TIME_ZONE = "Asia/Tokyo"
+---
+```
+
+反映
+```
+$ sudo service apache2 restart
+$ sudo service memcached restart
+```
+
+ブラウザアクセス
+[horizon](http://192.168.0.200/horizon/)
