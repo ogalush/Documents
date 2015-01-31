@@ -301,6 +301,7 @@ $ sudo apt-get -y install nova-api nova-cert nova-conductor nova-consoleauth nov
 
 nova設定
 ```
+$ sudo cp -raf /etc/neutron $BAK
 $ sudo vi /etc/nova/nova.conf
 ---
 [DEFAULT]
@@ -381,3 +382,361 @@ $ nova image-list
 +--------------------------------------+-------------+--------+--------+
 ```
 
+### neutron
+DB設定
+```
+$ mysql -u root -p
+MariaDB [(none)]> CREATE DATABASE neutron;
+MariaDB [(none)]> GRANT ALL PRIVILEGES ON neutron.* TO 'neutron'@'%' IDENTIFIED BY 'password';
+MariaDB [(none)]> FLUSH PRIVILEGES;
+MariaDB [(none)]> ¥q
+```
+
+keystone設定
+```
+$ keystone user-create --name neutron --pass password
+$ keystone user-role-add --user neutron --tenant service --role admin
+$ keystone service-create --name neutron --type network --description "OpenStack Networking"
+$ keystone endpoint-create --service-id $(keystone service-list | awk '/ network / {print $2}') --publicurl  http://192.168.0.200:9696 --adminurl http://192.168.0.200:9696 --internalurl http://192.168.0.200:9696 --region regionOne
+```
+
+neutronパッケージ
+```
+$ sudo apt-get -y install neutron-server neutron-plugin-ml2 python-neutronclient
+```
+
+neutron設定
+```
+$ keystone tenant-get service
++-------------+----------------------------------+
+|   Property  |              Value               |
++-------------+----------------------------------+
+| description |          Service Tenant          |
+|   enabled   |               True               |
+|      id     | 302f366fd65440eab9406a8f20317a93 |
+|     name    |             service              |
++-------------+----------------------------------+
+
+$ sudo cp -raf /etc/neutron $BAK
+$ sudo vi /etc/neutron/neutron.conf
+---
+[DEFAULT]
+...
+rpc_backend = rabbit
+rabbit_host = 192.168.0.200
+rabbit_user = guest
+rabbit_password = admin!
+auth_strategy = keystone
+...
+core_plugin = ml2
+service_plugins = router
+allow_overlapping_ips = True
+...
+notify_nova_on_port_status_changes = True
+notify_nova_on_port_data_changes = True
+nova_url = http://192.168.0.200:8774/v2
+nova_admin_auth_url = http://192.168.0.200:35357/v2.0
+nova_region_name = regionOne
+nova_admin_username = nova
+nova_admin_tenant_id = 302f366fd65440eab9406a8f20317a93
+nova_admin_password = password
+...
+[database]
+...
+connection = mysql://neutron:password@192.168.0.200/neutron
+...
+[keystone_authtoken]
+auth_uri = http://192.168.0.200:5000/v2.0
+identity_uri = http://192.168.0.200:35357
+admin_tenant_name = service
+admin_user = neutron
+admin_password = password
+---
+```
+
+ml2設定
+```
+$ sudo vi /etc/neutron/plugins/ml2/ml2_conf.ini
+---
+[ml2]
+type_drivers = flat,gre
+tenant_network_types = gre 
+mechanism_drivers = openvswitch
+...
+[ml2_type_gre]
+tunnel_id_ranges = 1:1000
+...
+[securitygroup]
+enable_security_group = True
+enable_ipset = True
+firewall_driver = neutron.agent.linux.iptables_firewall.OVSHybridIptablesFirewallDriver
+---
+```
+
+nova設定変更
+```
+$ sudo vi /etc/nova/nova.conf
+---
+[DEFAULT]
+...
+network_api_class = nova.network.neutronv2.api.API
+security_group_api = neutron
+linuxnet_interface_driver = nova.network.linux_net.LinuxOVSInterfaceDriver
+firewall_driver = nova.virt.firewall.NoopFirewallDriver
+...
+[neutron]
+url = http://192.168.0.200:9696
+auth_strategy = keystone
+admin_auth_url = http://192.168.0.200:35357/v2.0
+admin_tenant_name = service
+admin_username = neutron
+admin_password = password
+---
+```
+
+設定反映
+```
+$ sudo su -s /bin/sh -c "neutron-db-manage --config-file /etc/neutron/neutron.conf --config-file /etc/neutron/plugins/ml2/ml2_conf.ini upgrade juno" neutron
+```
+
+neutron, nova再起動
+```
+$ initctl list |grep -i nova | awk '{print $1}' |sort | awk '{print "sudo service "$1" restart"}' | bash
+$ sudo service neutron-server restart
+$ neutron ext-list
+→ 表示されれば確認OK.
+```
+
+networknode追加
+```
+$ sudo cp -p /etc/sysctl.conf $BAK
+$ sudo vi /etc/sysctl.conf
+---
+...
+#-- For OpenStack
+net.ipv4.ip_forward=1
+net.ipv4.conf.all.rp_filter=0
+net.ipv4.conf.default.rp_filter=0
+---
+$ sudo sysctl -p
+```
+
+neutronパッケージ
+```
+$ sudo apt-get -y install neutron-plugin-ml2 neutron-plugin-openvswitch-agent neutron-l3-agent neutron-dhcp-agent
+```
+
+neutron設定
+```
+$ sudo vi /etc/neutron/plugins/ml2/ml2_conf.ini 
+---
+[ml2_type_flat]
+flat_networks = external
+
+[ml2_type_gre]
+tunnel_id_ranges = 1:1000
+...
+[securitygroup]
+enable_security_group = True
+enable_ipset = True
+firewall_driver = neutron.agent.linux.iptables_firewall.OVSHybridIptablesFirewallDriver
+
+[ovs]
+local_ip = 192.168.0.200
+enable_tunneling = True
+bridge_mappings = external:br-ex
+
+[agent]
+tunnel_types = gre
+---
+
+$ sudo vi /etc/neutron/l3_agent.ini
+---
+[DEFAULT]
+interface_driver = neutron.agent.linux.interface.OVSInterfaceDriver
+use_namespaces = True
+external_network_bridge = br-ex
+...
+---
+
+$ sudo vi /etc/neutron/dhcp_agent.ini
+---
+[DEFAULT]
+interface_driver = neutron.agent.linux.interface.OVSInterfaceDriver
+dhcp_driver = neutron.agent.linux.dhcp.Dnsmasq
+use_namespaces = True
+dnsmasq_config_file = /etc/neutron/dnsmasq-neutron.conf
+...
+---
+
+$ sudo vi /etc/neutron/dnsmasq-neutron.conf
+---
+dhcp-option-force=26,1454
+---
+※ Enable the DHCP MTU option (26) and configure it to 1454 bytes:
+※ GREを使用すると最大フレームサイズ(1500)だと、カプセル化で付与したフレームが通らない.
+　そのためMTU値を低く設定する.
+
+$ sudo pkill dnsmasq
+
+$ sudo vi /etc/neutron/metadata_agent.ini
+---
+[DEFAULT]
+auth_url = http://192.168.0.200:5000/v2.0
+auth_region = regionOne
+admin_tenant_name = service
+admin_user = neutron
+admin_password = password
+nova_metadata_ip = 192.168.0.200
+metadata_proxy_shared_secret = password
+...
+---
+
+$ sudo vi /etc/nova/nova.conf
+---
+[neutron]
+...
+service_metadata_proxy = True
+metadata_proxy_shared_secret = password
+---
+
+$ sudo service nova-api restart
+```
+
+ovs設定
+```
+$ sudo service openvswitch-switch restart
+$ sudo ovs-vsctl add-br br-ex
+$ sudo ovs-vsctl add-port br-ex p1p1
+$ sudo ethtool -K p1p1 gro off
+```
+
+neutron再起動
+```
+$ sudo service neutron-plugin-openvswitch-agent restart
+$ sudo service neutron-l3-agent restart
+$ sudo service neutron-dhcp-agent restart
+$ sudo service neutron-metadata-agent restart
+```
+
+確認
+```
+$ neutron agent-list
++--------------------------------------+--------------------+-----------+-------+----------------+---------------------------+
+| id                                   | agent_type         | host      | alive | admin_state_up | binary                    |
++--------------------------------------+--------------------+-----------+-------+----------------+---------------------------+
+| 00326010-3775-47cb-ba35-d53d74d5135d | DHCP agent         | ryunosuke | :-)   | True           | neutron-dhcp-agent        |
+| 28135e73-d56e-4e82-a1ce-02ad37e4b2d8 | Metadata agent     | ryunosuke | :-)   | True           | neutron-metadata-agent    |
+| 61e5dfcd-cf6f-4f8e-880f-60cdb32aff9e | L3 agent           | ryunosuke | :-)   | True           | neutron-l3-agent          |
+| b63336e0-d292-433e-b8da-1688efef7a07 | Open vSwitch agent | ryunosuke | :-)   | True           | neutron-openvswitch-agent |
++--------------------------------------+--------------------+-----------+-------+----------------+---------------------------+
+```
+
+### 仮装ネットワーク作成
+#### 外部ネットワーク
+```
+$ neutron net-create ext-net --router:external True --provider:physical_network external --provider:network_type flat
+
+Created a new network:
++---------------------------+--------------------------------------+
+| Field                     | Value                                |
++---------------------------+--------------------------------------+
+| admin_state_up            | True                                 |
+| id                        | a55ded52-db8a-4146-a953-23e7149d6b50 |
+| name                      | ext-net                              |
+| provider:network_type     | flat                                 |
+| provider:physical_network | external                             |
+| provider:segmentation_id  |                                      |
+| router:external           | True                                 |
+| shared                    | False                                |
+| status                    | ACTIVE                               |
+| subnets                   |                                      |
+| tenant_id                 | 61dc76652fa14c58a4a72e0e9fad93e5     |
++---------------------------+--------------------------------------+
+
+$ neutron subnet-create ext-net --name ext-subnet --allocation-pool start=192.168.0.100,end=192.168.0.150 --disable-dhcp --gateway 192.168.0.254 192.168.0.0/24
+
+Created a new subnet:
++-------------------+----------------------------------------------------+
+| Field             | Value                                              |
++-------------------+----------------------------------------------------+
+| allocation_pools  | {"start": "192.168.0.100", "end": "192.168.0.150"} |
+| cidr              | 192.168.0.0/24                                     |
+| dns_nameservers   |                                                    |
+| enable_dhcp       | False                                              |
+| gateway_ip        | 192.168.0.254                                      |
+| host_routes       |                                                    |
+| id                | 682ffb8b-453b-45e5-8e22-37acdda4b883               |
+| ip_version        | 4                                                  |
+| ipv6_address_mode |                                                    |
+| ipv6_ra_mode      |                                                    |
+| name              | ext-subnet                                         |
+| network_id        | a55ded52-db8a-4146-a953-23e7149d6b50               |
+| tenant_id         | 61dc76652fa14c58a4a72e0e9fad93e5                   |
++-------------------+----------------------------------------------------+
+```
+
+#### 内部ネットワーク(テナント用)
+```
+$ neutron net-create demo-net
+Created a new network:
++---------------------------+--------------------------------------+
+| Field                     | Value                                |
++---------------------------+--------------------------------------+
+| admin_state_up            | True                                 |
+| id                        | 044ed164-2640-47bb-8fa9-d34808ead8ac |
+| name                      | demo-net                             |
+| provider:network_type     | gre                                  |
+| provider:physical_network |                                      |
+| provider:segmentation_id  | 1                                    |
+| router:external           | False                                |
+| shared                    | False                                |
+| status                    | ACTIVE                               |
+| subnets                   |                                      |
+| tenant_id                 | 61dc76652fa14c58a4a72e0e9fad93e5     |
++---------------------------+--------------------------------------+
+
+$ neutron subnet-create demo-net --name demo-subnet --gateway 10.0.0.1 10.0.0.0/24  --dns-nameservers list=true 192.168.0.254
+
++-------------------+--------------------------------------------+
+| Field             | Value                                      |
++-------------------+--------------------------------------------+
+| allocation_pools  | {"start": "10.0.0.2", "end": "10.0.0.254"} |
+| cidr              | 10.0.0.0/24                                |
+| dns_nameservers   | 192.168.0.254                              |
+| enable_dhcp       | True                                       |
+| gateway_ip        | 10.0.0.1                                   |
+| host_routes       |                                            |
+| id                | 0f4090fd-5b40-443e-9fd5-a0a382391e7f       |
+| ip_version        | 4                                          |
+| ipv6_address_mode |                                            |
+| ipv6_ra_mode      |                                            |
+| name              | demo-subnet                                |
+| network_id        | 044ed164-2640-47bb-8fa9-d34808ead8ac       |
+| tenant_id         | 61dc76652fa14c58a4a72e0e9fad93e5           |
++-------------------+--------------------------------------------+
+```
+
+#### 仮想ルータ
+```
+$ neutron router-create demo-router
+
+Created a new router:
++-----------------------+--------------------------------------+
+| Field                 | Value                                |
++-----------------------+--------------------------------------+
+| admin_state_up        | True                                 |
+| distributed           | False                                |
+| external_gateway_info |                                      |
+| ha                    | False                                |
+| id                    | 693cece8-079a-427d-83ef-fed908b5d514 |
+| name                  | demo-router                          |
+| routes                |                                      |
+| status                | ACTIVE                               |
+| tenant_id             | 61dc76652fa14c58a4a72e0e9fad93e5     |
++-----------------------+--------------------------------------+
+
+$ neutron router-interface-add demo-router demo-subnet
+$ neutron router-gateway-set demo-router ext-net
+
+```
