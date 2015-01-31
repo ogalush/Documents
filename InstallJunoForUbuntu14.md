@@ -276,3 +276,108 @@ $ sudo wget -P /usr/local/src http://cloud-images.ubuntu.com/releases/14.04/rele
 $ glance image-create --name "ubuntu14.04" --file /usr/local/src/ubuntu-14.04-server-cloudimg-amd64-disk1.img --disk-format qcow2 --container-format bare --is-public True --progress
 $ glance image-list
 ```
+
+### nova
+DB設定
+```
+$  mysql -u root -p
+MariaDB [(none)]> CREATE DATABASE nova;
+MariaDB [(none)]> GRANT ALL PRIVILEGES ON nova.* TO 'nova'@'%' IDENTIFIED BY 'password';
+MariaDB [(none)]> FLUSH PRIVILEGES;
+MariaDB [(none)]> ¥q
+```
+keystone設定
+```
+$ keystone user-create --name nova --pass password
+$ keystone user-role-add --user nova --tenant service --role admin
+$ keystone service-create --name nova --type compute --description "OpenStack Compute"
+$ keystone endpoint-create --service-id $(keystone service-list | awk '/ compute / {print $2}') --publicurl http://192.168.0.200:8774/v2/%\(tenant_id\)s --internalurl http://192.168.0.200:8774/v2/%\(tenant_id\)s --adminurl http://192.168.0.200:8774/v2/%\(tenant_id\)s --region regionOne
+```
+
+novaインストール
+```
+$ sudo apt-get -y install nova-api nova-cert nova-conductor nova-consoleauth nova-novncproxy nova-scheduler python-novaclient
+```
+
+nova設定
+```
+$ sudo vi /etc/nova/nova.conf
+---
+[DEFAULT]
+...
+rpc_backend = rabbit
+rabbit_host = 192.168.0.200
+rabbit_user = guest
+rabbit_password = admin!
+auth_strategy = keystone
+my_ip = 192.168.0.200
+vnc_enabled = True
+vncserver_listen = 192.168.0.200
+vncserver_proxyclient_address = 192.168.0.200
+novncproxy_base_url = http://192.168.0.200:6080/vnc_auto.html
+...
+[database]
+connection = mysql://nova:password@192.168.0.200/nova
+
+[keystone_authtoken]
+auth_uri = http://192.168.0.200:5000/v2.0
+identity_uri = http://192.168.0.200:35357
+admin_tenant_name = service
+admin_user = nova
+admin_password = password
+
+[glance]
+host = 192.168.0.200
+---
+
+$ sudo su -s /bin/sh -c "nova-manage db sync" nova
+```
+
+nova再起動
+```
+$ initctl list |grep -i nova | awk '{print $1}' |sort | awk '{print "sudo service "$1" restart"}' | bash
+
+※ 以下のサービスがrestartすればOK
+---
+nova-api
+nova-cert
+nova-consoleauth
+nova-scheduler
+nova-conductor
+nova-novncproxy
+---
+$ rm -f /var/lib/nova/nova.sqlite
+```
+
+Hypervisor設定
+```
+$ sudo apt-get -y install nova-compute sysfsutils
+$ sudo service nova-compute restart
+$ sudo rm -f /var/lib/nova/nova.sqlite
+```
+
+nova確認
+```
+5つのサービスが起動していればOK.
+$ nova service-list
+---
++----+------------------+-----------+----------+---------+-------+----------------------------+-----------------+
+| Id | Binary           | Host      | Zone     | Status  | State | Updated_at                 | Disabled Reason |
++----+------------------+-----------+----------+---------+-------+----------------------------+-----------------+
+| 1  | nova-cert        | ryunosuke | internal | enabled | up    | 2015-01-31T14:57:33.000000 | -               |
+| 2  | nova-consoleauth | ryunosuke | internal | enabled | up    | 2015-01-31T14:57:34.000000 | -               |
+| 3  | nova-conductor   | ryunosuke | internal | enabled | up    | 2015-01-31T14:57:34.000000 | -               |
+| 4  | nova-scheduler   | ryunosuke | internal | enabled | up    | 2015-01-31T14:57:34.000000 | -               |
+| 5  | nova-compute     | ryunosuke | nova     | enabled | up    | 2015-01-31T14:57:34.000000 | -               |
++----+------------------+-----------+----------+---------+-------+----------------------------+-----------------+
+---
+
+glanceイメージが表示されればOK.
+$ nova image-list
++--------------------------------------+-------------+--------+--------+
+| ID                                   | Name        | Status | Server |
++--------------------------------------+-------------+--------+--------+
+| a72549aa-2abb-4f90-82ed-53c39acf3d5a | ubuntu14.04 | ACTIVE |        |
++--------------------------------------+-------------+--------+--------+
+```
+
