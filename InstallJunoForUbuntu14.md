@@ -571,7 +571,7 @@ dnsmasq_config_file = /etc/neutron/dnsmasq-neutron.conf
 
 $ sudo vi /etc/neutron/dnsmasq-neutron.conf
 ---
-dhcp-option-force=26,1454
+dhcp-option-force=26,1400
 ---
 ※ Enable the DHCP MTU option (26) and configure it to 1454 bytes:
 ※ GREを使用すると最大フレームサイズ(1500)だと、カプセル化で付与したフレームが通らない.
