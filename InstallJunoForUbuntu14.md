@@ -634,15 +634,27 @@ $ neutron agent-list
 
 ### 仮装ネットワーク作成
 #### 外部ネットワーク
+マニュアルにSource the admin credentials to gain access to admin-only CLI commands:.  
+と記載があるので、admin権限で作成する.  
 ```
-$ neutron net-create ext-net --router:external True --provider:physical_network external --provider:network_type flat
+$ keystone tenant-list
++----------------------------------+---------+---------+
+|                id                |   name  | enabled |
++----------------------------------+---------+---------+
+| 61dc76652fa14c58a4a72e0e9fad93e5 |  admin  |   True  |
+~~~これを使用する.
+| 3397a7d0cf9047f1b7c3a0ae149f5a3d |   demo  |   True  |
+| 302f366fd65440eab9406a8f20317a93 | service |   True  |
++----------------------------------+---------+---------+
+
+$ neutron net-create ext-net --tenant-id 61dc76652fa14c58a4a72e0e9fad93e5 --router:external True --provider:physical_network external --provider:network_type flat
 
 Created a new network:
 +---------------------------+--------------------------------------+
 | Field                     | Value                                |
 +---------------------------+--------------------------------------+
 | admin_state_up            | True                                 |
-| id                        | a55ded52-db8a-4146-a953-23e7149d6b50 |
+| id                        | b46155c1-19f7-4bc5-992f-d910947d89bc |
 | name                      | ext-net                              |
 | provider:network_type     | flat                                 |
 | provider:physical_network | external                             |
@@ -654,7 +666,7 @@ Created a new network:
 | tenant_id                 | 61dc76652fa14c58a4a72e0e9fad93e5     |
 +---------------------------+--------------------------------------+
 
-$ neutron subnet-create ext-net --name ext-subnet --allocation-pool start=192.168.0.100,end=192.168.0.150 --disable-dhcp --gateway 192.168.0.254 192.168.0.0/24
+$ neutron subnet-create ext-net --name ext-subnet --tenant-id 61dc76652fa14c58a4a72e0e9fad93e5 --allocation-pool start=192.168.0.100,end=192.168.0.150 --disable-dhcp --gateway 192.168.0.254 192.168.0.0/24
 
 Created a new subnet:
 +-------------------+----------------------------------------------------+
@@ -666,25 +678,38 @@ Created a new subnet:
 | enable_dhcp       | False                                              |
 | gateway_ip        | 192.168.0.254                                      |
 | host_routes       |                                                    |
-| id                | 682ffb8b-453b-45e5-8e22-37acdda4b883               |
+| id                | be761def-2eb4-47c8-9a93-a82e48724000               |
 | ip_version        | 4                                                  |
 | ipv6_address_mode |                                                    |
 | ipv6_ra_mode      |                                                    |
 | name              | ext-subnet                                         |
-| network_id        | a55ded52-db8a-4146-a953-23e7149d6b50               |
+| network_id        | b46155c1-19f7-4bc5-992f-d910947d89bc               |
 | tenant_id         | 61dc76652fa14c58a4a72e0e9fad93e5                   |
 +-------------------+----------------------------------------------------+
 ```
 
 #### 内部ネットワーク(テナント用)
+Source the demo credentials to gain access to user-only CLI commands:  
+とあるので、demo向けに作成する.  
 ```
-$ neutron net-create demo-net
+$ keystone tenant-list
++----------------------------------+---------+---------+
+|                id                |   name  | enabled |
++----------------------------------+---------+---------+
+| 61dc76652fa14c58a4a72e0e9fad93e5 |  admin  |   True  |
+| 3397a7d0cf9047f1b7c3a0ae149f5a3d |   demo  |   True  |
+~~~これを使用する.
+| 302f366fd65440eab9406a8f20317a93 | service |   True  |
++----------------------------------+---------+---------+
+
+$ neutron net-create --tenant-id 3397a7d0cf9047f1b7c3a0ae149f5a3d  demo-net
+
 Created a new network:
 +---------------------------+--------------------------------------+
 | Field                     | Value                                |
 +---------------------------+--------------------------------------+
 | admin_state_up            | True                                 |
-| id                        | 044ed164-2640-47bb-8fa9-d34808ead8ac |
+| id                        | 20d0e6b7-1906-4134-a3c5-4c6adfc2e186 |
 | name                      | demo-net                             |
 | provider:network_type     | gre                                  |
 | provider:physical_network |                                      |
@@ -693,11 +718,13 @@ Created a new network:
 | shared                    | False                                |
 | status                    | ACTIVE                               |
 | subnets                   |                                      |
-| tenant_id                 | 61dc76652fa14c58a4a72e0e9fad93e5     |
+| tenant_id                 | 3397a7d0cf9047f1b7c3a0ae149f5a3d     |
 +---------------------------+--------------------------------------+
 
-$ neutron subnet-create demo-net --name demo-subnet --gateway 10.0.0.1 10.0.0.0/24  --dns-nameservers list=true 192.168.0.254
 
+$ neutron subnet-create demo-net --name demo-subnet --tenant-id 3397a7d0cf9047f1b7c3a0ae149f5a3d --gateway 10.0.0.1 10.0.0.0/24  --dns-nameservers list=true 192.168.0.254
+
+Created a new subnet:
 +-------------------+--------------------------------------------+
 | Field             | Value                                      |
 +-------------------+--------------------------------------------+
@@ -707,19 +734,19 @@ $ neutron subnet-create demo-net --name demo-subnet --gateway 10.0.0.1 10.0.0.0/
 | enable_dhcp       | True                                       |
 | gateway_ip        | 10.0.0.1                                   |
 | host_routes       |                                            |
-| id                | 0f4090fd-5b40-443e-9fd5-a0a382391e7f       |
+| id                | e6e4c91a-ac1e-4f49-963c-67059d6ddb0f       |
 | ip_version        | 4                                          |
 | ipv6_address_mode |                                            |
 | ipv6_ra_mode      |                                            |
 | name              | demo-subnet                                |
-| network_id        | 044ed164-2640-47bb-8fa9-d34808ead8ac       |
-| tenant_id         | 61dc76652fa14c58a4a72e0e9fad93e5           |
+| network_id        | 20d0e6b7-1906-4134-a3c5-4c6adfc2e186       |
+| tenant_id         | 3397a7d0cf9047f1b7c3a0ae149f5a3d           |
 +-------------------+--------------------------------------------+
 ```
 
 #### 仮想ルータ
 ```
-$ neutron router-create demo-router
+$ neutron router-create --tenant-id 3397a7d0cf9047f1b7c3a0ae149f5a3d demo-router
 
 Created a new router:
 +-----------------------+--------------------------------------+
@@ -729,11 +756,11 @@ Created a new router:
 | distributed           | False                                |
 | external_gateway_info |                                      |
 | ha                    | False                                |
-| id                    | 693cece8-079a-427d-83ef-fed908b5d514 |
+| id                    | 4c8dfa17-9399-4c8e-8875-7e175737ca49 |
 | name                  | demo-router                          |
 | routes                |                                      |
 | status                | ACTIVE                               |
-| tenant_id             | 61dc76652fa14c58a4a72e0e9fad93e5     |
+| tenant_id             | 3397a7d0cf9047f1b7c3a0ae149f5a3d     |
 +-----------------------+--------------------------------------+
 
 $ neutron router-interface-add demo-router demo-subnet
