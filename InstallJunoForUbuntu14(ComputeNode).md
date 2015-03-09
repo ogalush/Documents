@@ -108,7 +108,7 @@ ogalush@ryunosuke:~$ nova service-list
 | 6  | nova-compute     | hayao     | nova     | enabled | up    | 2015-03-09T14:45:47.000000 | -               |
 +----+------------------+-----------+----------+---------+-------+----------------------------+-----------------+
 ---
-
+```
 
 ### neutron
 バックアップ
@@ -160,7 +160,7 @@ admin_password = password
 [database]
 connection = mysql://neutron:password@192.168.0.200/neutron
 ---
-
+```
 
 ml2設定
 ```
@@ -252,13 +252,12 @@ $ sudo ovs-vsctl list-br
 → br-int, br-tunがあること
 ```
 
-ブラウザアクセス
-[horizon](http://192.168.0.200/horizon/)
-※ComputeNodeでインスタンスを作成でき、sshで疎通できればOK.
+ブラウザアクセス  
+[horizon](http://192.168.0.200/horizon/)  
+※ComputeNodeでインスタンスを作成でき、sshで疎通できればOK.  
 
-
-◆今後の課題 2015.3◆
-・DVRを使ってないLegacy手順なので、DVRを試してみる(ComputeNodeにもRouterを置いて効率よくする)
-  https://wiki.openstack.org/wiki/Neutron/DVR
-  http://www.slideshare.net/ToruMakabe/20-openstack-neutron-deep-dive-dvr
+◆今後の課題 2015.3◆  
+・DVRを使ってないLegacy手順なので、DVRを試してみる(ComputeNodeにもRouterを置いて効率よくする)  
+  https://wiki.openstack.org/wiki/Neutron/DVR  
+  http://www.slideshare.net/ToruMakabe/20-openstack-neutron-deep-dive-dvr  
 ・Cinder Volumeを作る(Dashboardで軽微なエラー表示がでる)
