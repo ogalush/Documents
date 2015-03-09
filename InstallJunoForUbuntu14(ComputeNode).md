@@ -111,76 +111,56 @@ ogalush@ryunosuke:~$ nova service-list
 
 
 ### neutron
-DB設定
+バックアップ
 ```
-$ mysql -u root -p
-MariaDB [(none)]> CREATE DATABASE neutron;
-MariaDB [(none)]> GRANT ALL PRIVILEGES ON neutron.* TO 'neutron'@'%' IDENTIFIED BY 'password';
-MariaDB [(none)]> FLUSH PRIVILEGES;
-MariaDB [(none)]> ¥q
+$ sudo cp -p /etc/network/interfaces $BAK
+$ sudo cp -p /etc/sysctl.conf $BAK
 ```
 
-keystone設定
+sysctl設定
 ```
-$ keystone user-create --name neutron --pass password
-$ keystone user-role-add --user neutron --tenant service --role admin
-$ keystone service-create --name neutron --type network --description "OpenStack Networking"
-$ keystone endpoint-create --service-id $(keystone service-list | awk '/ network / {print $2}') --publicurl  http://192.168.0.200:9696 --adminurl http://192.168.0.200:9696 --internalurl http://192.168.0.200:9696 --region regionOne
+$ sudo vi /etc/sysctl.conf
+---
+#-- for OpenStack
+net.ipv4.conf.all.rp_filter=0
+net.ipv4.conf.default.rp_filter=0
+---
+$ sudo sysctl -p
 ```
 
-neutronパッケージ
+パッケージ
 ```
-$ sudo apt-get -y install neutron-server neutron-plugin-ml2 python-neutronclient
+$ sudo apt-get -y install neutron-plugin-ml2 neutron-plugin-openvswitch-agent
 ```
 
 neutron設定
 ```
-$ keystone tenant-get service
-+-------------+----------------------------------+
-|   Property  |              Value               |
-+-------------+----------------------------------+
-| description |          Service Tenant          |
-|   enabled   |               True               |
-|      id     | 302f366fd65440eab9406a8f20317a93 |
-|     name    |             service              |
-+-------------+----------------------------------+
-
 $ sudo cp -raf /etc/neutron $BAK
 $ sudo vi /etc/neutron/neutron.conf
 ---
 [DEFAULT]
 ...
-rpc_backend = rabbit
+service_plugins = router
+allow_overlapping_ips = True
+rpc_backend = neutron.openstack.common.rpc.impl_kombu
 rabbit_host = 192.168.0.200
 rabbit_user = guest
 rabbit_password = admin!
 auth_strategy = keystone
 ...
-core_plugin = ml2
-service_plugins = router
-allow_overlapping_ips = True
-...
-notify_nova_on_port_status_changes = True
-notify_nova_on_port_data_changes = True
-nova_url = http://192.168.0.200:8774/v2
-nova_admin_auth_url = http://192.168.0.200:35357/v2.0
-nova_region_name = regionOne
-nova_admin_username = nova
-nova_admin_tenant_id = 302f366fd65440eab9406a8f20317a93
-nova_admin_password = password
-...
-[database]
-...
-connection = mysql://neutron:password@192.168.0.200/neutron
-...
 [keystone_authtoken]
-auth_uri = http://192.168.0.200:5000/v2.0
-identity_uri = http://192.168.0.200:35357
+auth_uri = http://192.168.0.200:5000
+auth_host = 192.168.0.200
+auth_protocol = http
+auth_port = 35357
 admin_tenant_name = service
 admin_user = neutron
 admin_password = password
+...
+[database]
+connection = mysql://neutron:password@192.168.0.200/neutron
 ---
-```
+
 
 ml2設定
 ```
@@ -198,7 +178,16 @@ tunnel_id_ranges = 1:1000
 enable_security_group = True
 enable_ipset = True
 firewall_driver = neutron.agent.linux.iptables_firewall.OVSHybridIptablesFirewallDriver
+...
+[ovs]
+local_ip = 192.168.0.210
+enable_tunneling = True
+
+[agent]
+tunnel_types = gre 
 ---
+
+$ sudo service openvswitch-switch restart
 ```
 
 nova設定変更
@@ -222,114 +211,40 @@ admin_password = password
 ---
 ```
 
-設定反映
-```
-$ sudo su -s /bin/sh -c "neutron-db-manage --config-file /etc/neutron/neutron.conf --config-file /etc/neutron/plugins/ml2/ml2_conf.ini upgrade juno" neutron
-```
-
 neutron, nova再起動
 ```
-$ initctl list |grep -i nova | awk '{print $1}' |sort | awk '{print "sudo service "$1" restart"}' | bash
-$ sudo service neutron-server restart
-$ neutron ext-list
-→ 表示されれば確認OK.
+$ sudo service nova-compute restart
+$ sudo service openvswitch-switch restart
+$ sudo service neutron-plugin-openvswitch-agent restart
 ```
 
-networknode追加
+確認
 ```
-$ sudo cp -p /etc/sysctl.conf $BAK
-$ sudo vi /etc/sysctl.conf
----
-...
-#-- For OpenStack
-net.ipv4.ip_forward=1
-net.ipv4.conf.all.rp_filter=0
-net.ipv4.conf.default.rp_filter=0
----
-$ sudo sysctl -p
+ComputeNodeのagentがUPしていればOK
+controller$ neutron agent-list
++--------------------------------------+--------------------+-----------+-------+----------------+---------------------------+
+| id                                   | agent_type         | host      | alive | admin_state_up | binary                    |
++--------------------------------------+--------------------+-----------+-------+----------------+---------------------------+
+| 00326010-3775-47cb-ba35-d53d74d5135d | DHCP agent         | ryunosuke | :-)   | True           | neutron-dhcp-agent        |
+| 28135e73-d56e-4e82-a1ce-02ad37e4b2d8 | Metadata agent     | ryunosuke | :-)   | True           | neutron-metadata-agent    |
+| 61e5dfcd-cf6f-4f8e-880f-60cdb32aff9e | L3 agent           | ryunosuke | :-)   | True           | neutron-l3-agent          |
+| b5b1bd30-109c-44fb-8a81-c6ca4bccf187 | Open vSwitch agent | hayao     | :-)   | True           | neutron-openvswitch-agent |
+| b63336e0-d292-433e-b8da-1688efef7a07 | Open vSwitch agent | ryunosuke | :-)   | True           | neutron-openvswitch-agent |
++--------------------------------------+--------------------+-----------+-------+----------------+---------------------------+
+
+controller$ nova service-list
++----+------------------+-----------+----------+---------+-------+----------------------------+-----------------+
+| Id | Binary           | Host      | Zone     | Status  | State | Updated_at                 | Disabled Reason |
++----+------------------+-----------+----------+---------+-------+----------------------------+-----------------+
+| 1  | nova-cert        | ryunosuke | internal | enabled | up    | 2015-03-09T15:16:17.000000 | -               |
+| 2  | nova-consoleauth | ryunosuke | internal | enabled | up    | 2015-03-09T15:16:13.000000 | -               |
+| 3  | nova-conductor   | ryunosuke | internal | enabled | up    | 2015-03-09T15:16:23.000000 | -               |
+| 4  | nova-scheduler   | ryunosuke | internal | enabled | up    | 2015-03-09T15:16:15.000000 | -               |
+| 5  | nova-compute     | ryunosuke | nova     | enabled | up    | 2015-03-09T15:16:15.000000 | -               |
+| 6  | nova-compute     | hayao     | nova     | enabled | up    | 2015-03-09T15:16:18.000000 | -               |
++----+------------------+-----------+----------+---------+-------+----------------------------+-----------------+
 ```
 
-neutronパッケージ
-```
-$ sudo apt-get -y install neutron-plugin-ml2 neutron-plugin-openvswitch-agent neutron-l3-agent neutron-dhcp-agent
-```
-
-neutron設定
-```
-$ sudo vi /etc/neutron/plugins/ml2/ml2_conf.ini 
----
-[ml2_type_flat]
-flat_networks = external
-
-[ml2_type_gre]
-tunnel_id_ranges = 1:1000
-...
-[securitygroup]
-enable_security_group = True
-enable_ipset = True
-firewall_driver = neutron.agent.linux.iptables_firewall.OVSHybridIptablesFirewallDriver
-
-[ovs]
-local_ip = 192.168.0.200
-enable_tunneling = True
-bridge_mappings = external:br-ex
-
-[agent]
-tunnel_types = gre
----
-
-$ sudo vi /etc/neutron/l3_agent.ini
----
-[DEFAULT]
-interface_driver = neutron.agent.linux.interface.OVSInterfaceDriver
-use_namespaces = True
-external_network_bridge = br-ex
-...
----
-
-$ sudo vi /etc/neutron/dhcp_agent.ini
----
-[DEFAULT]
-interface_driver = neutron.agent.linux.interface.OVSInterfaceDriver
-dhcp_driver = neutron.agent.linux.dhcp.Dnsmasq
-use_namespaces = True
-dnsmasq_config_file = /etc/neutron/dnsmasq-neutron.conf
-...
----
-
-$ sudo vi /etc/neutron/dnsmasq-neutron.conf
----
-dhcp-option-force=26,1400
----
-※ Enable the DHCP MTU option (26) and configure it to 1454 bytes:
-※ GREを使用すると最大フレームサイズ(1500)だと、カプセル化で付与したフレームが通らない.
-　そのためMTU値を低く設定する.
-
-$ sudo pkill dnsmasq
-
-$ sudo vi /etc/neutron/metadata_agent.ini
----
-[DEFAULT]
-auth_url = http://192.168.0.200:5000/v2.0
-auth_region = regionOne
-admin_tenant_name = service
-admin_user = neutron
-admin_password = password
-nova_metadata_ip = 192.168.0.200
-metadata_proxy_shared_secret = password
-...
----
-
-$ sudo vi /etc/nova/nova.conf
----
-[neutron]
-...
-service_metadata_proxy = True
-metadata_proxy_shared_secret = password
----
-
-$ sudo service nova-api restart
-```
 
 ovs設定
 ```
