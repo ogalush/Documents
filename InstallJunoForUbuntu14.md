@@ -566,6 +566,7 @@ interface_driver = neutron.agent.linux.interface.OVSInterfaceDriver
 dhcp_driver = neutron.agent.linux.dhcp.Dnsmasq
 use_namespaces = True
 dnsmasq_config_file = /etc/neutron/dnsmasq-neutron.conf
+dhcp_domain = localdomain
 ...
 ---
 
