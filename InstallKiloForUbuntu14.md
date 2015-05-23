@@ -95,7 +95,7 @@ $ sudo rabbitmqctl set_permissions openstack ".*" ".*" ".*"
 
 DB作成
 ```
-$ mysql -u root -p
+$ sudo mysql -u root
 MariaDB> CREATE DATABASE keystone;
 MariaDB> GRANT ALL PRIVILEGES ON keystone.* TO 'keystone'@'%' IDENTIFIED BY 'password';
 MariaDB> FLUSH PRIVILEGES;
@@ -104,7 +104,16 @@ MariaDB> quit;
 
 パッケージインストール
 ```
-$ sudo apt-get -y install keystone python-keystoneclient
+変更点の説明
+---
+By default, the keystone service listens on ports 5000 and 35357.
+However, this guide configures the Apache HTTP server to listen on those ports.
+To avoid port conflicts, disable the keystone service from starting automatically after installation:
+→ 今回はPort 5000/35357をApacheで受けさせるために、KeyStoneのPort番号を変更するとのこと.
+---
+
+$ echo 'manual' | sudo tee /etc/init/keystone.override
+$ sudo apt-get -y install keystone python-openstackclient apache2 libapache2-mod-wsgi memcached python-memcache
 ```
 
 KyeStone設定
@@ -118,87 +127,279 @@ admin_token = token
 ...
 [database]
 connection = mysql://keystone:password@192.168.0.200/keystone
+...
+[memcache]
+...
+servers = localhost:11211
+...
 [token]
 provider = keystone.token.providers.uuid.Provider
-driver = keystone.token.persistence.backends.sql.Token
+driver = keystone.token.persistence.backends.memcache.Token
+...
+[revoke]
+driver = keystone.contrib.revoke.backends.sql.Revoke
 ---
 ```
 
 DB反映
 ```
-$ sudo su -s /bin/sh -c "keystone-manage db_sync" keystone
+$ sudo su -s /bin/sh -c 'keystone-manage db_sync' keystone
 ```
 
-再起動
+apache2編集
 ```
-$ sudo service keystone restart
-$ sudo rm -f /var/lib/keystone/keystone.db
-```
-
-Cron設定
-```
-$ (sudo crontab -l -u keystone 2>&1 | grep -q token_flush) || echo '@hourly /usr/bin/keystone-manage token_flush  /var/log/keystone/keystone-tokenflush.log 2>&1' |sudo tee /var/spool/cron/crontabs/keystone
-$ sudo chown keystone:keystone /var/spool/cron/crontabs/keystone
-$ sudo ls -al /var/spool/cron/crontabs/keystone
-$ sudo cat /var/spool/cron/crontabs/keystone
-```
-
-環境変数（一時使用）
-```
-$ export OS_SERVICE_TOKEN=password
-$ export OS_SERVICE_ENDPOINT=http://192.168.0.200:35357/v2.0
-```
-
-テナント・ユーザ作成
-```
-$ keystone tenant-create --name admin --description "Admin Tenant"
-$ keystone user-create --name admin --pass password --email admin@192.168.0.200
-$ keystone role-create --name admin
-$ keystone user-role-add --user admin --tenant admin --role admin
-$ keystone tenant-create --name demo --description "Demo Tenant"
-$ keystone user-create --name demo --tenant demo --pass password --email demo@192.168.0.200
-$ keystone tenant-create --name service --description "Service Tenant"
-```
-
-サービス作成
-```
-$ keystone service-create --name keystone --type identity --description "OpenStack Identity"
-$ keystone endpoint-create --service-id $(keystone service-list | awk '/ identity / {print $2}') --publicurl http://192.168.0.200:5000/v2.0 --internalurl http://192.168.0.200:5000/v2.0 --adminurl http://192.168.0.200:35357/v2.0 --region regionOne
-```
-
-環境変数解除
-```
-$ unset OS_SERVICE_TOKEN OS_SERVICE_ENDPOINT
-```
-
-.keystone設定
-```
-$ vi ~/.keystonerc
----
-#!/bin/bash
-
-export OS_TENANT_NAME=admin
-export OS_USERNAME=admin
-export OS_PASSWORD=password
-export OS_AUTH_URL=http://192.168.0.200:35357/v2.0
----
-
-$ vi ~/.bashrc
+$ sudo cp -raf /etc/apache2 $BAK
+$ sudo vi /etc/apache2/apache2.conf 
 ---
 ...
-source ~/.keystonerc
+ServerName ryunosuke.local
+...
 ---
-$ source ~/.bashrc
+
+$ sudo vi /etc/apache2/sites-available/wsgi-keystone.conf
+---
+Listen 5000
+Listen 35357
+
+<VirtualHost *:5000>
+    WSGIDaemonProcess keystone-public processes=5 threads=1 user=keystone display-name=%{GROUP}
+    WSGIProcessGroup keystone-public
+    WSGIScriptAlias / /var/www/cgi-bin/keystone/main
+    WSGIApplicationGroup %{GLOBAL}
+    WSGIPassAuthorization On
+    <IfVersion >= 2.4>
+      ErrorLogFormat "%{cu}t %M"
+    </IfVersion>
+    LogLevel info
+    ErrorLog /var/log/apache2/keystone-error.log
+    CustomLog /var/log/apache2/keystone-access.log combined
+</VirtualHost>
+
+<VirtualHost *:35357>
+    WSGIDaemonProcess keystone-admin processes=5 threads=1 user=keystone display-name=%{GROUP}
+    WSGIProcessGroup keystone-admin
+    WSGIScriptAlias / /var/www/cgi-bin/keystone/admin
+    WSGIApplicationGroup %{GLOBAL}
+    WSGIPassAuthorization On
+    <IfVersion >= 2.4>
+      ErrorLogFormat "%{cu}t %M"
+    </IfVersion>
+    LogLevel info
+    ErrorLog /var/log/apache2/keystone-error.log
+    CustomLog /var/log/apache2/keystone-access.log combined
+</VirtualHost>
+---
+
+$ sudo ln -s /etc/apache2/sites-available/wsgi-keystone.conf /etc/apache2/sites-enabled
+$ sudo mkdir -p /var/www/cgi-bin/keystone
+$ curl http://git.openstack.org/cgit/openstack/keystone/plain/httpd/keystone.py?h=stable/kilo | sudo tee /var/www/cgi-bin/keystone/main /var/www/cgi-bin/keystone/admin
+$ sudo chown -R keystone:keystone /var/www/cgi-bin/keystone
+$ sudo chmod 755 /var/www/cgi-bin/keystone/*
+$ sudo /etc/init.d/apache2 restart
+$ sudo rm -f /var/lib/keystone/keystone.db
+$ sudo /etc/init.d/keystone restart
+```
+
+KeyStone設定
+```
+$ export OS_TOKEN=token
+$ export OS_URL=http://192.168.0.200:35357/v2.0
+$ export OS_AUTH_URL=http://192.168.0.200:35357/v3
+$ openstack service create --name keystone --description "OpenStack Identity" identity
+
++-------------+----------------------------------+
+| Field       | Value                            |
++-------------+----------------------------------+
+| description | OpenStack Identity               |
+| enabled     | True                             |
+| id          | 4d799f00f5074cd1b51cb9c56a841a06 |
+| name        | keystone                         |
+| type        | identity                         |
++-------------+----------------------------------+
+
+$ openstack endpoint create --publicurl http://192.168.0.200:5000/v2.0 --internalurl http://192.168.0.200:5000/v2.0  --adminurl http://192.168.0.200:35357/v2.0 --region RegionOne identity
+
++--------------+----------------------------------+
+| Field        | Value                            |
++--------------+----------------------------------+
+| adminurl     | http://192.168.0.200:35357/v2.0  |
+| id           | 0e018fe74be14f748341542cac742399 |
+| internalurl  | http://192.168.0.200:5000/v2.0   |
+| publicurl    | http://192.168.0.200:5000/v2.0   |
+| region       | RegionOne                        |
+| service_id   | 4d799f00f5074cd1b51cb9c56a841a06 |
+| service_name | keystone                         |
+| service_type | identity                         |
++--------------+----------------------------------+
+
+$ openstack project create --description "Admin Project" admin
++-------------+----------------------------------+
+| Field       | Value                            |
++-------------+----------------------------------+
+| description | Admin Project                    |
+| enabled     | True                             |
+| id          | f5d9444d84ff4245ae556f3c174a0e32 |
+| name        | admin                            |
++-------------+----------------------------------+
+
+$ openstack user create --password-prompt admin
+
+User Password: password
+Repeat User Password: password
++----------+----------------------------------+
+| Field    | Value                            |
++----------+----------------------------------+
+| email    | None                             |
+| enabled  | True                             |
+| id       | f0f8cdd96ed5412f9aacc9c75d6ddb14 |
+| name     | admin                            |
+| username | admin                            |
++----------+----------------------------------+
+
+$ openstack role create admin
++-------+----------------------------------+
+| Field | Value                            |
++-------+----------------------------------+
+| id    | 0ba0d34bfa5647ff84835d3a52928b8b |
+| name  | admin                            |
++-------+----------------------------------+
+
+$ openstack role add --project admin --user admin admin
++-------+----------------------------------+
+| Field | Value                            |
++-------+----------------------------------+
+| id    | 0ba0d34bfa5647ff84835d3a52928b8b |
+| name  | admin                            |
++-------+----------------------------------+
+
+$ openstack project create --description "Service Project" service
++-------------+----------------------------------+
+| Field       | Value                            |
++-------------+----------------------------------+
+| description | Service Project                  |
+| enabled     | True                             |
+| id          | 829656454b1043369cd1cbd1bb0f79db |
+| name        | service                          |
++-------------+----------------------------------+
+
+$ openstack project create --description "Demo Project" demo
++-------------+----------------------------------+
+| Field       | Value                            |
++-------------+----------------------------------+
+| description | Demo Project                     |
+| enabled     | True                             |
+| id          | fc28a21604fc4d1a825b4ac82a05fad9 |
+| name        | demo                             |
++-------------+----------------------------------+
+
+$ openstack user create --password-prompt demo
+User Password: password
+Repeat User Password: password
++----------+----------------------------------+
+| Field    | Value                            |
++----------+----------------------------------+
+| email    | None                             |
+| enabled  | True                             |
+| id       | 76e04e695af64da098ed9566642c3b79 |
+| name     | demo                             |
+| username | demo                             |
++----------+----------------------------------+
+
+$ openstack role create user
++-------+----------------------------------+
+| Field | Value                            |
++-------+----------------------------------+
+| id    | 08ba9e22af664de6bc3350debfb05a4c |
+| name  | user                             |
++-------+----------------------------------+
+
+$ openstack role add --project demo --user demo user
++-------+----------------------------------+
+| Field | Value                            |
++-------+----------------------------------+
+| id    | 08ba9e22af664de6bc3350debfb05a4c |
+| name  | user                             |
++-------+----------------------------------+
+```
+
+セキュリティ的な理由で削除する設定
+```
+$ sudo vi /etc/keystone/keystone-paste.ini
+---
+[pipeline:public_api]
+pipeline = sizelimit url_normalize request_id build_auth_context token_auth json_body ec2_extension user_crud_extension public_service
+※ admin_token_authを削除
+
+[pipeline:admin_api]
+pipeline = sizelimit url_normalize request_id build_auth_context token_auth json_body ec2_extension s3_extension crud_extension admin_service
+※ admin_token_authを削除
+
+[pipeline:api_v3]
+pipeline = sizelimit url_normalize request_id build_auth_context token_auth json_body ec2_extension_v3 s3_extension simple_cert_extension revoke_extension federation_extension oauth1_extension endpoint_filter_extension endpoint_policy_extension service_v3
+※ admin_token_authを削除
+---
 ```
 
 確認
 ```
-$ keystone token-get
-$ keystone user-list
-$ keystone role-list
-$ keystone tenant-list
+$ unset OS_TOKEN OS_URL
+$ openstack --os-auth-url http://192.168.0.200:35357 --os-project-name admin --os-username admin --os-auth-type password token issue
+Password: 
++------------+----------------------------------+
+| Field      | Value                            |
++------------+----------------------------------+
+| expires    | 2015-05-23T10:02:16Z             |
+| id         | d7994f072efd4944a8ee0f40cee930f7 |
+| project_id | f5d9444d84ff4245ae556f3c174a0e32 |
+| user_id    | f0f8cdd96ed5412f9aacc9c75d6ddb14 |
++------------+----------------------------------+
+
+$ openstack --os-auth-url http://192.168.0.200:35357 --os-project-domain-id default --os-user-domain-id default  --os-project-name admin --os-username admin --os-auth-type password token issue
++------------+----------------------------------+
+| Field      | Value                            |
++------------+----------------------------------+
+| expires    | 2015-05-23T10:03:12.470182Z      |
+| id         | 44e258659e6046dead9e9c8790356baf |
+| project_id | f5d9444d84ff4245ae556f3c174a0e32 |
+| user_id    | f0f8cdd96ed5412f9aacc9c75d6ddb14 |
++------------+----------------------------------+
+
+$ vi ~/admin-openrc.sh
+---
+export OS_PROJECT_DOMAIN_ID=default
+export OS_USER_DOMAIN_ID=default
+export OS_PROJECT_NAME=admin
+export OS_TENANT_NAME=admin
+export OS_USERNAME=admin
+export OS_PASSWORD=password
+export OS_AUTH_URL=http://192.168.0.200:35357/v3
+---
+
+$ vi ~/demo-openrc.sh
+---
+export OS_PROJECT_DOMAIN_ID=default
+export OS_USER_DOMAIN_ID=default
+export OS_PROJECT_NAME=demo
+export OS_TENANT_NAME=demo
+export OS_USERNAME=demo
+export OS_PASSWORD=password
+export OS_AUTH_URL=http://192.168.0.200:5000/v3
+---
+
+$ source ~/admin-openrc.sh
+$ echo 'source ~/admin-openrc.sh' | tee -a ~/.bashrc
+$ openstack token issue
++------------+----------------------------------+
+| Field      | Value                            |
++------------+----------------------------------+
+| expires    | 2015-05-23T10:05:57.524787Z      |
+| id         | 69996c9801824d0f8931118db76c110a |
+| project_id | f5d9444d84ff4245ae556f3c174a0e32 |
+| user_id    | f0f8cdd96ed5412f9aacc9c75d6ddb14 |
++------------+----------------------------------+
 ```
 
+# ここまで
 ### Glance
 DB設定
 ```
