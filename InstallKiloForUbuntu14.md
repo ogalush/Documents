@@ -21,26 +21,27 @@ $ BAK=/root/MAINTENANCE/`date "+%Y%m%d"`/bak
 ntpインストール
 ```
 $ sudo apt-get -y install ntp
+$ ntpq -p
+→ 同期され始めているようであればOK.
 ```
 
 OpenStackパッケージ
 ```
 $ sudo apt-get -y install ubuntu-cloud-keyring
-$ echo 'deb http://ubuntu-cloud.archive.canonical.com/ubuntu trusty-updates/juno main' | sudo tee /etc/apt/sources.list.d/cloudarchive-juno.list
-$ cat /etc/apt/sources.list.d/cloudarchive-juno.list
+$ echo 'deb http://ubuntu-cloud.archive.canonical.com/ubuntu trusty-updates/kilo main' | sudo tee /etc/apt/sources.list.d/cloudarchive-kilo.list
+$ cat /etc/apt/sources.list.d/cloudarchive-kilo.list
 $ sudo apt-get -y update && sudo apt-get -y dist-upgrade
 ```
 
 MariaDB(MySQL)
 ```
 $ sudo apt-get -y install mariadb-server python-mysqldb
-→ パスワード: admin!
 ```
 
 MariaDB設定
 ```
 $ sudo cp -raf /etc/mysql $BAK
-$ sudo vi /etc/mysql/my.cnf
+$ sudo vi /etc/mysql/mariadb.conf.d/mysqld.cnf 
 ----
 [mysqld]
 ...
@@ -49,9 +50,8 @@ bind-address            = 0.0.0.0
 #-- For OpenStack
 default-storage-engine = innodb
 innodb_file_per_table
-collation-server = utf8_general_ci
 init-connect = 'SET NAMES utf8'
-character-set-server = utf8
+→ collation-server, character-set-serverは既に設定ファイルにあるのでスキップ.
 ----
 
 #-- 設定の反映
@@ -77,13 +77,17 @@ Remove test database and access to it? [Y/n] y
 
 Reload privilege tables now? [Y/n] y
  ... Success!
+
+Reload privilege tables now? [Y/n] y
+ ... Success!
 ---
 ```
 
 RabbitMQ
 ```
 $ sudo apt-get -y install rabbitmq-server
-$ sudo rabbitmqctl change_password guest admin!
+$ sudo rabbitmqctl add_user openstack password
+$ sudo rabbitmqctl set_permissions openstack ".*" ".*" ".*"
 ```
 
 
