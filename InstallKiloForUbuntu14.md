@@ -399,11 +399,10 @@ $ openstack token issue
 +------------+----------------------------------+
 ```
 
-# ここまで
 ### Glance
 DB設定
 ```
-$ mysql -u root -p
+$ sudo mysql -u root
 MariaDB [(none)]> CREATE DATABASE glance;
 MariaDB [(none)]> GRANT ALL PRIVILEGES ON glance.* TO 'glance'@'%' IDENTIFIED BY 'password';
 MariaDB [(none)]> FLUSH PRIVILEGES;
@@ -412,10 +411,60 @@ MariaDB [(none)]> ¥q
 
 keystone設定
 ```
-$ keystone user-create --name glance --pass password
-$ keystone user-role-add --user glance --tenant service --role admin
-$ keystone service-create --name glance --type image --description "OpenStack Image Service"
-$ keystone endpoint-create --service-id $(keystone service-list | awk '/ image / {print $2}') --publicurl http://192.168.0.200:9292 --internalurl http://192.168.0.200:9292 --adminurl http://192.168.0.200:9292 --region regionOne
+$ source ~/admin-openrc.sh
+$ openstack user create --password-prompt glance
+---
+User Password: password
+Repeat User Password: password
++----------+----------------------------------+
+| Field    | Value                            |
++----------+----------------------------------+
+| email    | None                             |
+| enabled  | True                             |
+| id       | 84c7d045ed1c4b61a41982de3755457e |
+| name     | glance                           |
+| username | glance                           |
++----------+----------------------------------+
+---
+
+$ openstack role add --project service --user glance admin
+---
++-------+----------------------------------+
+| Field | Value                            |
++-------+----------------------------------+
+| id    | 0ba0d34bfa5647ff84835d3a52928b8b |
+| name  | admin                            |
++-------+----------------------------------+
+---
+
+$ openstack service create --name glance --description "OpenStack Image service" image
+---
++-------------+----------------------------------+
+| Field       | Value                            |
++-------------+----------------------------------+
+| description | OpenStack Image service          |
+| enabled     | True                             |
+| id          | a6e23791eb2e4486aa34603dda5dbce1 |
+| name        | glance                           |
+| type        | image                            |
++-------------+----------------------------------+
+---
+
+$ openstack endpoint create  --publicurl http://192.168.0.200:9292  --internalurl http://192.168.0.200:9292   --adminurl http://192.168.0.200:9292 --region RegionOne image
+---
++--------------+----------------------------------+
+| Field        | Value                            |
++--------------+----------------------------------+
+| adminurl     | http://192.168.0.200:9292        |
+| id           | a33b003e9fe54d61a9d24e9fe1533cfd |
+| internalurl  | http://192.168.0.200:9292        |
+| publicurl    | http://192.168.0.200:9292        |
+| region       | RegionOne                        |
+| service_id   | a6e23791eb2e4486aa34603dda5dbce1 |
+| service_name | glance                           |
+| service_type | image                            |
++--------------+----------------------------------+
+---
 ```
 
 glanceパッケージ
@@ -428,16 +477,24 @@ glance設定
 $ sudo cp -raf /etc/glance $BAK
 $ sudo vi /etc/glance/glance-api.conf
 ---
+[DEFAULT]
+...
+notification_driver = noop
+...
+
 [database]
 ...
 connection = mysql://glance:password@192.168.0.200/glance
 ...
 [keystone_authtoken]
-auth_uri = http://192.168.0.200:5000/v2.0
-identity_uri = http://192.168.0.200:35357
-admin_tenant_name = service
-admin_user = glance
-admin_password = password
+auth_uri = http://192.168.0.200:5000
+auth_url = http://192.168.0.200:35357
+auth_plugin = password
+project_domain_id = default
+user_domain_id = default
+project_name = service
+username = glance
+password = password
 ...
 [paste_deploy]
 ...
@@ -450,15 +507,24 @@ filesystem_store_datadir = /var/lib/glance/images/
 
 $ sudo vi /etc/glance/glance-registry.conf
 ---
+[DEFAULT]
+...
+notification_driver = noop
+...
+
 [database]
 connection = mysql://glance:password@192.168.0.200/glance
 ...
 [keystone_authtoken]
-auth_uri = http://192.168.0.200:5000/v2.0
-identity_uri = http://192.168.0.200:35357
-admin_tenant_name = service
-admin_user = glance
-admin_password = password
+auth_uri = http://192.168.0.200:5000
+auth_url = http://192.168.0.200:35357
+auth_plugin = password
+project_domain_id = default
+user_domain_id = default
+project_name = service
+username = glance
+password = password
+
 ...
 [paste_deploy]
 flavor = keystone
@@ -477,9 +543,43 @@ $ rm -f /var/lib/glance/glance.sqlite
 
 OSイメージインポート
 ```
-$ sudo wget -P /usr/local/src http://cloud-images.ubuntu.com/releases/14.04/release/ubuntu-14.04-server-cloudimg-amd64-disk1.img
-$ glance image-create --name "ubuntu14.04" --file /usr/local/src/ubuntu-14.04-server-cloudimg-amd64-disk1.img --disk-format qcow2 --container-format bare --is-public True --progress
+$ echo "export OS_IMAGE_API_VERSION=2" | tee -a ~/admin-openrc.sh ~/demo-openrc.sh
+$ source ~/admin-openrc.sh
+$ sudo wget -P /usr/local/src  http://cloud-images.ubuntu.com/releases/15.04/release/ubuntu-15.04-server-cloudimg-amd64-disk1.img
+
+$ glance image-create --name "Ubuntu15.04" --file /usr/local/src/ubuntu-15.04-server-cloudimg-amd64-disk1.img \
+  --disk-format qcow2 --container-format bare --visibility public --progress
+---
++------------------+--------------------------------------+
+| Property         | Value                                |
++------------------+--------------------------------------+
+| checksum         | c5229787d24e3478781f589468e376fa     |
+| container_format | bare                                 |
+| created_at       | 2015-05-31T08:39:19Z                 |
+| disk_format      | qcow2                                |
+| id               | 1b699de4-b435-4922-8df8-5adeddef0efb |
+| min_disk         | 0                                    |
+| min_ram          | 0                                    |
+| name             | Ubuntu15.04                          |
+| owner            | f5d9444d84ff4245ae556f3c174a0e32     |
+| protected        | False                                |
+| size             | 284819968                            |
+| status           | active                               |
+| tags             | []                                   |
+| updated_at       | 2015-05-31T08:39:20Z                 |
+| virtual_size     | None                                 |
+| visibility       | public                               |
++------------------+--------------------------------------+
+---
+  
 $ glance image-list
+---
++--------------------------------------+-------------+
+| ID                                   | Name        |
++--------------------------------------+-------------+
+| 1b699de4-b435-4922-8df8-5adeddef0efb | Ubuntu15.04 |
++--------------------------------------+-------------+
+---
 ```
 
 ### nova
