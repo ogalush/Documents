@@ -585,7 +585,7 @@ $ glance image-list
 ### nova
 DB設定
 ```
-$  mysql -u root -p
+$ sudo mysql
 MariaDB [(none)]> CREATE DATABASE nova;
 MariaDB [(none)]> GRANT ALL PRIVILEGES ON nova.* TO 'nova'@'%' IDENTIFIED BY 'password';
 MariaDB [(none)]> FLUSH PRIVILEGES;
@@ -593,47 +593,103 @@ MariaDB [(none)]> ¥q
 ```
 keystone設定
 ```
-$ keystone user-create --name nova --pass password
-$ keystone user-role-add --user nova --tenant service --role admin
-$ keystone service-create --name nova --type compute --description "OpenStack Compute"
-$ keystone endpoint-create --service-id $(keystone service-list | awk '/ compute / {print $2}') --publicurl http://192.168.0.200:8774/v2/%\(tenant_id\)s --internalurl http://192.168.0.200:8774/v2/%\(tenant_id\)s --adminurl http://192.168.0.200:8774/v2/%\(tenant_id\)s --region regionOne
+$ source ~/admin-openrc.sh
+$ openstack user create --password-prompt nova
+---
+User Password:
+Repeat User Password:
++----------+----------------------------------+
+| Field    | Value                            |
++----------+----------------------------------+
+| email    | None                             |
+| enabled  | True                             |
+| id       | 48f177f2dbc24eeab5b0ea1c45d06acf |
+| name     | nova                             |
+| username | nova                             |
++----------+----------------------------------+
+---
+
+$ openstack role add --project service --user nova admin
++-------+----------------------------------+
+| Field | Value                            |
++-------+----------------------------------+
+| id    | 0ba0d34bfa5647ff84835d3a52928b8b |
+| name  | admin                            |
++-------+----------------------------------+
+
+$ openstack service create --name nova --description "OpenStack Compute" compute
+---
++-------------+----------------------------------+
+| Field       | Value                            |
++-------------+----------------------------------+
+| description | OpenStack Compute                |
+| enabled     | True                             |
+| id          | 0f9a6d5aaef0429ba38d3aa601f26f35 |
+| name        | nova                             |
+| type        | compute                          |
++-------------+----------------------------------+
+---
+
+$ openstack endpoint create --publicurl http://192.168.0.200:8774/v2/%\(tenant_id\)s  --internalurl http://192.168.0.200:8774/v2/%\(tenant_id\)s --adminurl http://192.168.0.200:8774/v2/%\(tenant_id\)s --region RegionOne compute
+---
++--------------+--------------------------------------------+
+| Field        | Value                                      |
++--------------+--------------------------------------------+
+| adminurl     | http://192.168.0.200:8774/v2/%(tenant_id)s |
+| id           | 882d73a5c94c4a59bd26ad43838442eb           |
+| internalurl  | http://192.168.0.200:8774/v2/%(tenant_id)s |
+| publicurl    | http://192.168.0.200:8774/v2/%(tenant_id)s |
+| region       | RegionOne                                  |
+| service_id   | 0f9a6d5aaef0429ba38d3aa601f26f35           |
+| service_name | nova                                       |
+| service_type | compute                                    |
++--------------+--------------------------------------------+
+---
 ```
 
 novaインストール
 ```
-$ sudo apt-get -y install nova-api nova-cert nova-conductor nova-consoleauth nova-novncproxy nova-scheduler python-novaclient
+$ sudo apt-get -y install nova-api nova-cert nova-conductor nova-consoleauth nova-novncproxy nova-scheduler  python-novaclient
 ```
 
 nova設定
 ```
-$ sudo cp -raf /etc/neutron $BAK
+$ sudo cp -raf /etc/nova $BAK
 $ sudo vi /etc/nova/nova.conf
 ---
 [DEFAULT]
 ...
 rpc_backend = rabbit
-rabbit_host = 192.168.0.200
-rabbit_user = guest
-rabbit_password = admin!
 auth_strategy = keystone
 my_ip = 192.168.0.200
-vnc_enabled = True
 vncserver_listen = 192.168.0.200
 vncserver_proxyclient_address = 192.168.0.200
-novncproxy_base_url = http://192.168.0.200:6080/vnc_auto.html
+vnc_enabled = True
+novncproxy_base_url = http://controller:6080/vnc_auto.html
 ...
 [database]
 connection = mysql://nova:password@192.168.0.200/nova
+...
+[oslo_messaging_rabbit]
+rabbit_host = 192.168.0.200
+rabbit_userid = openstack
+rabbit_password = password
 
 [keystone_authtoken]
-auth_uri = http://192.168.0.200:5000/v2.0
-identity_uri = http://192.168.0.200:35357
-admin_tenant_name = service
-admin_user = nova
-admin_password = password
+auth_uri = http://192.168.0.200:5000
+auth_url = http://192.168.0.200:35357
+auth_plugin = password
+project_domain_id = default
+user_domain_id = default
+project_name = service
+username = nova
+password = password
 
 [glance]
 host = 192.168.0.200
+
+[oslo_concurrency]
+lock_path = /var/lib/nova/tmp
 ---
 
 $ sudo su -s /bin/sh -c "nova-manage db sync" nova
@@ -641,7 +697,7 @@ $ sudo su -s /bin/sh -c "nova-manage db sync" nova
 
 nova再起動
 ```
-$ initctl list |grep -i nova | awk '{print $1}' |sort | awk '{print "sudo service "$1" restart"}' | bash
+$ service --status-all |grep nova | awk '{print $4}' | awk '{print "sudo service "$1" restart"}'| bash
 
 ※ 以下のサービスがrestartすればOK
 ---
@@ -652,12 +708,17 @@ nova-scheduler
 nova-conductor
 nova-novncproxy
 ---
-$ rm -f /var/lib/nova/nova.sqlite
+$ sudo rm -f /var/lib/nova/nova.sqlite
 ```
 
 Hypervisor設定
 ```
 $ sudo apt-get -y install nova-compute sysfsutils
+$ sudo vi /etc/nova/nova-compute.conf
+---
+[libvirt]
+virt_type = kvm
+---
 $ sudo service nova-compute restart
 $ sudo rm -f /var/lib/nova/nova.sqlite
 ```
@@ -665,17 +726,104 @@ $ sudo rm -f /var/lib/nova/nova.sqlite
 nova確認
 ```
 5つのサービスが起動していればOK.
+$ source ~/admin-openrc.sh
 $ nova service-list
 ---
 +----+------------------+-----------+----------+---------+-------+----------------------------+-----------------+
 | Id | Binary           | Host      | Zone     | Status  | State | Updated_at                 | Disabled Reason |
 +----+------------------+-----------+----------+---------+-------+----------------------------+-----------------+
-| 1  | nova-cert        | ryunosuke | internal | enabled | up    | 2015-01-31T14:57:33.000000 | -               |
-| 2  | nova-consoleauth | ryunosuke | internal | enabled | up    | 2015-01-31T14:57:34.000000 | -               |
-| 3  | nova-conductor   | ryunosuke | internal | enabled | up    | 2015-01-31T14:57:34.000000 | -               |
-| 4  | nova-scheduler   | ryunosuke | internal | enabled | up    | 2015-01-31T14:57:34.000000 | -               |
-| 5  | nova-compute     | ryunosuke | nova     | enabled | up    | 2015-01-31T14:57:34.000000 | -               |
+| 1  | nova-cert        | ryunosuke | internal | enabled | up    | 2015-05-31T09:18:44.000000 | -               |
+| 2  | nova-conductor   | ryunosuke | internal | enabled | up    | 2015-05-31T09:18:44.000000 | -               |
+| 4  | nova-consoleauth | ryunosuke | internal | enabled | up    | 2015-05-31T09:18:35.000000 | -               |
+| 5  | nova-scheduler   | ryunosuke | internal | enabled | up    | 2015-05-31T09:18:36.000000 | -               |
+| 6  | nova-compute     | ryunosuke | nova     | enabled | up    | 2015-05-31T09:18:44.000000 | -               |
 +----+------------------+-----------+----------+---------+-------+----------------------------+-----------------+
+
+$ nova endpoints
+WARNING: nova has no endpoint in ! Available endpoints for this service:
++-----------+---------------------------------------------------------------+
+| nova      | Value                                                         |
++-----------+---------------------------------------------------------------+
+| id        | 48ff51e0d9c0482f9d3dd7ea06bf7ff4                              |
+| interface | public                                                        |
+| region    | RegionOne                                                     |
+| region_id | RegionOne                                                     |
+| url       | http://192.168.0.200:8774/v2/f5d9444d84ff4245ae556f3c174a0e32 |
++-----------+---------------------------------------------------------------+
++-----------+---------------------------------------------------------------+
+| nova      | Value                                                         |
++-----------+---------------------------------------------------------------+
+| id        | 9a22c09d41694ddf93b5a47dd070ca5f                              |
+| interface | internal                                                      |
+| region    | RegionOne                                                     |
+| region_id | RegionOne                                                     |
+| url       | http://192.168.0.200:8774/v2/f5d9444d84ff4245ae556f3c174a0e32 |
++-----------+---------------------------------------------------------------+
++-----------+---------------------------------------------------------------+
+| nova      | Value                                                         |
++-----------+---------------------------------------------------------------+
+| id        | 9a437880558e458c881c1be558f086bc                              |
+| interface | admin                                                         |
+| region    | RegionOne                                                     |
+| region_id | RegionOne                                                     |
+| url       | http://192.168.0.200:8774/v2/f5d9444d84ff4245ae556f3c174a0e32 |
++-----------+---------------------------------------------------------------+
+WARNING: keystone has no endpoint in ! Available endpoints for this service:
++-----------+----------------------------------+
+| keystone  | Value                            |
++-----------+----------------------------------+
+| id        | 41535177fe5142269f3823f95daad943 |
+| interface | public                           |
+| region    | RegionOne                        |
+| region_id | RegionOne                        |
+| url       | http://192.168.0.200:5000/v2.0   |
++-----------+----------------------------------+
++-----------+----------------------------------+
+| keystone  | Value                            |
++-----------+----------------------------------+
+| id        | b4ff53b968784880a78ed0bcd596e39b |
+| interface | admin                            |
+| region    | RegionOne                        |
+| region_id | RegionOne                        |
+| url       | http://192.168.0.200:35357/v2.0  |
++-----------+----------------------------------+
++-----------+----------------------------------+
+| keystone  | Value                            |
++-----------+----------------------------------+
+| id        | ee8cd0689efb4fd586c4755ad4196c26 |
+| interface | internal                         |
+| region    | RegionOne                        |
+| region_id | RegionOne                        |
+| url       | http://192.168.0.200:5000/v2.0   |
++-----------+----------------------------------+
+WARNING: glance has no endpoint in ! Available endpoints for this service:
++-----------+----------------------------------+
+| glance    | Value                            |
++-----------+----------------------------------+
+| id        | 6de69c15bc7a4c3cbd04bd50f3b1f5a3 |
+| interface | internal                         |
+| region    | RegionOne                        |
+| region_id | RegionOne                        |
+| url       | http://192.168.0.200:9292        |
++-----------+----------------------------------+
++-----------+----------------------------------+
+| glance    | Value                            |
++-----------+----------------------------------+
+| id        | 8c930277c819499ca0ca531d24294c27 |
+| interface | public                           |
+| region    | RegionOne                        |
+| region_id | RegionOne                        |
+| url       | http://192.168.0.200:9292        |
++-----------+----------------------------------+
++-----------+----------------------------------+
+| glance    | Value                            |
++-----------+----------------------------------+
+| id        | ad6a48bfd42d4282af0cc35d46a13e9c |
+| interface | admin                            |
+| region    | RegionOne                        |
+| region_id | RegionOne                        |
+| url       | http://192.168.0.200:9292        |
++-----------+----------------------------------+
 ---
 
 glanceイメージが表示されればOK.
@@ -683,10 +831,12 @@ $ nova image-list
 +--------------------------------------+-------------+--------+--------+
 | ID                                   | Name        | Status | Server |
 +--------------------------------------+-------------+--------+--------+
-| a72549aa-2abb-4f90-82ed-53c39acf3d5a | ubuntu14.04 | ACTIVE |        |
+| 1b699de4-b435-4922-8df8-5adeddef0efb | Ubuntu15.04 | ACTIVE |        |
 +--------------------------------------+-------------+--------+--------+
 ```
 
+
+# ここまで
 ### neutron
 DB設定
 ```
