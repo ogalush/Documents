@@ -836,11 +836,10 @@ $ nova image-list
 ```
 
 
-# ここまで
 ### neutron
 DB設定
 ```
-$ mysql -u root -p
+$ sudo mysql
 MariaDB [(none)]> CREATE DATABASE neutron;
 MariaDB [(none)]> GRANT ALL PRIVILEGES ON neutron.* TO 'neutron'@'%' IDENTIFIED BY 'password';
 MariaDB [(none)]> FLUSH PRIVILEGES;
@@ -849,10 +848,53 @@ MariaDB [(none)]> ¥q
 
 keystone設定
 ```
-$ keystone user-create --name neutron --pass password
-$ keystone user-role-add --user neutron --tenant service --role admin
-$ keystone service-create --name neutron --type network --description "OpenStack Networking"
-$ keystone endpoint-create --service-id $(keystone service-list | awk '/ network / {print $2}') --publicurl  http://192.168.0.200:9696 --adminurl http://192.168.0.200:9696 --internalurl http://192.168.0.200:9696 --region regionOne
+$ source ~/admin-openrc.sh 
+$ openstack user create --password-prompt neutron
+User Password:
+Repeat User Password:
++----------+----------------------------------+
+| Field    | Value                            |
++----------+----------------------------------+
+| email    | None                             |
+| enabled  | True                             |
+| id       | 6e088b62789045528f926cf0cc10108b |
+| name     | neutron                          |
+| username | neutron                          |
++----------+----------------------------------+
+
+$ openstack role add --project service --user neutron admin
++-------+----------------------------------+
+| Field | Value                            |
++-------+----------------------------------+
+| id    | 0ba0d34bfa5647ff84835d3a52928b8b |
+| name  | admin                            |
++-------+----------------------------------+
+
+$ openstack service create --name neutron --description "OpenStack Networking" network
++-------------+----------------------------------+
+| Field       | Value                            |
++-------------+----------------------------------+
+| description | OpenStack Networking             |
+| enabled     | True                             |
+| id          | ef37327d99c44bf58115d167d31febb2 |
+| name        | neutron                          |
+| type        | network                          |
++-------------+----------------------------------+
+
+$ openstack endpoint create --publicurl http://192.168.0.200:9696 --adminurl http://192.168.0.200:9696 --internalurl http://192.168.0.200:9696 --region RegionOne network
+ RegionOne network
++--------------+----------------------------------+
+| Field        | Value                            |
++--------------+----------------------------------+
+| adminurl     | http://192.168.0.200:9696        |
+| id           | bfb8a390d0b64e688acbbca83541a7b5 |
+| internalurl  | http://192.168.0.200:9696        |
+| publicurl    | http://192.168.0.200:9696        |
+| region       | RegionOne                        |
+| service_id   | ef37327d99c44bf58115d167d31febb2 |
+| service_name | neutron                          |
+| service_type | network                          |
++--------------+----------------------------------+
 ```
 
 neutronパッケージ
@@ -862,25 +904,11 @@ $ sudo apt-get -y install neutron-server neutron-plugin-ml2 python-neutronclient
 
 neutron設定
 ```
-$ keystone tenant-get service
-+-------------+----------------------------------+
-|   Property  |              Value               |
-+-------------+----------------------------------+
-| description |          Service Tenant          |
-|   enabled   |               True               |
-|      id     | 302f366fd65440eab9406a8f20317a93 |
-|     name    |             service              |
-+-------------+----------------------------------+
-
 $ sudo cp -raf /etc/neutron $BAK
 $ sudo vi /etc/neutron/neutron.conf
 ---
 [DEFAULT]
-...
 rpc_backend = rabbit
-rabbit_host = 192.168.0.200
-rabbit_user = guest
-rabbit_password = admin!
 auth_strategy = keystone
 ...
 core_plugin = ml2
@@ -890,22 +918,37 @@ allow_overlapping_ips = True
 notify_nova_on_port_status_changes = True
 notify_nova_on_port_data_changes = True
 nova_url = http://192.168.0.200:8774/v2
-nova_admin_auth_url = http://192.168.0.200:35357/v2.0
-nova_region_name = regionOne
-nova_admin_username = nova
-nova_admin_tenant_id = 302f366fd65440eab9406a8f20317a93
-nova_admin_password = password
-...
+
 [database]
-...
 connection = mysql://neutron:password@192.168.0.200/neutron
 ...
+
+[oslo_messaging_rabbit]
+...
+rabbit_host = 192.168.0.200
+rabbit_userid = openstack
+rabbit_password = password
+
+
 [keystone_authtoken]
-auth_uri = http://192.168.0.200:5000/v2.0
-identity_uri = http://192.168.0.200:35357
-admin_tenant_name = service
-admin_user = neutron
-admin_password = password
+auth_uri = http://192.168.0.200:5000
+auth_url = http://192.168.0.200:35357
+auth_plugin = password
+project_domain_id = default
+user_domain_id = default
+project_name = service
+username = neutron
+password = password
+
+[nova]
+auth_url = http://192.168.0.200:35357
+auth_plugin = password
+project_domain_id = default
+user_domain_id = default
+region_name = RegionOne
+project_name = service
+username = nova
+password = password
 ---
 ```
 
@@ -914,8 +957,8 @@ ml2設定
 $ sudo vi /etc/neutron/plugins/ml2/ml2_conf.ini
 ---
 [ml2]
-type_drivers = flat,gre
-tenant_network_types = gre 
+type_drivers = flat,vlan,gre,vxlan
+tenant_network_types = gre
 mechanism_drivers = openvswitch
 ...
 [ml2_type_gre]
@@ -951,16 +994,43 @@ admin_password = password
 
 設定反映
 ```
-$ sudo su -s /bin/sh -c "neutron-db-manage --config-file /etc/neutron/neutron.conf --config-file /etc/neutron/plugins/ml2/ml2_conf.ini upgrade juno" neutron
+$ sudo su -s /bin/bash -c "neutron-db-manage --config-file /etc/neutron/neutron.conf --config-file /etc/neutron/plugins/ml2/ml2_conf.ini upgrade head" neutron
 ```
 
 neutron, nova再起動
 ```
-$ initctl list |grep -i nova | awk '{print $1}' |sort | awk '{print "sudo service "$1" restart"}' | bash
-$ sudo service neutron-server restart
-$ neutron ext-list
-→ 表示されれば確認OK.
+$ sudo service nova-api restart
+$ sudo service neutron-server start
 ```
+
+反映確認
+```
+$ source ~/admin-openrc.sh
+$ neutron ext-list
++-----------------------+-----------------------------------------------+
+| alias                 | name                                          |
++-----------------------+-----------------------------------------------+
+| security-group        | security-group                                |
+| l3_agent_scheduler    | L3 Agent Scheduler                            |
+| net-mtu               | Network MTU                                   |
+| ext-gw-mode           | Neutron L3 Configurable external gateway mode |
+| binding               | Port Binding                                  |
+| provider              | Provider Network                              |
+| agent                 | agent                                         |
+| quotas                | Quota management support                      |
+| subnet_allocation     | Subnet Allocation                             |
+| dhcp_agent_scheduler  | DHCP Agent Scheduler                          |
+| l3-ha                 | HA Router extension                           |
+| multi-provider        | Multi Provider Network                        |
+| external-net          | Neutron external network                      |
+| router                | Neutron L3 Router                             |
+| allowed-address-pairs | Allowed Address Pairs                         |
+| extraroute            | Neutron Extra Route                           |
+| extra_dhcp_opt        | Neutron Extra DHCP opts                       |
+| dvr                   | Distributed Virtual Router                    |
++-----------------------+-----------------------------------------------+
+```
+
 
 networknode追加
 ```
@@ -978,7 +1048,7 @@ $ sudo sysctl -p
 
 neutronパッケージ
 ```
-$ sudo apt-get -y install neutron-plugin-ml2 neutron-plugin-openvswitch-agent neutron-l3-agent neutron-dhcp-agent
+$ sudo apt-get -y install neutron-plugin-ml2 neutron-plugin-openvswitch-agent neutron-l3-agent neutron-dhcp-agent neutron-metadata-agent
 ```
 
 neutron設定
@@ -998,7 +1068,6 @@ firewall_driver = neutron.agent.linux.iptables_firewall.OVSHybridIptablesFirewal
 
 [ovs]
 local_ip = 192.168.0.200
-enable_tunneling = True
 bridge_mappings = external:br-ex
 
 [agent]
@@ -1009,8 +1078,8 @@ $ sudo vi /etc/neutron/l3_agent.ini
 ---
 [DEFAULT]
 interface_driver = neutron.agent.linux.interface.OVSInterfaceDriver
-use_namespaces = True
 external_network_bridge = br-ex
+router_delete_namespaces = True
 ...
 ---
 
@@ -1019,15 +1088,15 @@ $ sudo vi /etc/neutron/dhcp_agent.ini
 [DEFAULT]
 interface_driver = neutron.agent.linux.interface.OVSInterfaceDriver
 dhcp_driver = neutron.agent.linux.dhcp.Dnsmasq
-use_namespaces = True
+dhcp_delete_namespaces = True
 dnsmasq_config_file = /etc/neutron/dnsmasq-neutron.conf
-dhcp_domain = localdomain
+dhcp_domain = local
 ...
 ---
 
 $ sudo vi /etc/neutron/dnsmasq-neutron.conf
 ---
-dhcp-option-force=26,1400
+dhcp-option-force=26,1454
 ---
 ※ Enable the DHCP MTU option (26) and configure it to 1454 bytes:
 ※ GREを使用すると最大フレームサイズ(1500)だと、カプセル化で付与したフレームが通らない.
@@ -1038,11 +1107,15 @@ $ sudo pkill dnsmasq
 $ sudo vi /etc/neutron/metadata_agent.ini
 ---
 [DEFAULT]
-auth_url = http://192.168.0.200:5000/v2.0
-auth_region = regionOne
-admin_tenant_name = service
-admin_user = neutron
-admin_password = password
+auth_uri = http://192.168.0.200:5000
+auth_url = http://192.168.0.200:35357
+auth_region = RegionOne
+auth_plugin = password
+project_domain_id = default
+user_domain_id = default
+project_name = service
+username = neutron
+password = password
 nova_metadata_ip = 192.168.0.200
 metadata_proxy_shared_secret = password
 ...
@@ -1066,7 +1139,7 @@ $ sudo ovs-vsctl add-br br-ex
 $ sudo ovs-vsctl add-port br-ex p1p1
 $ sudo ethtool -K p1p1 gro off
 ```
-
+###ここまで
 neutron再起動
 ```
 $ sudo service neutron-plugin-openvswitch-agent restart
