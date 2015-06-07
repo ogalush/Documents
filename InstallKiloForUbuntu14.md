@@ -41,7 +41,7 @@ $ sudo apt-get -y install mariadb-server python-mysqldb
 MariaDB設定
 ```
 $ sudo cp -raf /etc/mysql $BAK
-$ sudo vi /etc/mysql/mariadb.conf.d/mysqld.cnf 
+$ sudo vi /etc/mysql/my.cnf 
 ----
 [mysqld]
 ...
@@ -50,8 +50,9 @@ bind-address            = 0.0.0.0
 #-- For OpenStack
 default-storage-engine = innodb
 innodb_file_per_table
+collation-server = utf8_general_ci
 init-connect = 'SET NAMES utf8'
-→ collation-server, character-set-serverは既に設定ファイルにあるのでスキップ.
+character-set-server = utf8
 ----
 
 #-- 設定の反映
@@ -95,7 +96,7 @@ $ sudo rabbitmqctl set_permissions openstack ".*" ".*" ".*"
 
 DB作成
 ```
-$ sudo mysql -u root
+$ sudo mysql -u root -ppassword
 MariaDB> CREATE DATABASE keystone;
 MariaDB> GRANT ALL PRIVILEGES ON keystone.* TO 'keystone'@'%' IDENTIFIED BY 'password';
 MariaDB> FLUSH PRIVILEGES;
@@ -195,9 +196,9 @@ $ sudo mkdir -p /var/www/cgi-bin/keystone
 $ curl http://git.openstack.org/cgit/openstack/keystone/plain/httpd/keystone.py?h=stable/kilo | sudo tee /var/www/cgi-bin/keystone/main /var/www/cgi-bin/keystone/admin
 $ sudo chown -R keystone:keystone /var/www/cgi-bin/keystone
 $ sudo chmod 755 /var/www/cgi-bin/keystone/*
-$ sudo /etc/init.d/apache2 restart
+$ sudo service apache2 restart
 $ sudo rm -f /var/lib/keystone/keystone.db
-$ sudo /etc/init.d/keystone restart
+$ sudo service keystone restart
 ```
 
 KeyStone設定
@@ -212,7 +213,7 @@ $ openstack service create --name keystone --description "OpenStack Identity" id
 +-------------+----------------------------------+
 | description | OpenStack Identity               |
 | enabled     | True                             |
-| id          | 4d799f00f5074cd1b51cb9c56a841a06 |
+| id          | 148ddb1eff5c4eeebd16892f04173ac9 |
 | name        | keystone                         |
 | type        | identity                         |
 +-------------+----------------------------------+
@@ -223,11 +224,11 @@ $ openstack endpoint create --publicurl http://192.168.0.200:5000/v2.0 --interna
 | Field        | Value                            |
 +--------------+----------------------------------+
 | adminurl     | http://192.168.0.200:35357/v2.0  |
-| id           | 0e018fe74be14f748341542cac742399 |
+| id           | 593c069dc6d24920b2320c472652c16b |
 | internalurl  | http://192.168.0.200:5000/v2.0   |
 | publicurl    | http://192.168.0.200:5000/v2.0   |
 | region       | RegionOne                        |
-| service_id   | 4d799f00f5074cd1b51cb9c56a841a06 |
+| service_id   | 148ddb1eff5c4eeebd16892f04173ac9 |
 | service_name | keystone                         |
 | service_type | identity                         |
 +--------------+----------------------------------+
@@ -238,7 +239,7 @@ $ openstack project create --description "Admin Project" admin
 +-------------+----------------------------------+
 | description | Admin Project                    |
 | enabled     | True                             |
-| id          | f5d9444d84ff4245ae556f3c174a0e32 |
+| id          | 7460bfbafaba45cdac98542810a92ac9 |
 | name        | admin                            |
 +-------------+----------------------------------+
 
@@ -251,7 +252,7 @@ Repeat User Password: password
 +----------+----------------------------------+
 | email    | None                             |
 | enabled  | True                             |
-| id       | f0f8cdd96ed5412f9aacc9c75d6ddb14 |
+| id       | 859115906b1c429181dee2de5729478b |
 | name     | admin                            |
 | username | admin                            |
 +----------+----------------------------------+
@@ -260,7 +261,7 @@ $ openstack role create admin
 +-------+----------------------------------+
 | Field | Value                            |
 +-------+----------------------------------+
-| id    | 0ba0d34bfa5647ff84835d3a52928b8b |
+| id    | 167be3dc6eeb468a986f701f6c9986c6 |
 | name  | admin                            |
 +-------+----------------------------------+
 
@@ -268,7 +269,7 @@ $ openstack role add --project admin --user admin admin
 +-------+----------------------------------+
 | Field | Value                            |
 +-------+----------------------------------+
-| id    | 0ba0d34bfa5647ff84835d3a52928b8b |
+| id    | 167be3dc6eeb468a986f701f6c9986c6 |
 | name  | admin                            |
 +-------+----------------------------------+
 
@@ -278,7 +279,7 @@ $ openstack project create --description "Service Project" service
 +-------------+----------------------------------+
 | description | Service Project                  |
 | enabled     | True                             |
-| id          | 829656454b1043369cd1cbd1bb0f79db |
+| id          | f8cecc6e1f264d3eb4ffbf9e90f555ee |
 | name        | service                          |
 +-------------+----------------------------------+
 
@@ -288,7 +289,7 @@ $ openstack project create --description "Demo Project" demo
 +-------------+----------------------------------+
 | description | Demo Project                     |
 | enabled     | True                             |
-| id          | fc28a21604fc4d1a825b4ac82a05fad9 |
+| id          | 5cc062a3bb494d96ba860b7c6c319f34 |
 | name        | demo                             |
 +-------------+----------------------------------+
 
@@ -300,7 +301,7 @@ Repeat User Password: password
 +----------+----------------------------------+
 | email    | None                             |
 | enabled  | True                             |
-| id       | 76e04e695af64da098ed9566642c3b79 |
+| id       | adb2761beba44ff6bc9bf7f38d709eae |
 | name     | demo                             |
 | username | demo                             |
 +----------+----------------------------------+
@@ -309,7 +310,7 @@ $ openstack role create user
 +-------+----------------------------------+
 | Field | Value                            |
 +-------+----------------------------------+
-| id    | 08ba9e22af664de6bc3350debfb05a4c |
+| id    | 2d14b106ba44431eabc6a7913fe6ed3c |
 | name  | user                             |
 +-------+----------------------------------+
 
@@ -317,7 +318,7 @@ $ openstack role add --project demo --user demo user
 +-------+----------------------------------+
 | Field | Value                            |
 +-------+----------------------------------+
-| id    | 08ba9e22af664de6bc3350debfb05a4c |
+| id    | 2d14b106ba44431eabc6a7913fe6ed3c |
 | name  | user                             |
 +-------+----------------------------------+
 ```
@@ -348,20 +349,20 @@ Password:
 +------------+----------------------------------+
 | Field      | Value                            |
 +------------+----------------------------------+
-| expires    | 2015-05-23T10:02:16Z             |
-| id         | d7994f072efd4944a8ee0f40cee930f7 |
-| project_id | f5d9444d84ff4245ae556f3c174a0e32 |
-| user_id    | f0f8cdd96ed5412f9aacc9c75d6ddb14 |
+| expires    | 2015-06-07T05:32:00Z             |
+| id         | 19213b2d320c4c209b04b2543f412564 |
+| project_id | 7460bfbafaba45cdac98542810a92ac9 |
+| user_id    | 859115906b1c429181dee2de5729478b |
 +------------+----------------------------------+
 
 $ openstack --os-auth-url http://192.168.0.200:35357 --os-project-domain-id default --os-user-domain-id default  --os-project-name admin --os-username admin --os-auth-type password token issue
 +------------+----------------------------------+
 | Field      | Value                            |
 +------------+----------------------------------+
-| expires    | 2015-05-23T10:03:12.470182Z      |
-| id         | 44e258659e6046dead9e9c8790356baf |
-| project_id | f5d9444d84ff4245ae556f3c174a0e32 |
-| user_id    | f0f8cdd96ed5412f9aacc9c75d6ddb14 |
+| expires    | 2015-06-07T05:32:19.038924Z      |
+| id         | 842183196d5f496291a9ddd9fc8ee4f5 |
+| project_id | 7460bfbafaba45cdac98542810a92ac9 |
+| user_id    | 859115906b1c429181dee2de5729478b |
 +------------+----------------------------------+
 
 $ vi ~/admin-openrc.sh
@@ -392,17 +393,17 @@ $ openstack token issue
 +------------+----------------------------------+
 | Field      | Value                            |
 +------------+----------------------------------+
-| expires    | 2015-05-23T10:05:57.524787Z      |
-| id         | 69996c9801824d0f8931118db76c110a |
-| project_id | f5d9444d84ff4245ae556f3c174a0e32 |
-| user_id    | f0f8cdd96ed5412f9aacc9c75d6ddb14 |
+| expires    | 2015-06-07T05:33:16.984394Z      |
+| id         | a03550196ede496c9b8dd3ef8325ac64 |
+| project_id | 7460bfbafaba45cdac98542810a92ac9 |
+| user_id    | 859115906b1c429181dee2de5729478b |
 +------------+----------------------------------+
 ```
 
 ### Glance
 DB設定
 ```
-$ sudo mysql -u root
+$ sudo mysql -u root -ppassword
 MariaDB [(none)]> CREATE DATABASE glance;
 MariaDB [(none)]> GRANT ALL PRIVILEGES ON glance.* TO 'glance'@'%' IDENTIFIED BY 'password';
 MariaDB [(none)]> FLUSH PRIVILEGES;
@@ -421,7 +422,7 @@ Repeat User Password: password
 +----------+----------------------------------+
 | email    | None                             |
 | enabled  | True                             |
-| id       | 84c7d045ed1c4b61a41982de3755457e |
+| id       | 011ef396d0184fd1ac9d7a2f99294b06 |
 | name     | glance                           |
 | username | glance                           |
 +----------+----------------------------------+
@@ -432,7 +433,7 @@ $ openstack role add --project service --user glance admin
 +-------+----------------------------------+
 | Field | Value                            |
 +-------+----------------------------------+
-| id    | 0ba0d34bfa5647ff84835d3a52928b8b |
+| id    | 167be3dc6eeb468a986f701f6c9986c6 |
 | name  | admin                            |
 +-------+----------------------------------+
 ---
@@ -444,7 +445,7 @@ $ openstack service create --name glance --description "OpenStack Image service"
 +-------------+----------------------------------+
 | description | OpenStack Image service          |
 | enabled     | True                             |
-| id          | a6e23791eb2e4486aa34603dda5dbce1 |
+| id          | 61351360283946af93d366df1a3b46ed |
 | name        | glance                           |
 | type        | image                            |
 +-------------+----------------------------------+
@@ -456,11 +457,11 @@ $ openstack endpoint create  --publicurl http://192.168.0.200:9292  --internalur
 | Field        | Value                            |
 +--------------+----------------------------------+
 | adminurl     | http://192.168.0.200:9292        |
-| id           | a33b003e9fe54d61a9d24e9fe1533cfd |
+| id           | 44019a21a38f44d3a9e24244c33aa30b |
 | internalurl  | http://192.168.0.200:9292        |
 | publicurl    | http://192.168.0.200:9292        |
 | region       | RegionOne                        |
-| service_id   | a6e23791eb2e4486aa34603dda5dbce1 |
+| service_id   | 61351360283946af93d366df1a3b46ed |
 | service_name | glance                           |
 | service_type | image                            |
 +--------------+----------------------------------+
@@ -545,10 +546,10 @@ OSイメージインポート
 ```
 $ echo "export OS_IMAGE_API_VERSION=2" | tee -a ~/admin-openrc.sh ~/demo-openrc.sh
 $ source ~/admin-openrc.sh
-$ sudo wget -P /usr/local/src  http://cloud-images.ubuntu.com/releases/15.04/release/ubuntu-15.04-server-cloudimg-amd64-disk1.img
+$ sudo wget -P /usr/local/src  http://cloud-images.ubuntu.com/releases/14.04/release/ubuntu-14.04-server-cloudimg-amd64-disk1.img
 
-$ glance image-create --name "Ubuntu15.04" --file /usr/local/src/ubuntu-15.04-server-cloudimg-amd64-disk1.img \
-  --disk-format qcow2 --container-format bare --visibility public --progress
+$ glance image-create --name "Ubuntu14.04.2" --file /usr/local/src/ubuntu-14.04-server-cloudimg-amd64-disk1.img
+ --disk-format qcow2 --container-format bare --visibility public --progress
 ---
 +------------------+--------------------------------------+
 | Property         | Value                                |
@@ -585,7 +586,7 @@ $ glance image-list
 ### nova
 DB設定
 ```
-$ sudo mysql
+$ mysql -uroot -ppassword
 MariaDB [(none)]> CREATE DATABASE nova;
 MariaDB [(none)]> GRANT ALL PRIVILEGES ON nova.* TO 'nova'@'%' IDENTIFIED BY 'password';
 MariaDB [(none)]> FLUSH PRIVILEGES;
@@ -603,7 +604,7 @@ Repeat User Password:
 +----------+----------------------------------+
 | email    | None                             |
 | enabled  | True                             |
-| id       | 48f177f2dbc24eeab5b0ea1c45d06acf |
+| id       | 9b670915247e458aba7d961f26a75250 |
 | name     | nova                             |
 | username | nova                             |
 +----------+----------------------------------+
@@ -613,7 +614,7 @@ $ openstack role add --project service --user nova admin
 +-------+----------------------------------+
 | Field | Value                            |
 +-------+----------------------------------+
-| id    | 0ba0d34bfa5647ff84835d3a52928b8b |
+| id    | 167be3dc6eeb468a986f701f6c9986c6 |
 | name  | admin                            |
 +-------+----------------------------------+
 
@@ -624,7 +625,7 @@ $ openstack service create --name nova --description "OpenStack Compute" compute
 +-------------+----------------------------------+
 | description | OpenStack Compute                |
 | enabled     | True                             |
-| id          | 0f9a6d5aaef0429ba38d3aa601f26f35 |
+| id          | d7dd027e347c46939546a260ad2548d1 |
 | name        | nova                             |
 | type        | compute                          |
 +-------------+----------------------------------+
@@ -636,11 +637,11 @@ $ openstack endpoint create --publicurl http://192.168.0.200:8774/v2/%\(tenant_i
 | Field        | Value                                      |
 +--------------+--------------------------------------------+
 | adminurl     | http://192.168.0.200:8774/v2/%(tenant_id)s |
-| id           | 882d73a5c94c4a59bd26ad43838442eb           |
+| id           | 27c2b31a26fb42e7b197b89938c88eb4           |
 | internalurl  | http://192.168.0.200:8774/v2/%(tenant_id)s |
 | publicurl    | http://192.168.0.200:8774/v2/%(tenant_id)s |
 | region       | RegionOne                                  |
-| service_id   | 0f9a6d5aaef0429ba38d3aa601f26f35           |
+| service_id   | d7dd027e347c46939546a260ad2548d1           |
 | service_name | nova                                       |
 | service_type | compute                                    |
 +--------------+--------------------------------------------+
@@ -665,11 +666,11 @@ my_ip = 192.168.0.200
 vncserver_listen = 192.168.0.200
 vncserver_proxyclient_address = 192.168.0.200
 vnc_enabled = True
-novncproxy_base_url = http://controller:6080/vnc_auto.html
-...
+novncproxy_base_url = http://192.168.0.200:6080/vnc_auto.html
+
 [database]
 connection = mysql://nova:password@192.168.0.200/nova
-...
+
 [oslo_messaging_rabbit]
 rabbit_host = 192.168.0.200
 rabbit_userid = openstack
@@ -720,7 +721,6 @@ $ sudo vi /etc/nova/nova-compute.conf
 virt_type = kvm
 ---
 $ sudo service nova-compute restart
-$ sudo rm -f /var/lib/nova/nova.sqlite
 ```
 
 nova確認
@@ -732,48 +732,22 @@ $ nova service-list
 +----+------------------+-----------+----------+---------+-------+----------------------------+-----------------+
 | Id | Binary           | Host      | Zone     | Status  | State | Updated_at                 | Disabled Reason |
 +----+------------------+-----------+----------+---------+-------+----------------------------+-----------------+
-| 1  | nova-cert        | ryunosuke | internal | enabled | up    | 2015-05-31T09:18:44.000000 | -               |
-| 2  | nova-conductor   | ryunosuke | internal | enabled | up    | 2015-05-31T09:18:44.000000 | -               |
-| 4  | nova-consoleauth | ryunosuke | internal | enabled | up    | 2015-05-31T09:18:35.000000 | -               |
-| 5  | nova-scheduler   | ryunosuke | internal | enabled | up    | 2015-05-31T09:18:36.000000 | -               |
-| 6  | nova-compute     | ryunosuke | nova     | enabled | up    | 2015-05-31T09:18:44.000000 | -               |
+| 1  | nova-cert        | ryunosuke | internal | enabled | up    | 2015-06-07T05:05:10.000000 | -               |
+| 2  | nova-conductor   | ryunosuke | internal | enabled | up    | 2015-06-07T05:05:11.000000 | -               |
+| 3  | nova-consoleauth | ryunosuke | internal | enabled | up    | 2015-06-07T05:05:11.000000 | -               |
+| 4  | nova-scheduler   | ryunosuke | internal | enabled | up    | 2015-06-07T05:05:02.000000 | -               |
+| 5  | nova-compute     | ryunosuke | nova     | enabled | up    | 2015-06-07T05:05:10.000000 | -               |
 +----+------------------+-----------+----------+---------+-------+----------------------------+-----------------+
+---
 
 $ nova endpoints
-WARNING: nova has no endpoint in ! Available endpoints for this service:
-+-----------+---------------------------------------------------------------+
-| nova      | Value                                                         |
-+-----------+---------------------------------------------------------------+
-| id        | 48ff51e0d9c0482f9d3dd7ea06bf7ff4                              |
-| interface | public                                                        |
-| region    | RegionOne                                                     |
-| region_id | RegionOne                                                     |
-| url       | http://192.168.0.200:8774/v2/f5d9444d84ff4245ae556f3c174a0e32 |
-+-----------+---------------------------------------------------------------+
-+-----------+---------------------------------------------------------------+
-| nova      | Value                                                         |
-+-----------+---------------------------------------------------------------+
-| id        | 9a22c09d41694ddf93b5a47dd070ca5f                              |
-| interface | internal                                                      |
-| region    | RegionOne                                                     |
-| region_id | RegionOne                                                     |
-| url       | http://192.168.0.200:8774/v2/f5d9444d84ff4245ae556f3c174a0e32 |
-+-----------+---------------------------------------------------------------+
-+-----------+---------------------------------------------------------------+
-| nova      | Value                                                         |
-+-----------+---------------------------------------------------------------+
-| id        | 9a437880558e458c881c1be558f086bc                              |
-| interface | admin                                                         |
-| region    | RegionOne                                                     |
-| region_id | RegionOne                                                     |
-| url       | http://192.168.0.200:8774/v2/f5d9444d84ff4245ae556f3c174a0e32 |
-+-----------+---------------------------------------------------------------+
+---
 WARNING: keystone has no endpoint in ! Available endpoints for this service:
 +-----------+----------------------------------+
 | keystone  | Value                            |
 +-----------+----------------------------------+
-| id        | 41535177fe5142269f3823f95daad943 |
-| interface | public                           |
+| id        | 54c705b71eec4c0794c402a0a53a16ae |
+| interface | internal                         |
 | region    | RegionOne                        |
 | region_id | RegionOne                        |
 | url       | http://192.168.0.200:5000/v2.0   |
@@ -781,7 +755,7 @@ WARNING: keystone has no endpoint in ! Available endpoints for this service:
 +-----------+----------------------------------+
 | keystone  | Value                            |
 +-----------+----------------------------------+
-| id        | b4ff53b968784880a78ed0bcd596e39b |
+| id        | c437777bc6524b05a68292396f5d4f72 |
 | interface | admin                            |
 | region    | RegionOne                        |
 | region_id | RegionOne                        |
@@ -790,8 +764,8 @@ WARNING: keystone has no endpoint in ! Available endpoints for this service:
 +-----------+----------------------------------+
 | keystone  | Value                            |
 +-----------+----------------------------------+
-| id        | ee8cd0689efb4fd586c4755ad4196c26 |
-| interface | internal                         |
+| id        | d75dc09e19cf4767bba2de666a249152 |
+| interface | public                           |
 | region    | RegionOne                        |
 | region_id | RegionOne                        |
 | url       | http://192.168.0.200:5000/v2.0   |
@@ -800,7 +774,7 @@ WARNING: glance has no endpoint in ! Available endpoints for this service:
 +-----------+----------------------------------+
 | glance    | Value                            |
 +-----------+----------------------------------+
-| id        | 6de69c15bc7a4c3cbd04bd50f3b1f5a3 |
+| id        | 488218b4b7574b43b2b1be897e68900f |
 | interface | internal                         |
 | region    | RegionOne                        |
 | region_id | RegionOne                        |
@@ -809,8 +783,8 @@ WARNING: glance has no endpoint in ! Available endpoints for this service:
 +-----------+----------------------------------+
 | glance    | Value                            |
 +-----------+----------------------------------+
-| id        | 8c930277c819499ca0ca531d24294c27 |
-| interface | public                           |
+| id        | 52f0cb6391c8418a80b764b8d673261a |
+| interface | admin                            |
 | region    | RegionOne                        |
 | region_id | RegionOne                        |
 | url       | http://192.168.0.200:9292        |
@@ -818,12 +792,40 @@ WARNING: glance has no endpoint in ! Available endpoints for this service:
 +-----------+----------------------------------+
 | glance    | Value                            |
 +-----------+----------------------------------+
-| id        | ad6a48bfd42d4282af0cc35d46a13e9c |
-| interface | admin                            |
+| id        | 7b1c478a62d54bb59eb848fb8a477a01 |
+| interface | public                           |
 | region    | RegionOne                        |
 | region_id | RegionOne                        |
 | url       | http://192.168.0.200:9292        |
 +-----------+----------------------------------+
+WARNING: nova has no endpoint in ! Available endpoints for this service:
++-----------+---------------------------------------------------------------+
+| nova      | Value                                                         |
++-----------+---------------------------------------------------------------+
+| id        | 386c2d03bc154b07966746e6728200cc                              |
+| interface | internal                                                      |
+| region    | RegionOne                                                     |
+| region_id | RegionOne                                                     |
+| url       | http://192.168.0.200:8774/v2/7460bfbafaba45cdac98542810a92ac9 |
++-----------+---------------------------------------------------------------+
++-----------+---------------------------------------------------------------+
+| nova      | Value                                                         |
++-----------+---------------------------------------------------------------+
+| id        | 4a04dd033f33416bbda6d3c08a6db7f4                              |
+| interface | admin                                                         |
+| region    | RegionOne                                                     |
+| region_id | RegionOne                                                     |
+| url       | http://192.168.0.200:8774/v2/7460bfbafaba45cdac98542810a92ac9 |
++-----------+---------------------------------------------------------------+
++-----------+---------------------------------------------------------------+
+| nova      | Value                                                         |
++-----------+---------------------------------------------------------------+
+| id        | a4e658dcf99f4a8685b2470c87bafb4d                              |
+| interface | public                                                        |
+| region    | RegionOne                                                     |
+| region_id | RegionOne                                                     |
+| url       | http://192.168.0.200:8774/v2/7460bfbafaba45cdac98542810a92ac9 |
++-----------+---------------------------------------------------------------+
 ---
 
 glanceイメージが表示されればOK.
@@ -839,7 +841,7 @@ $ nova image-list
 ### neutron
 DB設定
 ```
-$ sudo mysql
+$ mysql -uroot -ppassword
 MariaDB [(none)]> CREATE DATABASE neutron;
 MariaDB [(none)]> GRANT ALL PRIVILEGES ON neutron.* TO 'neutron'@'%' IDENTIFIED BY 'password';
 MariaDB [(none)]> FLUSH PRIVILEGES;
@@ -857,7 +859,7 @@ Repeat User Password:
 +----------+----------------------------------+
 | email    | None                             |
 | enabled  | True                             |
-| id       | 6e088b62789045528f926cf0cc10108b |
+| id       | e1b943661dbe4ea881509271f5bffc8a |
 | name     | neutron                          |
 | username | neutron                          |
 +----------+----------------------------------+
@@ -866,7 +868,7 @@ $ openstack role add --project service --user neutron admin
 +-------+----------------------------------+
 | Field | Value                            |
 +-------+----------------------------------+
-| id    | 0ba0d34bfa5647ff84835d3a52928b8b |
+| id    | 167be3dc6eeb468a986f701f6c9986c6 |
 | name  | admin                            |
 +-------+----------------------------------+
 
@@ -876,25 +878,27 @@ $ openstack service create --name neutron --description "OpenStack Networking" n
 +-------------+----------------------------------+
 | description | OpenStack Networking             |
 | enabled     | True                             |
-| id          | ef37327d99c44bf58115d167d31febb2 |
+| id          | 8067ae01260c4f849b8101acbf474f89 |
 | name        | neutron                          |
 | type        | network                          |
 +-------------+----------------------------------+
 
 $ openstack endpoint create --publicurl http://192.168.0.200:9696 --adminurl http://192.168.0.200:9696 --internalurl http://192.168.0.200:9696 --region RegionOne network
- RegionOne network
+---
 +--------------+----------------------------------+
 | Field        | Value                            |
 +--------------+----------------------------------+
 | adminurl     | http://192.168.0.200:9696        |
-| id           | bfb8a390d0b64e688acbbca83541a7b5 |
+| id           | 200a9388f6b746e3b7fa0ab198707b43 |
 | internalurl  | http://192.168.0.200:9696        |
 | publicurl    | http://192.168.0.200:9696        |
 | region       | RegionOne                        |
-| service_id   | ef37327d99c44bf58115d167d31febb2 |
+| service_id   | 8067ae01260c4f849b8101acbf474f89 |
 | service_name | neutron                          |
 | service_type | network                          |
 +--------------+----------------------------------+
+---
+
 ```
 
 neutronパッケージ
@@ -971,7 +975,7 @@ firewall_driver = neutron.agent.linux.iptables_firewall.OVSHybridIptablesFirewal
 ---
 ```
 
-nova設定変更
+nova設定追加
 ```
 $ sudo vi /etc/nova/nova.conf
 ---
@@ -1000,7 +1004,7 @@ $ sudo su -s /bin/bash -c "neutron-db-manage --config-file /etc/neutron/neutron.
 neutron, nova再起動
 ```
 $ sudo service nova-api restart
-$ sudo service neutron-server start
+$ sudo service neutron-server restart
 ```
 
 反映確認
@@ -1103,7 +1107,6 @@ dhcp-option-force=26,1454
 　そのためMTU値を低く設定する.
 
 $ sudo pkill dnsmasq
-
 $ sudo vi /etc/neutron/metadata_agent.ini
 ---
 [DEFAULT]
