@@ -18,6 +18,9 @@ $ BAK=/root/MAINTENANCE/`date "+%Y%m%d"`/bak
 ```
 
 ### Basicインストール
+CPU GOVERNER変更  
+[Performanceへ変更](https://github.com/ogalush/documents/blob/master/setCPUPerformance.md)  
+
 ntpインストール
 ```
 $ sudo apt-get -y install ntp
