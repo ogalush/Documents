@@ -21,7 +21,7 @@ $ grep GOVERNOR /etc/init.d/cpufrequtils
 $ sudo service cpufrequtils restart
 $ cat /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor
 → performanceとなっていればOK.
-
+$ sudo shutdown -r now
 $ cat /proc/cpuinfo
 ---
 ...
