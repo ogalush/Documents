@@ -1,6 +1,6 @@
 <!--
 ************************************************************
-OpenStack JunoをUbuntu15.04(x86_64)へインストールする手順
+OpenStack KiloをUbuntu14.04(x86_64)へインストールする手順
 参照元: http://docs.openstack.org/kilo/install-guide/install/apt/content/  
 Copyright (c) Takehiko OGASAWARA 2015 All Rights Reserved.
 ************************************************************
@@ -30,7 +30,7 @@ OpenStackパッケージ
 $ sudo apt-get -y install ubuntu-cloud-keyring
 $ echo 'deb http://ubuntu-cloud.archive.canonical.com/ubuntu trusty-updates/kilo main' | sudo tee /etc/apt/sources.list.d/cloudarchive-kilo.list
 $ cat /etc/apt/sources.list.d/cloudarchive-kilo.list
-$ sudo apt-get -y update && sudo apt-get -y dist-upgrade
+$ sudo apt-get -y update && sudo apt-get -y update && sudo apt-get -y dist-upgrade
 ```
 
 MariaDB(MySQL)
