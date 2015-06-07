@@ -551,26 +551,25 @@ $ echo "export OS_IMAGE_API_VERSION=2" | tee -a ~/admin-openrc.sh ~/demo-openrc.
 $ source ~/admin-openrc.sh
 $ sudo wget -P /usr/local/src  http://cloud-images.ubuntu.com/releases/14.04/release/ubuntu-14.04-server-cloudimg-amd64-disk1.img
 
-$ glance image-create --name "Ubuntu14.04.2" --file /usr/local/src/ubuntu-14.04-server-cloudimg-amd64-disk1.img
- --disk-format qcow2 --container-format bare --visibility public --progress
+$ glance image-create --name "Ubuntu14.04.2" --file /usr/local/src/ubuntu-14.04-server-cloudimg-amd64-disk1.img --disk-format qcow2 --container-format bare --visibility public --progress
 ---
 +------------------+--------------------------------------+
 | Property         | Value                                |
 +------------------+--------------------------------------+
-| checksum         | c5229787d24e3478781f589468e376fa     |
+| checksum         | 779856b640b58ad65e4f76d9e2abdc5d     |
 | container_format | bare                                 |
-| created_at       | 2015-05-31T08:39:19Z                 |
+| created_at       | 2015-06-07T05:54:53Z                 |
 | disk_format      | qcow2                                |
-| id               | 1b699de4-b435-4922-8df8-5adeddef0efb |
+| id               | 41e5017d-89a2-4c6c-939c-238f55828081 |
 | min_disk         | 0                                    |
 | min_ram          | 0                                    |
-| name             | Ubuntu15.04                          |
-| owner            | f5d9444d84ff4245ae556f3c174a0e32     |
+| name             | Ubuntu14.04.2                        |
+| owner            | 7460bfbafaba45cdac98542810a92ac9     |
 | protected        | False                                |
-| size             | 284819968                            |
+| size             | 257229312                            |
 | status           | active                               |
 | tags             | []                                   |
-| updated_at       | 2015-05-31T08:39:20Z                 |
+| updated_at       | 2015-06-07T05:54:54Z                 |
 | virtual_size     | None                                 |
 | visibility       | public                               |
 +------------------+--------------------------------------+
@@ -578,11 +577,11 @@ $ glance image-create --name "Ubuntu14.04.2" --file /usr/local/src/ubuntu-14.04-
   
 $ glance image-list
 ---
-+--------------------------------------+-------------+
-| ID                                   | Name        |
-+--------------------------------------+-------------+
-| 1b699de4-b435-4922-8df8-5adeddef0efb | Ubuntu15.04 |
-+--------------------------------------+-------------+
++--------------------------------------+---------------+
+| ID                                   | Name          |
++--------------------------------------+---------------+
+| 41e5017d-89a2-4c6c-939c-238f55828081 | Ubuntu14.04.2 |
++--------------------------------------+---------------+
 ---
 ```
 
@@ -718,7 +717,7 @@ $ sudo rm -f /var/lib/nova/nova.sqlite
 Hypervisor設定
 ```
 $ sudo apt-get -y install nova-compute sysfsutils
-$ sudo vi /etc/nova/nova-compute.conf
+$ sudo vi /etc/nova/neutron.conf
 ---
 [libvirt]
 virt_type = kvm
@@ -833,11 +832,11 @@ WARNING: nova has no endpoint in ! Available endpoints for this service:
 
 glanceイメージが表示されればOK.
 $ nova image-list
-+--------------------------------------+-------------+--------+--------+
-| ID                                   | Name        | Status | Server |
-+--------------------------------------+-------------+--------+--------+
-| 1b699de4-b435-4922-8df8-5adeddef0efb | Ubuntu15.04 | ACTIVE |        |
-+--------------------------------------+-------------+--------+--------+
++--------------------------------------+---------------+--------+--------+
+| ID                                   | Name          | Status | Server |
++--------------------------------------+---------------+--------+--------+
+| 41e5017d-89a2-4c6c-939c-238f55828081 | Ubuntu14.04.2 | ACTIVE |        |
++--------------------------------------+---------------+--------+--------+
 ```
 
 
@@ -1049,6 +1048,8 @@ $ sudo vi /etc/sysctl.conf
 net.ipv4.ip_forward=1
 net.ipv4.conf.all.rp_filter=0
 net.ipv4.conf.default.rp_filter=0
+net.bridge.bridge-nf-call-iptables=1
+net.bridge.bridge-nf-call-ip6tables=1
 ---
 $ sudo sysctl -p
 ```
@@ -1138,172 +1139,11 @@ metadata_proxy_shared_secret = password
 $ sudo service nova-api restart
 ```
 
-ovs設定
+NIC設定
 ```
-$ sudo service openvswitch-switch restart
-$ sudo ovs-vsctl add-br br-ex
-$ sudo ovs-vsctl add-port br-ex p1p1
-$ sudo ethtool -K p1p1 gro off
-```
-###ここまで
-neutron再起動
-```
-$ sudo service neutron-plugin-openvswitch-agent restart
-$ sudo service neutron-l3-agent restart
-$ sudo service neutron-dhcp-agent restart
-$ sudo service neutron-metadata-agent restart
-```
-
-確認
-```
-$ neutron agent-list
-+--------------------------------------+--------------------+-----------+-------+----------------+---------------------------+
-| id                                   | agent_type         | host      | alive | admin_state_up | binary                    |
-+--------------------------------------+--------------------+-----------+-------+----------------+---------------------------+
-| 00326010-3775-47cb-ba35-d53d74d5135d | DHCP agent         | ryunosuke | :-)   | True           | neutron-dhcp-agent        |
-| 28135e73-d56e-4e82-a1ce-02ad37e4b2d8 | Metadata agent     | ryunosuke | :-)   | True           | neutron-metadata-agent    |
-| 61e5dfcd-cf6f-4f8e-880f-60cdb32aff9e | L3 agent           | ryunosuke | :-)   | True           | neutron-l3-agent          |
-| b63336e0-d292-433e-b8da-1688efef7a07 | Open vSwitch agent | ryunosuke | :-)   | True           | neutron-openvswitch-agent |
-+--------------------------------------+--------------------+-----------+-------+----------------+---------------------------+
-```
-
-### 仮装ネットワーク作成
-#### 外部ネットワーク
-マニュアルにSource the admin credentials to gain access to admin-only CLI commands:.  
-と記載があるので、admin権限で作成する.  
-```
-$ keystone tenant-list
-+----------------------------------+---------+---------+
-|                id                |   name  | enabled |
-+----------------------------------+---------+---------+
-| 61dc76652fa14c58a4a72e0e9fad93e5 |  admin  |   True  |
-~~~これを使用する.
-| 3397a7d0cf9047f1b7c3a0ae149f5a3d |   demo  |   True  |
-| 302f366fd65440eab9406a8f20317a93 | service |   True  |
-+----------------------------------+---------+---------+
-
-$ neutron net-create ext-net --tenant-id 61dc76652fa14c58a4a72e0e9fad93e5 --router:external True --provider:physical_network external --provider:network_type flat
-
-Created a new network:
-+---------------------------+--------------------------------------+
-| Field                     | Value                                |
-+---------------------------+--------------------------------------+
-| admin_state_up            | True                                 |
-| id                        | b46155c1-19f7-4bc5-992f-d910947d89bc |
-| name                      | ext-net                              |
-| provider:network_type     | flat                                 |
-| provider:physical_network | external                             |
-| provider:segmentation_id  |                                      |
-| router:external           | True                                 |
-| shared                    | False                                |
-| status                    | ACTIVE                               |
-| subnets                   |                                      |
-| tenant_id                 | 61dc76652fa14c58a4a72e0e9fad93e5     |
-+---------------------------+--------------------------------------+
-
-$ neutron subnet-create ext-net --name ext-subnet --tenant-id 61dc76652fa14c58a4a72e0e9fad93e5 --allocation-pool start=192.168.0.100,end=192.168.0.150 --disable-dhcp --gateway 192.168.0.254 192.168.0.0/24
-
-Created a new subnet:
-+-------------------+----------------------------------------------------+
-| Field             | Value                                              |
-+-------------------+----------------------------------------------------+
-| allocation_pools  | {"start": "192.168.0.100", "end": "192.168.0.150"} |
-| cidr              | 192.168.0.0/24                                     |
-| dns_nameservers   |                                                    |
-| enable_dhcp       | False                                              |
-| gateway_ip        | 192.168.0.254                                      |
-| host_routes       |                                                    |
-| id                | be761def-2eb4-47c8-9a93-a82e48724000               |
-| ip_version        | 4                                                  |
-| ipv6_address_mode |                                                    |
-| ipv6_ra_mode      |                                                    |
-| name              | ext-subnet                                         |
-| network_id        | b46155c1-19f7-4bc5-992f-d910947d89bc               |
-| tenant_id         | 61dc76652fa14c58a4a72e0e9fad93e5                   |
-+-------------------+----------------------------------------------------+
-```
-
-#### 内部ネットワーク(テナント用)
-Source the demo credentials to gain access to user-only CLI commands:  
-とあるので、demo向けに作成する.  
-```
-$ keystone tenant-list
-+----------------------------------+---------+---------+
-|                id                |   name  | enabled |
-+----------------------------------+---------+---------+
-| 61dc76652fa14c58a4a72e0e9fad93e5 |  admin  |   True  |
-| 3397a7d0cf9047f1b7c3a0ae149f5a3d |   demo  |   True  |
-~~~これを使用する.
-| 302f366fd65440eab9406a8f20317a93 | service |   True  |
-+----------------------------------+---------+---------+
-
-$ neutron net-create --tenant-id 3397a7d0cf9047f1b7c3a0ae149f5a3d  demo-net
-
-Created a new network:
-+---------------------------+--------------------------------------+
-| Field                     | Value                                |
-+---------------------------+--------------------------------------+
-| admin_state_up            | True                                 |
-| id                        | 20d0e6b7-1906-4134-a3c5-4c6adfc2e186 |
-| name                      | demo-net                             |
-| provider:network_type     | gre                                  |
-| provider:physical_network |                                      |
-| provider:segmentation_id  | 1                                    |
-| router:external           | False                                |
-| shared                    | False                                |
-| status                    | ACTIVE                               |
-| subnets                   |                                      |
-| tenant_id                 | 3397a7d0cf9047f1b7c3a0ae149f5a3d     |
-+---------------------------+--------------------------------------+
-
-
-$ neutron subnet-create demo-net --name demo-subnet --tenant-id 3397a7d0cf9047f1b7c3a0ae149f5a3d --gateway 10.0.0.1 10.0.0.0/24  --dns-nameservers list=true 192.168.0.254
-
-Created a new subnet:
-+-------------------+--------------------------------------------+
-| Field             | Value                                      |
-+-------------------+--------------------------------------------+
-| allocation_pools  | {"start": "10.0.0.2", "end": "10.0.0.254"} |
-| cidr              | 10.0.0.0/24                                |
-| dns_nameservers   | 192.168.0.254                              |
-| enable_dhcp       | True                                       |
-| gateway_ip        | 10.0.0.1                                   |
-| host_routes       |                                            |
-| id                | e6e4c91a-ac1e-4f49-963c-67059d6ddb0f       |
-| ip_version        | 4                                          |
-| ipv6_address_mode |                                            |
-| ipv6_ra_mode      |                                            |
-| name              | demo-subnet                                |
-| network_id        | 20d0e6b7-1906-4134-a3c5-4c6adfc2e186       |
-| tenant_id         | 3397a7d0cf9047f1b7c3a0ae149f5a3d           |
-+-------------------+--------------------------------------------+
-```
-
-#### 仮想ルータ
-```
-$ neutron router-create --tenant-id 3397a7d0cf9047f1b7c3a0ae149f5a3d demo-router
-
-Created a new router:
-+-----------------------+--------------------------------------+
-| Field                 | Value                                |
-+-----------------------+--------------------------------------+
-| admin_state_up        | True                                 |
-| distributed           | False                                |
-| external_gateway_info |                                      |
-| ha                    | False                                |
-| id                    | 4c8dfa17-9399-4c8e-8875-7e175737ca49 |
-| name                  | demo-router                          |
-| routes                |                                      |
-| status                | ACTIVE                               |
-| tenant_id             | 3397a7d0cf9047f1b7c3a0ae149f5a3d     |
-+-----------------------+--------------------------------------+
-
-$ neutron router-interface-add demo-router demo-subnet
-$ neutron router-gateway-set demo-router ext-net
-
-$ sudo cp /etc/network/interfaces $BAK
 $ sudo vi /etc/network/interfaces
 ---
+# The loopback network interface
 auto lo
 iface lo inet loopback
 
@@ -1322,27 +1162,188 @@ iface br-ex inet static
   gateway 192.168.0.254
   dns-nameservers 192.168.0.254
 ---
-$ sudo reboot
-→ 再起動後、sshログインできればOK.
+```
+
+ovs設定
+```
+ssh経由での接続が切断されてしまうので、shutdownコマンドを入れておく.
+
+$ sudo service openvswitch-switch restart
+$ sudo ovs-vsctl add-br br-ex; sudo ovs-vsctl add-port br-ex p1p1; sudo ethtool -K p1p1 gro off; sudo shutdown -r now
+```
+
+neutron再起動
+```
+$ sudo service neutron-plugin-openvswitch-agent restart
+$ sudo service neutron-l3-agent restart
+$ sudo service neutron-dhcp-agent restart
+$ sudo service neutron-metadata-agent restart
+```
+
+確認
+```
+$ neutron agent-list
++--------------------------------------+--------------------+-----------+-------+----------------+---------------------------+
+| id                                   | agent_type         | host      | alive | admin_state_up | binary                    |
++--------------------------------------+--------------------+-----------+-------+----------------+---------------------------+
+| 64b348ca-4c6d-4ae7-9831-5cf80b6b2e24 | Metadata agent     | ryunosuke | :-)   | True           | neutron-metadata-agent    |
+| 82fbf144-6806-467a-b53a-dff6ad71dac8 | Open vSwitch agent | ryunosuke | :-)   | True           | neutron-openvswitch-agent |
+| c5bd9b07-87e5-4877-aa6d-56ad61d5c8ac | DHCP agent         | ryunosuke | :-)   | True           | neutron-dhcp-agent        |
+| dfc034fb-b5e7-42eb-a08e-788c89219eb0 | L3 agent           | ryunosuke | :-)   | True           | neutron-l3-agent          |
++--------------------------------------+--------------------+-----------+-------+----------------+---------------------------+
+```
+
+### 仮装ネットワーク作成
+#### 外部ネットワーク
+```
+$  source ~/admin-openrc.sh
+$ neutron net-create ext-net --router:external --provider:physical_network external --provider:network_type flat
+---
+Created a new network:
++---------------------------+--------------------------------------+
+| Field                     | Value                                |
++---------------------------+--------------------------------------+
+| admin_state_up            | True                                 |
+| id                        | eeaab19f-2fc6-4a3b-a745-bb2fcd4923e6 |
+| mtu                       | 0                                    |
+| name                      | ext-net                              |
+| provider:network_type     | flat                                 |
+| provider:physical_network | external                             |
+| provider:segmentation_id  |                                      |
+| router:external           | True                                 |
+| shared                    | False                                |
+| status                    | ACTIVE                               |
+| subnets                   |                                      |
+| tenant_id                 | 7460bfbafaba45cdac98542810a92ac9     |
++---------------------------+--------------------------------------+
+---
+
+$ neutron subnet-create ext-net 192.168.0.0/24 --name ext-subnet --allocation-pool start=192.168.0.100,end=192.168.0.150 --disable-dhcp --gateway 192.168.0.254
+---
+Created a new subnet:
++-------------------+----------------------------------------------------+
+| Field             | Value                                              |
++-------------------+----------------------------------------------------+
+| allocation_pools  | {"start": "192.168.0.100", "end": "192.168.0.150"} |
+| cidr              | 192.168.0.0/24                                     |
+| dns_nameservers   |                                                    |
+| enable_dhcp       | False                                              |
+| gateway_ip        | 192.168.0.254                                      |
+| host_routes       |                                                    |
+| id                | a7e78785-7600-4200-b993-7eb3af222990               |
+| ip_version        | 4                                                  |
+| ipv6_address_mode |                                                    |
+| ipv6_ra_mode      |                                                    |
+| name              | ext-subnet                                         |
+| network_id        | eeaab19f-2fc6-4a3b-a745-bb2fcd4923e6               |
+| subnetpool_id     |                                                    |
+| tenant_id         | 7460bfbafaba45cdac98542810a92ac9                   |
++-------------------+----------------------------------------------------+
+---
+```
+
+#### 内部ネットワーク(テナント用)
+```
+$ source ~/demo-openrc.sh
+$ neutron net-create demo-net
+---
+Created a new network:
++-----------------+--------------------------------------+
+| Field           | Value                                |
++-----------------+--------------------------------------+
+| admin_state_up  | True                                 |
+| id              | d8f597fe-5664-4c7f-9078-11c26877ee81 |
+| mtu             | 0                                    |
+| name            | demo-net                             |
+| router:external | False                                |
+| shared          | False                                |
+| status          | ACTIVE                               |
+| subnets         |                                      |
+| tenant_id       | 5cc062a3bb494d96ba860b7c6c319f34     |
++-----------------+--------------------------------------+
+---
+
+$ neutron subnet-create demo-net 10.0.0.0/24 --name demo-subnet --gateway 10.0.0.1 --dns-nameservers list=true 192.168.0.254
+---
+Created a new subnet:
++-------------------+--------------------------------------------+
+| Field             | Value                                      |
++-------------------+--------------------------------------------+
+| allocation_pools  | {"start": "10.0.0.2", "end": "10.0.0.254"} |
+| cidr              | 10.0.0.0/24                                |
+| dns_nameservers   | 192.168.0.254                              |
+| enable_dhcp       | True                                       |
+| gateway_ip        | 10.0.0.1                                   |
+| host_routes       |                                            |
+| id                | 17b1dcb7-fa4c-4ebd-8cd2-863cd9fc5613       |
+| ip_version        | 4                                          |
+| ipv6_address_mode |                                            |
+| ipv6_ra_mode      |                                            |
+| name              | demo-subnet                                |
+| network_id        | d8f597fe-5664-4c7f-9078-11c26877ee81       |
+| subnetpool_id     |                                            |
+| tenant_id         | 5cc062a3bb494d96ba860b7c6c319f34           |
++-------------------+--------------------------------------------+
+---
+```
+
+#### 仮想ルータ
+```
+$ neutron router-create demo-router
+---
+Created a new router:
++-----------------------+--------------------------------------+
+| Field                 | Value                                |
++-----------------------+--------------------------------------+
+| admin_state_up        | True                                 |
+| external_gateway_info |                                      |
+| id                    | cc603ad2-2b4a-40e1-9d95-f851cca9c79a |
+| name                  | demo-router                          |
+| routes                |                                      |
+| status                | ACTIVE                               |
+| tenant_id             | 5cc062a3bb494d96ba860b7c6c319f34     |
++-----------------------+--------------------------------------+
+---
+
+$ neutron router-interface-add demo-router demo-subnet
+---
+Added interface ba035f08-ecc4-4e4d-aaaf-b563ffa778ea to router demo-router.
+---
+
+$ neutron router-gateway-set demo-router ext-net
+---
+Set gateway for router demo-router
+---
 ```
 
 ### horizon
 horizon本体
 ```
-$ sudo apt-get -y install openstack-dashboard apache2 libapache2-mod-wsgi memcached python-memcache
+$ sudo apt-get -y install openstack-dashboard
+$ BAK=/root/MAINTENANCE/`date "+%Y%m%d"`/bak
+$ sudo cp -raf /etc/openstack-dashboard $BAK
+
 ```
 
 horizon設定
 ```
-$ sudo cp -raf /etc/openstack-dashboard $BAK
 $ sudo vi /etc/openstack-dashboard/local_settings.py 
 ---
 ...
 OPENSTACK_HOST = "192.168.0.200"
 ...
-ALLOWED_HOSTS = ['*']
+OPENSTACK_KEYSTONE_DEFAULT_ROLE = "user"
+...
+ALLOWED_HOSTS = '*'
 ...
 TIME_ZONE = "Asia/Tokyo"
+...
+CACHES = {
+   'default': {
+       'BACKEND': 'django.core.cache.backends.memcached.MemcachedCache',
+       'LOCATION': '127.0.0.1:11211',
+   }
+}
 ---
 ```
 
@@ -1352,5 +1353,250 @@ $ sudo service apache2 restart
 $ sudo service memcached restart
 ```
 
-ブラウザアクセス
-[horizon](http://192.168.0.200/horizon/)
+確認
+[horizon](http://192.168.0.200/horizon/)  
+  
+アクセスとセクリティから、以下の通信を許可する.  
+```
+・全てのICMP(送信)通信
+・全てのICMP(受信)通信
+・全てのTCP(送信)通信
+・全てのTCP(受信)通信
+・全てのUDP(送信)通信
+・全てのUDP(受信)通信
+```
+
+### 仮装ルータから仮装インスタンスへのアクセス
+```
+$ sudo ip netns exec qrouter-$(neutron router-list|awk '{print $2}' | grep -vP '^\s*$|id') ping 10.0.0.3
+PING 10.0.0.3 (10.0.0.3) 56(84) bytes of data.
+64 bytes from 10.0.0.3: icmp_seq=1 ttl=64 time=0.352 ms
+64 bytes from 10.0.0.3: icmp_seq=2 ttl=64 time=0.261 ms
+64 bytes from 10.0.0.3: icmp_seq=3 ttl=64 time=0.289 ms
+→ pingをsshへ変更すればアクセスOK.
+```
+
+### Cinder
+MySQL
+```
+$ mysql -u root -ppassword
+MariaDB [(none)]> CREATE DATABASE cinder;
+MariaDB [(none)]> GRANT ALL PRIVILEGES ON cinder.* TO 'cinder'@'%' IDENTIFIED BY 'password';
+MariaDB [(none)]> FLUSH PRIVILEGES;
+MariaDB [(none)]> ¥q
+```
+
+keystone設定
+```
+$ source ~/admin-openrc.sh
+$ openstack user create --password-prompt cinder
+---
+User Password:
+Repeat User Password:
++----------+----------------------------------+
+| Field    | Value                            |
++----------+----------------------------------+
+| email    | None                             |
+| enabled  | True                             |
+| id       | 22b09537b6e44f90b8eb45dd7c37ee66 |
+| name     | cinder                           |
+| username | cinder                           |
++----------+----------------------------------+
+---
+
+$ openstack role add --project service --user cinder admin
++-------+----------------------------------+
+| Field | Value                            |
++-------+----------------------------------+
+| id    | 167be3dc6eeb468a986f701f6c9986c6 |
+| name  | admin                            |
++-------+----------------------------------+
+
+$ openstack service create --name cinder --description "OpenStack Block Storage" volume
+---
++-------------+----------------------------------+
+| Field       | Value                            |
++-------------+----------------------------------+
+| description | OpenStack Block Storage          |
+| enabled     | True                             |
+| id          | ec51ae981393449eb3a5d4d2dad7f73a |
+| name        | cinder                           |
+| type        | volume                           |
++-------------+----------------------------------+
+---
+
+$ openstack service create --name cinderv2 --description "OpenStack Block Storage" volumev2
+---
++-------------+----------------------------------+
+| Field       | Value                            |
++-------------+----------------------------------+
+| description | OpenStack Block Storage          |
+| enabled     | True                             |
+| id          | f0f31654eb37457798ea9b1a093e0d35 |
+| name        | cinderv2                         |
+| type        | volumev2                         |
++-------------+----------------------------------+
+---
+
+$ openstack endpoint create --publicurl http://192.168.0.200:8776/v2/%\(tenant_id\)s --internalurl http://192.168.0.200:8776/v2/%\(tenant_id\)s --adminurl http://192.168.0.200:8776/v2/%\(tenant_id\)s --region RegionOne volume
+---
++--------------+--------------------------------------------+
+| Field        | Value                                      |
++--------------+--------------------------------------------+
+| adminurl     | http://192.168.0.200:8776/v2/%(tenant_id)s |
+| id           | a47eb5f284e243de96ed4185a2860c96           |
+| internalurl  | http://192.168.0.200:8776/v2/%(tenant_id)s |
+| publicurl    | http://192.168.0.200:8776/v2/%(tenant_id)s |
+| region       | RegionOne                                  |
+| service_id   | ec51ae981393449eb3a5d4d2dad7f73a           |
+| service_name | cinder                                     |
+| service_type | volume                                     |
++--------------+--------------------------------------------+
+---
+
+$ openstack endpoint create --publicurl http://192.168.0.200:8776/v2/%\(tenant_id\)s --internalurl http://192.168.0.200:8776/v2/%\(tenant_id\)s --adminurl http://192.168.0.200:8776/v2/%\(tenant_id\)s --region RegionOne volumev2
+---
++--------------+--------------------------------------------+
+| Field        | Value                                      |
++--------------+--------------------------------------------+
+| adminurl     | http://192.168.0.200:8776/v2/%(tenant_id)s |
+| id           | f7d8276ffd774306beab57e65ae92852           |
+| internalurl  | http://192.168.0.200:8776/v2/%(tenant_id)s |
+| publicurl    | http://192.168.0.200:8776/v2/%(tenant_id)s |
+| region       | RegionOne                                  |
+| service_id   | f0f31654eb37457798ea9b1a093e0d35           |
+| service_name | cinderv2                                   |
+| service_type | volumev2                                   |
++--------------+--------------------------------------------+
+---
+```
+
+Cinder設定
+```
+$ sudo apt-get -y install cinder-api cinder-scheduler python-cinderclient
+$ sudo cp -raf  /etc/cinder $BAK
+
+$ sudo vi /etc/cinder/cinder.conf
+---
+[DEFAULT]
+...
+rpc_backend = rabbit
+auth_strategy = keystone
+my_ip = 192.168.0.200
+
+...
+[database]
+connection = mysql://cinder:password@192.168.0.200/cinder
+ 
+[oslo_messaging_rabbit]
+rabbit_host = 192.168.0.200
+rabbit_userid = openstack
+rabbit_password = password
+
+[keystone_authtoken]
+auth_uri = http://192.168.0.200:5000
+auth_url = http://192.168.0.200:35357
+auth_plugin = password
+project_domain_id = default
+user_domain_id = default
+project_name = service
+username = cinder
+password = password
+
+[oslo_concurrency]
+lock_path = /var/lock/cinder
+---
+
+$ sudo su -s /bin/sh -c "cinder-manage db sync" cinder
+```
+
+反映
+```
+$ sudo service cinder-scheduler restart
+$ sudo service cinder-api restart
+$ sudo rm -f /var/lib/cinder/cinder.sqlite
+```
+
+ブロックストレージ作成
+```
+$ sudo apt-get -y install qemu lvm2
+
+$ sudo cp -raf /etc/lvm $BAK
+$ sudo vi /etc/lvm/lvm.conf 
+$ sudo pvcreate /dev/sdb1
+ → 別途ボリュームを用意する.(SDカード)
+$ sudo vgcreate cinder-volumes /dev/sdb1
+  Volume group "cinder-volumes" successfully created
+```
+
+Cinder設定
+```
+$ sudo apt-get -y install cinder-volume python-mysqldb
+$ sudo cp -raf /etc/cinder $BAK
+$ sudo vi /etc/cinder/cinder.conf
+---
+[DEFAULT]
+...
+enabled_backends = lvm
+glance_host = 192.168.0.200
+
+[lvm]
+volume_driver = cinder.volume.drivers.lvm.LVMVolumeDriver
+volume_group = cinder-volumes
+iscsi_protocol = iscsi
+iscsi_helper = tgtadm
+---
+$ sudo service tgt restart
+$ sudo service cinder-volume restart
+
+$ echo "export OS_VOLUME_API_VERSION=2" | tee -a ~/admin-openrc.sh ~/demo-openrc.sh
+$ source admin-openrc.sh
+```
+
+確認
+```
+$ source ~/admin-openrc.sh
+$ cinder service-list
++------------------+---------------+------+---------+-------+----------------------------+-----------------+
+|      Binary      |      Host     | Zone |  Status | State |         Updated_at         | Disabled Reason |
++------------------+---------------+------+---------+-------+----------------------------+-----------------+
+| cinder-scheduler |   ryunosuke   | nova | enabled |   up  | 2015-06-07T07:44:51.000000 |       None      |
+|  cinder-volume   |   ryunosuke   | nova | enabled |  down | 2015-06-07T07:43:18.000000 |       None      |
+|  cinder-volume   | ryunosuke@lvm | nova | enabled |   up  | 2015-06-07T07:44:56.000000 |       None      |
++------------------+---------------+------+---------+-------+----------------------------+-----------------+
+
+$ source demo-openrc.sh
+$ cinder create --name demo-volume1 1
++---------------------------------------+--------------------------------------+
+|                Property               |                Value                 |
++---------------------------------------+--------------------------------------+
+|              attachments              |                  []                  |
+|           availability_zone           |                 nova                 |
+|                bootable               |                false                 |
+|          consistencygroup_id          |                 None                 |
+|               created_at              |      2015-06-07T07:46:12.000000      |
+|              description              |                 None                 |
+|               encrypted               |                False                 |
+|                   id                  | 7ea12307-14db-49ca-81bf-b5770c9e8751 |
+|                metadata               |                  {}                  |
+|              multiattach              |                False                 |
+|                  name                 |             demo-volume1             |
+|      os-vol-tenant-attr:tenant_id     |   5cc062a3bb494d96ba860b7c6c319f34   |
+|   os-volume-replication:driver_data   |                 None                 |
+| os-volume-replication:extended_status |                 None                 |
+|           replication_status          |               disabled               |
+|                  size                 |                  1                   |
+|              snapshot_id              |                 None                 |
+|              source_volid             |                 None                 |
+|                 status                |               creating               |
+|                user_id                |   adb2761beba44ff6bc9bf7f38d709eae   |
+|              volume_type              |                 None                 |
++---------------------------------------+--------------------------------------+
+
+$ cinder list
++--------------------------------------+-----------+--------------+------+-------------+----------+-------------+
+|                  ID                  |   Status  |     Name     | Size | Volume Type | Bootable | Attached to |
++--------------------------------------+-----------+--------------+------+-------------+----------+-------------+
+| 7ea12307-14db-49ca-81bf-b5770c9e8751 | available | demo-volume1 |  1   |     None    |  false   |             |
++--------------------------------------+-----------+--------------+------+-------------+----------+-------------+
+```
