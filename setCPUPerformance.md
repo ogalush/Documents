@@ -1,4 +1,4 @@
-# Ubuntu14.04のCPUスピードを調整する
+# CPUスピードを調整する(for Ubuntu14.04.2)
 
 ## スピード制限解除
 CPUの省電力機能によってCPUをフルパワーで利用できていない状況を改善する.  
@@ -21,6 +21,10 @@ $ grep GOVERNOR /etc/init.d/cpufrequtils
 $ sudo service cpufrequtils restart
 $ cat /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor
 → performanceとなっていればOK.
+
+$ sudo update-rc.d cpufrequtils enable
+→ 再起動後も動作するように.
+
 $ sudo shutdown -r now
 $ cat /proc/cpuinfo
 ---
