@@ -2,7 +2,10 @@
 
 ## スピード制限解除
 CPUの省電力機能によってCPUをフルパワーで利用できていない状況を改善する.  
-(RedHat系だとcpuspeed, Ubuntu系だとcpufrequtils)
+(RedHat系だとcpuspeed, Ubuntu系だとcpufrequtils)  
+
+CPU GOVERNERを変更することで改善.  
+参考: [CPU GOVERNER](http://kledgeb.blogspot.jp/2013/06/ubuntu-cpufreq-1-cpufreq-cpufreq-cpufreq.html)
 
 ## 手順
 ```
