@@ -273,7 +273,7 @@ $ rm -f /var/lib/glance/glance.sqlite
 OSイメージインポート
 ```
 $ sudo wget -P /usr/local/src http://cloud-images.ubuntu.com/releases/14.04/release/ubuntu-14.04-server-cloudimg-amd64-disk1.img
-$ glance image-create --name "ubuntu14.04" --file /usr/local/src/ubuntu-14.04-server-cloudimg-amd64-disk1.img --disk-format qcow2 --container-format bare --is-public True --progress
+$ glance image-create --name "ubuntu14.04" --file /usr/local/src/ubuntu-14.04-server-cloudimg-amd64-disk1.img --disk-format qcow2 --container-format bare --visibility public --progress
 $ glance image-list
 ```
 
