@@ -7,4 +7,4 @@
  [DVR公式Doc](http://www.slideshare.net/ToruMakabe/20-openstack-neutron-deep-dive-dvr)  
 
 #手順
-
+ テナントネットワークは[OpenvSwitch + VXLANが必須](http://docs.openstack.org/networking-guide/deploy_scenario2.html)の模様.
