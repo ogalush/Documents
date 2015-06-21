@@ -324,26 +324,24 @@ $ neutron agent-list
 Externalはflatで作成済みなので、Internalのみを作っていく.
 
 ```
+$ source ~/demo-openrc.sh 
 $ neutron net-create demo-net
 ---
 $ neutron net-create demo-net
 Created a new network:
-+---------------------------+--------------------------------------+
-| Field                     | Value                                |
-+---------------------------+--------------------------------------+
-| admin_state_up            | True                                 |
-| id                        | 8e997def-3fe7-4b94-a2cd-85af248bec87 |
-| mtu                       | 0                                    |
-| name                      | demo-net                             |
-| provider:network_type     | vxlan                                |
-| provider:physical_network |                                      |
-| provider:segmentation_id  | 1001                                 |
-| router:external           | False                                |
-| shared                    | False                                |
-| status                    | ACTIVE                               |
-| subnets                   |                                      |
-| tenant_id                 | 7460bfbafaba45cdac98542810a92ac9     |
-+---------------------------+--------------------------------------+
++-----------------+--------------------------------------+
+| Field           | Value                                |
++-----------------+--------------------------------------+
+| admin_state_up  | True                                 |
+| id              | 0f741fef-42b2-4858-bf3e-9a0442fb9908 |
+| mtu             | 0                                    |
+| name            | demo-net                             |
+| router:external | False                                |
+| shared          | False                                |
+| status          | ACTIVE                               |
+| subnets         |                                      |
+| tenant_id       | 5cc062a3bb494d96ba860b7c6c319f34     |
++-----------------+--------------------------------------+
 ---
 
 $ neutron subnet-create demo-net 10.0.0.0/24 --name demo-subnet --gateway 10.0.0.1 --dns-nameservers list=true 192.168.0.254
@@ -358,14 +356,14 @@ Created a new subnet:
 | enable_dhcp       | True                                       |
 | gateway_ip        | 10.0.0.1                                   |
 | host_routes       |                                            |
-| id                | 01da9805-83ea-4127-b100-b0b353acd8f5       |
+| id                | 58b52893-fb0d-47ed-9dec-76dc724b3c2b       |
 | ip_version        | 4                                          |
 | ipv6_address_mode |                                            |
 | ipv6_ra_mode      |                                            |
 | name              | demo-subnet                                |
-| network_id        | 8e997def-3fe7-4b94-a2cd-85af248bec87       |
+| network_id        | 0f741fef-42b2-4858-bf3e-9a0442fb9908       |
 | subnetpool_id     |                                            |
-| tenant_id         | 7460bfbafaba45cdac98542810a92ac9           |
+| tenant_id         | 5cc062a3bb494d96ba860b7c6c319f34           |
 +-------------------+--------------------------------------------+
 ---
 
@@ -375,40 +373,34 @@ Created a new router:
 | Field                 | Value                                |
 +-----------------------+--------------------------------------+
 | admin_state_up        | True                                 |
-| distributed           | True                                 |
-~~~~ここがTrueならOK.
 | external_gateway_info |                                      |
-| ha                    | False                                |
-| id                    | b1f72298-a2a3-4bfc-9cd0-0187261e5972 |
+| id                    | 0cc03a68-8bb6-4f8d-8831-edb7c12b6dca |
 | name                  | demo-router                          |
 | routes                |                                      |
 | status                | ACTIVE                               |
-| tenant_id             | 7460bfbafaba45cdac98542810a92ac9     |
+| tenant_id             | 5cc062a3bb494d96ba860b7c6c319f34     |
 +-----------------------+--------------------------------------+
 
 $ neutron router-interface-add demo-router demo-subnet
-Added interface 53ea1499-0f8f-44b0-a055-dca8688ee765 to router demo-router.
+Added interface ed7bc02a-3e78-4d5a-b809-ca7b1dbe150e to router demo-router.
 
-$ neutron router-gateway-set demo-router ext-net
+$ $ neutron router-gateway-set demo-router ext-net
 Set gateway for router demo-router
 
 $ neutron router-port-list demo-router
----
-| 53ea1499-0f8f-44b0-a055-dca8688ee765 |      | fa:16:3e:d6:d6:11 | {"subnet_id": "01da9805-83ea-4127-b100-b0b353acd8f5", "ip_address": "10.0.0.1"}      |
-| 267fd40c-3c8c-447d-afe3-87c88c19d5d1 |      | fa:16:3e:ed:34:54 | {"subnet_id": "a7e78785-7600-4200-b993-7eb3af222990", "ip_address": "192.168.0.103"} |
-~~~External側にRouter-GatewayのIPアドレスができていればOK.
-| ec9f5466-1573-4c9e-8502-47e10e042a6b |      | fa:16:3e:88:18:50 | {"subnet_id": "01da9805-83ea-4127-b100-b0b353acd8f5", "ip_address": "10.0.0.3"}      |
+| ed7bc02a-3e78-4d5a-b809-ca7b1dbe150e |      | fa:16:3e:29:11:42 | {"subnet_id": "58b52893-fb0d-47ed-9dec-76dc724b3c2b", "ip_address": "10.0.0.1"} |
 ---
 
-$ neutron router-show demo-router
----
+$ $ neutron router-show demo-router
+| Field                 | Value |
 | admin_state_up        | True  |
-| distributed           | True  |
-| external_gateway_info | {"network_id": "eeaab19f-2fc6-4a3b-a745-bb2fcd4923e6", "enable_snat": true, "external_fixed_ips": [{"subnet_id": "a7e78785-7600-4200-b993-7eb3af222990", "ip_address": "192.168.0.103"}]} |
-| ha                    | False |
-| id                    | b1f72298-a2a3-4bfc-9cd0-0187261e5972 |
+| external_gateway_info | {"network_id": "eeaab19f-2fc6-4a3b-a745-bb2fcd4923e6", "enable_snat": true, "external_fixed_ips": [{"subnet_id": "a7e78785-7600-4200-b993-7eb3af222990", "ip_address": "192.168.0.104"}]} |
+~~~external_fixed_ipが入ってればOK.
+| id                    | 0cc03a68-8bb6-4f8d-8831-edb7c12b6dca |
 | name                  | demo-router |
 | routes                |             |
 | status                | ACTIVE      |
-| tenant_id             | 7460bfbafaba45cdac98542810a92ac9     |
+| tenant_id             | 5cc062a3bb494d96ba860b7c6c319f34 |
 ```
+
+インスタンスを作成して、通信できればOK.
