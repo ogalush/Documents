@@ -54,15 +54,20 @@ $ sudo apt-get -y install python-openstackclient
 ### SQL database
 ```
 $ sudo apt-get -y install mariadb-server python-pymysql
-
-$ sudo tee /etc/mysql/conf.d/openstack.cnf << 'EOT'
+$ sudo vi /etc/mysql/mariadb.conf.d/50-server.cnf
+----
 [mysqld]
-bind-address = 192.168.0.200
+...
+bind-address            = 0.0.0.0
+...
+###character-set-server  = utf8mb4
+###collation-server      = utf8mb4_general_ci
+
 default-storage-engine = innodb
 innodb_file_per_table
 collation-server = utf8_general_ci
 character-set-server = utf8
-EOT
+----
 
 $ sudo service mysql restart
 $ sudo service mysql status
@@ -132,3 +137,114 @@ $ sudo service memcached status
            └─9279 /usr/bin/memcached -m 64 -p 11211 -u memcache -l 192.168.0.200
 ```
 
+## Identity service
+### DB作成
+```
+$ sudo mysql -u root -p
+
+MariaDB [(none)]> CREATE DATABASE keystone;
+Query OK, 1 row affected (0.00 sec)
+MariaDB [(none)]> GRANT ALL PRIVILEGES ON keystone.* TO 'keystone'@'%' IDENTIFIED BY 'password';
+Query OK, 0 rows affected (0.00 sec)
+MariaDB [(none)]> FLUSH PRIVILEGES;
+Query OK, 0 rows affected (0.00 sec)
+MariaDB [(none)]> quit;
+Bye
+```
+
+### Keystoneインストール
+```
+
+インストール後に自動起動しないようにする設定とのこと。
+$ echo "manual" | sudo tee /etc/init/keystone.override
+$ cat /etc/init/keystone.override 
+manual
+
+$ sudo apt-get -y install keystone apache2 libapache2-mod-wsgi
+```
+
+### Keystone 設定
+```
+$ sudo vi /etc/keystone/keystone.conf
+----
+[DEFAULT]
+admin_token = token
+...
+
+[database]
+### connection = sqlite:////var/lib/keystone/keystone.db
+connection = mysql+pymysql://keystone:password@192.168.0.200/keystone
+...
+
+[token]
+...
+provider = fernet
+----
+
+反映
+$ sudo bash -c "keystone-manage db_sync" keystone
+
+fernet(?)の初期化
+$ sudo keystone-manage fernet_setup --keystone-user keystone --keystone-group keystone
+```
+
+### Configure the Apache HTTP server
+```
+$ sudo vi /etc/apache2/apache2.conf
+----
+## for OpenStack
+ServerName ryunosuke.localdomain
+----
+
+$ sudo vi /etc/apache2/sites-available/wsgi-keystone.conf
+----
+Listen 5000
+Listen 35357
+
+<VirtualHost *:5000>
+    WSGIDaemonProcess keystone-public processes=5 threads=1 user=keystone group=keystone display-name=%{GROUP}
+    WSGIProcessGroup keystone-public
+    WSGIScriptAlias / /usr/bin/keystone-wsgi-public
+    WSGIApplicationGroup %{GLOBAL}
+    WSGIPassAuthorization On
+    ErrorLogFormat "%{cu}t %M"
+    ErrorLog /var/log/apache2/keystone.log
+    CustomLog /var/log/apache2/keystone_access.log combined
+
+    <Directory /usr/bin>
+        Require all granted
+    </Directory>
+</VirtualHost>
+
+<VirtualHost *:35357>
+    WSGIDaemonProcess keystone-admin processes=5 threads=1 user=keystone group=keystone display-name=%{GROUP}
+    WSGIProcessGroup keystone-admin
+    WSGIScriptAlias / /usr/bin/keystone-wsgi-admin
+    WSGIApplicationGroup %{GLOBAL}
+    WSGIPassAuthorization On
+    ErrorLogFormat "%{cu}t %M"
+    ErrorLog /var/log/apache2/keystone.log
+    CustomLog /var/log/apache2/keystone_access.log combined
+
+    <Directory /usr/bin>
+        Require all granted
+    </Directory>
+</VirtualHost>
+----
+
+$ sudo ln -s /etc/apache2/sites-available/wsgi-keystone.conf /etc/apache2/sites-enabled
+$ ls -l /etc/apache2/sites-enabled/wsgi-keystone.conf 
+lrwxrwxrwx 1 root root 47 Apr 23 16:24 /etc/apache2/sites-enabled/wsgi-keystone.conf -> /etc/apache2/sites-available/wsgi-keystone.conf
+
+$ sudo rm -v /var/lib/keystone/keystone.db
+$ sudo service apache2 restart
+$ sudo service apache2 status
+● apache2.service - LSB: Apache2 web server
+   Loaded: loaded (/etc/init.d/apache2; bad; vendor preset: enabled)
+  Drop-In: /lib/systemd/system/apache2.service.d
+           └─apache2-systemd.conf
+   Active: inactive (dead) since Sat 2016-04-23 16:25:45 JST; 19s ago
+     Docs: man:systemd-sysv-generator(8)
+  Process: 15279 ExecStop=/etc/init.d/apache2 stop (code=exited, status=0/SUCCESS)
+  Process: 15261 ExecStart=/etc/init.d/apache2 start (code=exited, status=0/SUCCESS)
+```
