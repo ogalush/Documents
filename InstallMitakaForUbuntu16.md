@@ -1472,4 +1472,6 @@ $ sudo service apache2 reload
 ```
 
 WebUI確認  
-[http://192.168.0.200/horizon/](http://192.168.0.200/horizon/)
+[http://192.168.0.200/horizon/](http://192.168.0.200/horizon/)  
+ドメイン: default
+userid: admin, demo
