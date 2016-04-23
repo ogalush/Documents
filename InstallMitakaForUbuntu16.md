@@ -50,3 +50,85 @@ $ sudo apt-get -y update && sudo apt-get -y upgrade && sudo apt-get -y dist-upgr
 ```
 $ sudo apt-get -y install python-openstackclient
 ```
+
+### SQL database
+```
+$ sudo apt-get -y install mariadb-server python-pymysql
+
+$ sudo tee /etc/mysql/conf.d/openstack.cnf << 'EOT'
+[mysqld]
+bind-address = 192.168.0.200
+default-storage-engine = innodb
+innodb_file_per_table
+collation-server = utf8_general_ci
+character-set-server = utf8
+EOT
+
+$ sudo service mysql restart
+$ sudo service mysql status
+● mysql.service - LSB: Start and stop the mysql database server daemon
+   Loaded: loaded (/etc/init.d/mysql; bad; vendor preset: enabled)
+   Active: active (running) since Sat 2016-04-23 15:32:12 JST; 13s ago
+     Docs: man:systemd-sysv-generator(8)
+  Process: 6933 ExecStop=/etc/init.d/mysql stop (code=exited, status=0/SUCCESS)
+  Process: 6969 ExecStart=/etc/init.d/mysql start (code=exited, status=0/SUCCESS)
+    Tasks: 27 (limit: 512)
+   Memory: 78.7M
+      CPU: 264ms
+   CGroup: /system.slice/mysql.service
+           ├─6998 /bin/bash /usr/bin/mysqld_safe
+           ├─6999 logger -p daemon err -t /etc/init.d/mysql -i
+           ├─7158 /usr/sbin/mysqld --basedir=/usr --datadir=/var/lib/mysql --plugin-dir=/usr/lib/mysql/plugin --user=mysql --sk
+           └─7159 logger -t mysqld -p daemon error
+
+
+$ sudo mysql_secure_installation
+...
+Enter current password for root (enter for none): <パスワードを入れる>
+Change the root password? [Y/n] y
+New password: <パスワードを入れる>
+Re-enter new password: <パスワードを入れる>
+Password updated successfully!
+
+Remove anonymous users? [Y/n] y
+Disallow root login remotely? [Y/n] y
+Remove test database and access to it? [Y/n] y
+Reload privilege tables now? [Y/n] y
+```
+
+### Message queue
+RabbitMQを入れる。
+```
+$ sudo apt-get -y install rabbitmq-server
+$ sudo rabbitmqctl add_user openstack password
+Creating user "openstack" ...
+$ sudo rabbitmqctl set_permissions openstack ".*" ".*" ".*"
+Setting permissions for user "openstack" in vhost "/" ...
+```
+
+### Memcached
+```
+$ sudo apt-get -y install memcached python-memcache
+$ sudo cp -pv /etc/memcached.conf /etc/memcached.conf.def
+'/etc/memcached.conf' -> '/etc/memcached.conf.def'
+
+$ sudo sed -i 's/127.0.0.1/192.168.0.200/g' /etc/memcached.conf
+$ diff -u /etc/memcached.conf.def /etc/memcached.conf
+----
+--l 127.0.0.1
++-l 192.168.0.200
+----
+
+$ sudo service memcached restart
+$ sudo service memcached status
+● memcached.service - memcached daemon
+   Loaded: loaded (/lib/systemd/system/memcached.service; enabled; vendor preset: enabled)
+   Active: active (running) since Sat 2016-04-23 15:45:57 JST; 2s ago
+ Main PID: 9279 (memcached)
+    Tasks: 6 (limit: 512)
+   Memory: 932.0K
+      CPU: 3ms
+   CGroup: /system.slice/memcached.service
+           └─9279 /usr/bin/memcached -m 64 -p 11211 -u memcache -l 192.168.0.200
+```
+
