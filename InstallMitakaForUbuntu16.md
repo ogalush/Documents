@@ -557,5 +557,222 @@ ogalush@ryunosuke:~$ openstack token issue
 | user_id    | 92b2fc5986d54c76b0a84c406a2edd1c                                                                                                                                                        |
 +------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
 ogalush@ryunosuke:~$ 
+```
 
+## Image service
+### Install and configure
+MySQL
+```
+$ sudo mysql -u root -p
+MariaDB [(none)]> CREATE DATABASE glance;
+Query OK, 1 row affected (0.00 sec)
+
+MariaDB [(none)]> GRANT ALL PRIVILEGES ON glance.* TO 'glance'@'%' IDENTIFIED BY 'password';
+Query OK, 0 rows affected (0.00 sec)
+
+MariaDB [(none)]> FLUSH PRIVILEGES;
+Query OK, 0 rows affected (0.00 sec)
+
+MariaDB [(none)]> quit;
+```
+
+Keystone設定
+```
+$ source admin-openrc 
+$ openstack user create --domain default --password-prompt glance
+User Password:
+Repeat User Password:
++-----------+----------------------------------+
+| Field     | Value                            |
++-----------+----------------------------------+
+| domain_id | 7841afe520964a04aa50756aee42a5d3 |
+| enabled   | True                             |
+| id        | 7939cfe6ce874cc9ab9fea0d71a95f2b |
+| name      | glance                           |
++-----------+----------------------------------+
+
+$ openstack role add --project service --user glance admin
+$ openstack service create --name glance --description "OpenStack Image" image
++-------------+----------------------------------+
+| Field       | Value                            |
++-------------+----------------------------------+
+| description | OpenStack Image                  |
+| enabled     | True                             |
+| id          | 45b639dad4ed43a7974b676c7af11582 |
+| name        | glance                           |
+| type        | image                            |
++-------------+----------------------------------+
+
+$ openstack endpoint create --region RegionOne image public http://192.168.0.200:9292
++--------------+----------------------------------+
+| Field        | Value                            |
++--------------+----------------------------------+
+| enabled      | True                             |
+| id           | 9c1298cf5fcd44b88f329f3a8b03cad3 |
+| interface    | public                           |
+| region       | RegionOne                        |
+| region_id    | RegionOne                        |
+| service_id   | 45b639dad4ed43a7974b676c7af11582 |
+| service_name | glance                           |
+| service_type | image                            |
+| url          | http://192.168.0.200:9292        |
++--------------+----------------------------------+
+
+$ openstack endpoint create --region RegionOne image internal http://192.168.0.200:9292
++--------------+----------------------------------+
+| Field        | Value                            |
++--------------+----------------------------------+
+| enabled      | True                             |
+| id           | 518d2308b7cf48748105a0683a19e6c1 |
+| interface    | internal                         |
+| region       | RegionOne                        |
+| region_id    | RegionOne                        |
+| service_id   | 45b639dad4ed43a7974b676c7af11582 |
+| service_name | glance                           |
+| service_type | image                            |
+| url          | http://192.168.0.200:9292        |
++--------------+----------------------------------+
+
+$ openstack endpoint create --region RegionOne image admin http://192.168.0.200:9292
++--------------+----------------------------------+
+| Field        | Value                            |
++--------------+----------------------------------+
+| enabled      | True                             |
+| id           | bb73a570eea349bc8bd3d387a2f373bc |
+| interface    | admin                            |
+| region       | RegionOne                        |
+| region_id    | RegionOne                        |
+| service_id   | 45b639dad4ed43a7974b676c7af11582 |
+| service_name | glance                           |
+| service_type | image                            |
+| url          | http://192.168.0.200:9292        |
++--------------+----------------------------------+
+```
+
+### Install and configure components
+インストール
+```
+$ sudo apt-get -y install glance
+```
+
+設定
+```
+$ sudo vi /etc/glance/glance-api.conf
+----
+[database]
+...
+connection = mysql+pymysql://glance:password@192.168.0.200/glance
+
+[keystone_authtoken]
+...
+auth_uri = http://192.168.0.200:5000
+auth_url = http://192.168.0.200:35357
+memcached_servers = 192.168.0.200:11211
+auth_type = password
+project_domain_name = default
+user_domain_name = default
+project_name = service
+username = glance
+password = password
+
+[paste_deploy]
+...
+flavor = keystone
+
+[glance_store]
+...
+stores = file,http
+default_store = file
+filesystem_store_datadir = /var/lib/glance/images/
+----
+
+$ sudo vi /etc/glance/glance-registry.conf
+----
+[database]
+connection = mysql+pymysql://glance:password@192.168.0.200/glance
+...
+
+[keystone_authtoken]
+...
+auth_uri = http://192.168.0.200:5000
+auth_url = http://192.168.0.200:35357
+memcached_servers = 192.168.0.200:11211
+auth_type = password
+project_domain_name = default
+user_domain_name = default
+project_name = service
+username = glance
+password = password
+
+[paste_deploy]
+...
+flavor = keystone
+----
+```
+
+反映
+```
+$ sudo bash -c "glance-manage db_sync" glance
+$ sudo service glance-registry restart
+$ sudo service glance-registry status
+● glance-registry.service - OpenStack Image Service Registry
+   Loaded: loaded (/lib/systemd/system/glance-registry.service; enabled; vendor preset: enabled)
+   Active: active (running) since Sat 2016-04-23 17:12:28 JST; 2s ago
+  Process: 18302 ExecStartPre=/bin/chown glance:glance /var/lock/glance /var/log/glance /var/lib/glance (code=exited, status=0/
+  Process: 18299 ExecStartPre=/bin/mkdir -p /var/lock/glance /var/log/glance /var/lib/glance (code=exited, status=0/SUCCESS)
+ Main PID: 18306 (glance-registry)
+    Tasks: 5 (limit: 512)
+   Memory: 110.9M
+      CPU: 836ms
+   CGroup: /system.slice/glance-registry.service
+
+
+$ sudo service glance-api restart
+$ sudo service glance-api status
+● glance-api.service - OpenStack Image Service API
+   Loaded: loaded (/lib/systemd/system/glance-api.service; enabled; vendor preset: enabled)
+   Active: active (running) since Sat 2016-04-23 17:13:03 JST; 2s ago
+  Process: 18353 ExecStartPre=/bin/chown glance:glance /var/lock/glance /var/log/glance /var/lib/glance (code=exited, status=0/
+  Process: 18350 ExecStartPre=/bin/mkdir -p /var/lock/glance /var/log/glance /var/lib/glance (code=exited, status=0/SUCCESS)
+ Main PID: 18356 (glance-api)
+    Tasks: 5 (limit: 512)
+   Memory: 128.9M
+      CPU: 1.100s
+   CGroup: /system.slice/glance-api.service
+```
+
+### Verify operation
+```
+$ source ~/admin-openrc
+$ wget http://download.cirros-cloud.net/0.3.4/cirros-0.3.4-x86_64-disk.img
+$ openstack image create "cirros" --file cirros-0.3.4-x86_64-disk.img --disk-format qcow2 --container-format bare --public
++------------------+------------------------------------------------------+
+| Field            | Value                                                |
++------------------+------------------------------------------------------+
+| checksum         | ee1eca47dc88f4879d8a229cc70a07c6                     |
+| container_format | bare                                                 |
+| created_at       | 2016-04-23T08:15:27Z                                 |
+| disk_format      | qcow2                                                |
+| file             | /v2/images/e7b8f2d9-7612-499f-9f09-01016ebb08e5/file |
+| id               | e7b8f2d9-7612-499f-9f09-01016ebb08e5                 |
+| min_disk         | 0                                                    |
+| min_ram          | 0                                                    |
+| name             | cirros                                               |
+| owner            | 290db0b57ea34427b01a6308d3f6e47c                     |
+| protected        | False                                                |
+| schema           | /v2/schemas/image                                    |
+| size             | 13287936                                             |
+| status           | active                                               |
+| tags             |                                                      |
+| updated_at       | 2016-04-23T08:15:28Z                                 |
+| virtual_size     | None                                                 |
+| visibility       | public                                               |
++------------------+------------------------------------------------------+
+
+$ openstack image list
++--------------------------------------+--------+--------+
+| ID                                   | Name   | Status |
++--------------------------------------+--------+--------+
+| e7b8f2d9-7612-499f-9f09-01016ebb08e5 | cirros | active |
++--------------------------------------+--------+--------+
 ```
