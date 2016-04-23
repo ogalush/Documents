@@ -3,6 +3,8 @@
 ドキュメント: [OpenStack Docs](http://docs.openstack.org/mitaka/install-guide-ubuntu/environment.html)  
 インストール先: ryunosuke(192.168.0.200)  
 ```
+$ ssh -c aes128-ctr -A ogalush@192.168.0.200
+Welcome to Ubuntu 16.04 LTS (GNU/Linux 4.4.0-21-generic x86_64)
 ogalush@ryunosuke:~$ uname -a
 Linux ryunosuke 4.4.0-21-generic #37-Ubuntu SMP Mon Apr 18 18:33:37 UTC 2016 x86_64 x86_64 x86_64 GNU/Linux
 ```
