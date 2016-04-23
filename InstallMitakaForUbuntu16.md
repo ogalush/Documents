@@ -1462,7 +1462,7 @@ OPENSTACK_KEYSTONE_DEFAULT_DOMAIN = "default"
 OPENSTACK_KEYSTONE_DEFAULT_ROLE = "user"
 
 ###TIME_ZONE = "UTC"
-TIME_ZONE = "JST"
+TIME_ZONE = "Asia/Tokyo"
 ----
 ```
 
@@ -1471,5 +1471,5 @@ TIME_ZONE = "JST"
 $ sudo service apache2 reload
 ```
 
-WebUI確認
+WebUI確認  
 [http://192.168.0.200/horizon/](http://192.168.0.200/horizon/)
