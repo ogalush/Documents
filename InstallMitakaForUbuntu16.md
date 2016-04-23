@@ -776,3 +776,261 @@ $ openstack image list
 | e7b8f2d9-7612-499f-9f09-01016ebb08e5 | cirros | active |
 +--------------------------------------+--------+--------+
 ```
+
+## Compute Service
+### Install and configure controller node
+MySQL設定
+```
+$ sudo mysql -u root -p
+
+MariaDB [(none)]> CREATE DATABASE nova_api;
+Query OK, 1 row affected (0.00 sec)
+
+MariaDB [(none)]> CREATE DATABASE nova;
+Query OK, 1 row affected (0.00 sec)
+
+MariaDB [(none)]> GRANT ALL PRIVILEGES ON nova_api.* TO 'nova'@'%' IDENTIFIED BY 'password';
+Query OK, 0 rows affected (0.00 sec)
+
+MariaDB [(none)]> GRANT ALL PRIVILEGES ON nova.* TO 'nova'@'%' IDENTIFIED BY 'password';
+Query OK, 0 rows affected (0.00 sec)
+
+MariaDB [(none)]> FLUSH PRIVILEGES;
+Query OK, 0 rows affected (0.00 sec)
+
+MariaDB [(none)]> quit;
+Bye
+```
+
+keystone設定
+```
+$ source ~/admin-openrc 
+$ openstack user create --domain default --password-prompt nova
+User Password:
+Repeat User Password:
++-----------+----------------------------------+
+| Field     | Value                            |
++-----------+----------------------------------+
+| domain_id | 7841afe520964a04aa50756aee42a5d3 |
+| enabled   | True                             |
+| id        | c08307bc05064d6d971a9bd3903cf13e |
+| name      | nova                             |
++-----------+----------------------------------+
+
+$ openstack role add --project service --user nova admin
+
+$ openstack service create --name nova --description "OpenStack Compute" compute
++-------------+----------------------------------+
+| Field       | Value                            |
++-------------+----------------------------------+
+| description | OpenStack Compute                |
+| enabled     | True                             |
+| id          | 3e2ad499428d4352abb8c415a5e83dcb |
+| name        | nova                             |
+| type        | compute                          |
++-------------+----------------------------------+
+
+$ openstack endpoint create --region RegionOne compute public http://192.168.0.200:8774/v2.1/%\(tenant_id\)s
++--------------+----------------------------------------------+
+| Field        | Value                                        |
++--------------+----------------------------------------------+
+| enabled      | True                                         |
+| id           | 42f6abc309444aef98f2dde136182f1e             |
+| interface    | public                                       |
+| region       | RegionOne                                    |
+| region_id    | RegionOne                                    |
+| service_id   | 3e2ad499428d4352abb8c415a5e83dcb             |
+| service_name | nova                                         |
+| service_type | compute                                      |
+| url          | http://192.168.0.200:8774/v2.1/%(tenant_id)s |
++--------------+----------------------------------------------+
+
+$ openstack endpoint create --region RegionOne compute internal http://192.168.0.200:8774/v2.1/%\(tenant_id\)s
++--------------+----------------------------------------------+
+| Field        | Value                                        |
++--------------+----------------------------------------------+
+| enabled      | True                                         |
+| id           | 848560a583aa435ba4b769294c09ce0f             |
+| interface    | internal                                     |
+| region       | RegionOne                                    |
+| region_id    | RegionOne                                    |
+| service_id   | 3e2ad499428d4352abb8c415a5e83dcb             |
+| service_name | nova                                         |
+| service_type | compute                                      |
+| url          | http://192.168.0.200:8774/v2.1/%(tenant_id)s |
++--------------+----------------------------------------------+
+
+$ openstack endpoint create --region RegionOne compute admin http://192.168.0.200:8774/v2.1/%\(tenant_id\)s
++--------------+----------------------------------------------+
+| Field        | Value                                        |
++--------------+----------------------------------------------+
+| enabled      | True                                         |
+| id           | 0691148ee67d414488e83e1a924b983b             |
+| interface    | admin                                        |
+| region       | RegionOne                                    |
+| region_id    | RegionOne                                    |
+| service_id   | 3e2ad499428d4352abb8c415a5e83dcb             |
+| service_name | nova                                         |
+| service_type | compute                                      |
+| url          | http://192.168.0.200:8774/v2.1/%(tenant_id)s |
++--------------+----------------------------------------------+
+```
+
+### Install and configure components
+インストール
+```
+$ sudo apt-get -y install nova-api nova-conductor nova-consoleauth nova-novncproxy nova-scheduler
+```
+
+設定
+```
+$ sudo vi /etc/nova/nova.conf
+----
+[DEFAULT]
+...
+### enabled_apis=ec2,osapi_compute,metadata
+enabled_apis = osapi_compute,metadata
+rpc_backend = rabbit
+auth_strategy = keystone
+my_ip = 192.168.0.200
+use_neutron = True
+firewall_driver = nova.virt.firewall.NoopFirewallDriver
+
+[api_database]
+connection = mysql+pymysql://nova:password@192.168.0.200/nova_api
+
+[database]
+connection = mysql+pymysql://nova:password@192.168.0.200/nova
+
+[oslo_messaging_rabbit]
+rabbit_host = 192.168.0.200
+rabbit_userid = openstack
+rabbit_password = password
+
+
+[keystone_authtoken]
+auth_uri = http://192.168.0.200:5000
+auth_url = http://192.168.0.200:35357
+memcached_servers = 192.168.0.200:11211
+auth_type = password
+project_domain_name = default
+user_domain_name = default
+project_name = service
+username = nova
+password = password
+
+[vnc]
+vncserver_listen = $my_ip
+vncserver_proxyclient_address = $my_ip
+
+[glance]
+api_servers = http://192.168.0.200:9292
+
+[oslo_concurrency]
+lock_path = /var/lib/nova/tmp
+----
+```
+
+反映
+```
+$ sudo bash -c "nova-manage api_db sync" nova
+$ sudo bash -c "nova-manage db sync" nova
+```
+
+nova再起動
+```
+sudo service nova-api restart
+sudo service nova-consoleauth restart
+sudo service nova-scheduler restart
+sudo service nova-conductor restart
+sudo service nova-novncproxy restart
+```
+
+### Install and configure a compute node
+インストール
+```
+$ sudo apt-get -y install nova-compute
+```
+
+設定
+```
+$ sudo vi /etc/nova/nova.conf
+----
+[DEFAULT]
+...
+rpc_backend = rabbit
+auth_strategy = keystone
+my_ip = 192.168.0.200
+use_neutron = True
+firewall_driver = nova.virt.firewall.NoopFirewallDriver
+
+[oslo_messaging_rabbit]
+rabbit_host = 192.168.0.200
+rabbit_userid = openstack
+rabbit_password = password
+
+[keystone_authtoken]
+auth_uri = http://192.168.0.200:5000
+auth_url = http://192.168.0.200:35357
+memcached_servers = 192.168.0.200:11211
+auth_type = password
+project_domain_name = default
+user_domain_name = default
+project_name = service
+username = nova
+password = password
+
+[vnc]
+enabled = True
+vncserver_listen = 0.0.0.0
+vncserver_proxyclient_address = $my_ip
+novncproxy_base_url = http://192.168.0.200:6080/vnc_auto.html
+
+[glance]
+api_servers = http://192.168.0.200:9292
+
+[oslo_concurrency]
+lock_path = /var/lib/nova/tmp
+----
+```
+
+確認
+```
+$ egrep -c '(vmx|svm)' /proc/cpuinfo
+4 ・・・ 1 以上なら仮想化可能。
+
+$ sudo vi /etc/nova/nova-compute.conf
+----
+[libvirt]
+virt_type=kvm
+----
+
+$ sudo service nova-compute restart
+$ sudo service nova-compute status
+● nova-compute.service - OpenStack Compute
+   Loaded: loaded (/lib/systemd/system/nova-compute.service; enabled; vendor preset: enabled)
+   Active: active (running) since Sat 2016-04-23 19:01:32 JST; 2s ago
+  Process: 25044 ExecStartPre=/bin/chown nova:nova /var/lock/nova /var/log/nova /var/lib/nova (code=exited, 
+  Process: 25041 ExecStartPre=/bin/mkdir -p /var/lock/nova /var/log/nova /var/lib/nova (code=exited, status=
+ Main PID: 25049 (nova-compute)
+    Tasks: 22 (limit: 512)
+   Memory: 133.6M
+      CPU: 2.236s
+   CGroup: /system.slice/nova-compute.service
+```
+
+### Verify operation
+確認
+```
+$ source ~/admin-openrc
+$ openstack compute service list
++----+------------------+-----------+----------+---------+-------+----------------------------+
+| Id | Binary           | Host      | Zone     | Status  | State | Updated At                 |
++----+------------------+-----------+----------+---------+-------+----------------------------+
+|  4 | nova-consoleauth | ryunosuke | internal | enabled | up    | 2016-04-23T10:02:49.000000 |
+|  5 | nova-scheduler   | ryunosuke | internal | enabled | up    | 2016-04-23T10:02:52.000000 |
+|  6 | nova-conductor   | ryunosuke | internal | enabled | up    | 2016-04-23T10:02:52.000000 |
+|  7 | nova-compute     | ryunosuke | nova     | enabled | up    | 2016-04-23T10:02:50.000000 |
++----+------------------+-----------+----------+---------+-------+----------------------------+
+
+```
