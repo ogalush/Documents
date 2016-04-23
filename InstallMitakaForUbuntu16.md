@@ -1475,3 +1475,231 @@ WebUI確認
 [http://192.168.0.200/horizon/](http://192.168.0.200/horizon/)  
 ドメイン: default
 userid: admin, demo
+
+## Launch an instance
+ネットワーク作成
+### Provider network
+外部ネットワーク
+```
+$ source ~/admin-openrc
+$ neutron net-create --shared --provider:physical_network provider --provider:network_type flat provider
+Created a new network:
++---------------------------+--------------------------------------+
+| Field                     | Value                                |
++---------------------------+--------------------------------------+
+| admin_state_up            | True                                 |
+| availability_zone_hints   |                                      |
+| availability_zones        |                                      |
+| created_at                | 2016-04-23T11:38:17                  |
+| description               |                                      |
+| id                        | f066f8f5-ac01-42b3-b94b-d0d24575f286 |
+| ipv4_address_scope        |                                      |
+| ipv6_address_scope        |                                      |
+| mtu                       | 1500                                 |
+| name                      | provider                             |
+| port_security_enabled     | True                                 |
+| provider:network_type     | flat                                 |
+| provider:physical_network | provider                             |
+| provider:segmentation_id  |                                      |
+| router:external           | False                                |
+| shared                    | True                                 |
+| status                    | ACTIVE                               |
+| subnets                   |                                      |
+| tags                      |                                      |
+| tenant_id                 | 290db0b57ea34427b01a6308d3f6e47c     |
+| updated_at                | 2016-04-23T11:38:17                  |
++---------------------------+--------------------------------------+
+
+$ neutron subnet-create --name provider --allocation-pool start=192.168.0.220,end=192.168.0.230 --dns-nameserver 192.168.0.254 --gateway 192.168.0.254 provider 192.168.0.0/24
+Created a new subnet:
++-------------------+----------------------------------------------------+
+| Field             | Value                                              |
++-------------------+----------------------------------------------------+
+| allocation_pools  | {"start": "192.168.0.220", "end": "192.168.0.230"} |
+| cidr              | 192.168.0.0/24                                     |
+| created_at        | 2016-04-23T11:38:34                                |
+| description       |                                                    |
+| dns_nameservers   | 192.168.0.254                                      |
+| enable_dhcp       | True                                               |
+| gateway_ip        | 192.168.0.254                                      |
+| host_routes       |                                                    |
+| id                | d5630741-6198-4c07-80af-5851e730f2cf               |
+| ip_version        | 4                                                  |
+| ipv6_address_mode |                                                    |
+| ipv6_ra_mode      |                                                    |
+| name              | provider                                           |
+| network_id        | f066f8f5-ac01-42b3-b94b-d0d24575f286               |
+| subnetpool_id     |                                                    |
+| tenant_id         | 290db0b57ea34427b01a6308d3f6e47c                   |
+| updated_at        | 2016-04-23T11:38:34                                |
++-------------------+----------------------------------------------------+
+```
+
+内部ネットワーク
+```
+$ source ~/demo-openrc
+$ $ neutron net-create selfservice
+Created a new network:
++-------------------------+--------------------------------------+
+| Field                   | Value                                |
++-------------------------+--------------------------------------+
+| admin_state_up          | True                                 |
+| availability_zone_hints |                                      |
+| availability_zones      |                                      |
+| created_at              | 2016-04-23T11:40:45                  |
+| description             |                                      |
+| id                      | 9fcb01ec-d66d-43cf-befc-f22e0d59d8cf |
+| ipv4_address_scope      |                                      |
+| ipv6_address_scope      |                                      |
+| mtu                     | 1450                                 |
+| name                    | selfservice                          |
+| port_security_enabled   | True                                 |
+| router:external         | False                                |
+| shared                  | False                                |
+| status                  | ACTIVE                               |
+| subnets                 |                                      |
+| tags                    |                                      |
+| tenant_id               | dae2d17668e242d9a639f637d21123ff     |
+| updated_at              | 2016-04-23T11:40:45                  |
++-------------------------+--------------------------------------+
+
+$ neutron subnet-create --name selfservice  --dns-nameserver 192.168.0.220 --gateway 10.0.0.1 selfservice 10.0.0.0/24
+Created a new subnet:
++-------------------+--------------------------------------------+
+| Field             | Value                                      |
++-------------------+--------------------------------------------+
+| allocation_pools  | {"start": "10.0.0.2", "end": "10.0.0.254"} |
+| cidr              | 10.0.0.0/24                                |
+| created_at        | 2016-04-23T11:41:43                        |
+| description       |                                            |
+| dns_nameservers   | 192.168.0.220                              |
+| enable_dhcp       | True                                       |
+| gateway_ip        | 10.0.0.1                                   |
+| host_routes       |                                            |
+| id                | f4fe7bc8-4d93-4292-b75e-3414a8b3ea96       |
+| ip_version        | 4                                          |
+| ipv6_address_mode |                                            |
+| ipv6_ra_mode      |                                            |
+| name              | selfservice                                |
+| network_id        | 9fcb01ec-d66d-43cf-befc-f22e0d59d8cf       |
+| subnetpool_id     |                                            |
+| tenant_id         | dae2d17668e242d9a639f637d21123ff           |
+| updated_at        | 2016-04-23T11:41:43                        |
++-------------------+--------------------------------------------+
+```
+
+仮想ルータ
+```
+$ source ~/admin-openrc
+$ $ neutron net-update provider --router:external
+Updated network: provider
+
+$ source ~/demo-openrc
+$ neutron router-create router
+Created a new router:
++-------------------------+--------------------------------------+
+| Field                   | Value                                |
++-------------------------+--------------------------------------+
+| admin_state_up          | True                                 |
+| availability_zone_hints |                                      |
+| availability_zones      |                                      |
+| description             |                                      |
+| external_gateway_info   |                                      |
+| id                      | c9173750-b7c5-4ce7-8a99-9902df6799d7 |
+| name                    | router                               |
+| routes                  |                                      |
+| status                  | ACTIVE                               |
+| tenant_id               | dae2d17668e242d9a639f637d21123ff     |
++-------------------------+--------------------------------------+
+
+$ neutron router-interface-add router selfservice
+Added interface 90637295-0963-4337-96d2-d6c2e0e9ec69 to router router.
+
+$ neutron router-gateway-set router provider
+Set gateway for router router
+```
+
+確認
+```
+$ source ~/admin-openrc
+$ ip netns
+qrouter-c9173750-b7c5-4ce7-8a99-9902df6799d7 (id: 2)
+qdhcp-9fcb01ec-d66d-43cf-befc-f22e0d59d8cf (id: 1)
+qdhcp-f066f8f5-ac01-42b3-b94b-d0d24575f286 (id: 0)
+→ ルータとDHCPがある。
+
+$ neutron router-port-list router
++--------------------------------------+------+-------------------+--------------------------------------------------------------------------------------+
+| id                                   | name | mac_address       | fixed_ips                                                                            |
++--------------------------------------+------+-------------------+--------------------------------------------------------------------------------------+
+| 90637295-0963-4337-96d2-d6c2e0e9ec69 |      | fa:16:3e:84:36:8b | {"subnet_id": "f4fe7bc8-4d93-4292-b75e-3414a8b3ea96", "ip_address": "10.0.0.1"}      |
+| de6ff0af-6f91-4431-a434-8a8d1df99b21 |      | fa:16:3e:3c:5c:84 | {"subnet_id": "d5630741-6198-4c07-80af-5851e730f2cf", "ip_address": "192.168.0.221"} |
++--------------------------------------+------+-------------------+--------------------------------------------------------------------------------------+
+→ ポート一覧があればOK.
+
+ogalush@ryunosuke:~$ ping 192.168.0.221
+PING 192.168.0.221 (192.168.0.221) 56(84) bytes of data.
+64 bytes from 192.168.0.221: icmp_seq=1 ttl=64 time=0.086 ms
+64 bytes from 192.168.0.221: icmp_seq=2 ttl=64 time=0.049 ms
+~~~ 外部ネットワークのポートに対してpingが届いているのでOK.
+```
+
+### Add security group rules
+外部ネットワーク
+```
+$ source ~/admin-openrc
+
+icmp許可
+$ openstack security group rule create --proto icmp default
++-----------------------+--------------------------------------+
+| Field                 | Value                                |
++-----------------------+--------------------------------------+
+| id                    | 96024f26-f0fa-4a57-b84d-27d7cb411098 |
+| ip_protocol           | icmp                                 |
+| ip_range              | 0.0.0.0/0                            |
+| parent_group_id       | fdd0a696-1d09-44cc-915f-6ab58e4a5693 |
+| port_range            |                                      |
+| remote_security_group |                                      |
++-----------------------+--------------------------------------+
+
+ssh許可
+$ openstack security group rule create --proto tcp --dst-port 22 default
++-----------------------+--------------------------------------+
+| Field                 | Value                                |
++-----------------------+--------------------------------------+
+| id                    | 8323e607-341f-4d56-b41f-c41a9e6e7115 |
+| ip_protocol           | tcp                                  |
+| ip_range              | 0.0.0.0/0                            |
+| parent_group_id       | fdd0a696-1d09-44cc-915f-6ab58e4a5693 |
+| port_range            | 22:22                                |
+| remote_security_group |                                      |
++-----------------------+--------------------------------------+
+```
+
+内部ネットワーク
+```
+$ source ~/demo-openrc 
+ogalush@ryunosuke:~$ openstack security group rule create --proto icmp default
++-----------------------+--------------------------------------+
+| Field                 | Value                                |
++-----------------------+--------------------------------------+
+| id                    | 9546b633-8342-4887-bf02-e2d45b2fa045 |
+| ip_protocol           | icmp                                 |
+| ip_range              | 0.0.0.0/0                            |
+| parent_group_id       | 4fdaa3ad-edd0-4cbe-953b-6b5d537835cf |
+| port_range            |                                      |
+| remote_security_group |                                      |
++-----------------------+--------------------------------------+
+
+$ openstack security group rule create --proto tcp --dst-port 22 default
++-----------------------+--------------------------------------+
+| Field                 | Value                                |
++-----------------------+--------------------------------------+
+| id                    | c385cb2f-9e5e-4d14-8854-2773050ad522 |
+| ip_protocol           | tcp                                  |
+| ip_range              | 0.0.0.0/0                            |
+| parent_group_id       | 4fdaa3ad-edd0-4cbe-953b-6b5d537835cf |
+| port_range            | 22:22                                |
+| remote_security_group |                                      |
++-----------------------+--------------------------------------+
+```
