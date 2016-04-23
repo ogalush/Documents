@@ -769,12 +769,37 @@ $ openstack image create "cirros" --file cirros-0.3.4-x86_64-disk.img --disk-for
 | visibility       | public                                               |
 +------------------+------------------------------------------------------+
 
+$ openstack image create "Ubuntu14.04" --file /usr/local/src/ubuntu-14.04-server-cloudimg-amd64-disk1.img --disk-format qcow2 --container-format bare --public
++------------------+------------------------------------------------------+
+| Field            | Value                                                |
++------------------+------------------------------------------------------+
+| checksum         | 742ec3c3d8a6b4f8caa7f14569d58eef                     |
+| container_format | bare                                                 |
+| created_at       | 2016-04-23T11:56:38Z                                 |
+| disk_format      | qcow2                                                |
+| file             | /v2/images/d0ab1492-d629-4f73-953e-21de2fd200ba/file |
+| id               | d0ab1492-d629-4f73-953e-21de2fd200ba                 |
+| min_disk         | 0                                                    |
+| min_ram          | 0                                                    |
+| name             | Ubuntu14.04                                          |
+| owner            | 290db0b57ea34427b01a6308d3f6e47c                     |
+| protected        | False                                                |
+| schema           | /v2/schemas/image                                    |
+| size             | 229704192                                            |
+| status           | active                                               |
+| tags             |                                                      |
+| updated_at       | 2016-04-23T11:56:39Z                                 |
+| virtual_size     | None                                                 |
+| visibility       | public                                               |
++------------------+------------------------------------------------------+
+
 $ openstack image list
-+--------------------------------------+--------+--------+
-| ID                                   | Name   | Status |
-+--------------------------------------+--------+--------+
-| e7b8f2d9-7612-499f-9f09-01016ebb08e5 | cirros | active |
-+--------------------------------------+--------+--------+
++--------------------------------------+-------------+--------+
+| ID                                   | Name        | Status |
++--------------------------------------+-------------+--------+
+| d0ab1492-d629-4f73-953e-21de2fd200ba | Ubuntu14.04 | active |
+| e7b8f2d9-7612-499f-9f09-01016ebb08e5 | cirros      | active |
++--------------------------------------+-------------+--------+
 ```
 
 ## Compute Service
