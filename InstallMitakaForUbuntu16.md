@@ -237,6 +237,8 @@ $ ls -l /etc/apache2/sites-enabled/wsgi-keystone.conf
 lrwxrwxrwx 1 root root 47 Apr 23 16:24 /etc/apache2/sites-enabled/wsgi-keystone.conf -> /etc/apache2/sites-available/wsgi-keystone.conf
 
 $ sudo rm -v /var/lib/keystone/keystone.db
+$ sudo service keystone stop
+~~~ Port 5000がKeystoneで使われているので、一旦停止させる。
 $ sudo service apache2 restart
 $ sudo service apache2 status
 ● apache2.service - LSB: Apache2 web server
@@ -247,4 +249,313 @@ $ sudo service apache2 status
      Docs: man:systemd-sysv-generator(8)
   Process: 15279 ExecStop=/etc/init.d/apache2 stop (code=exited, status=0/SUCCESS)
   Process: 15261 ExecStart=/etc/init.d/apache2 start (code=exited, status=0/SUCCESS)
+```
+
+### Create the service entity and API endpoints
+準備
+```
+$ export OS_TOKEN=token
+$ export OS_URL=http://192.168.0.200:35357/v3
+$ export OS_IDENTITY_API_VERSION=3
+```
+
+サービス作成
+```
+$ openstack service create  --name keystone --description "OpenStack Identity" identity
++-------------+----------------------------------+
+| Field       | Value                            |
++-------------+----------------------------------+
+| description | OpenStack Identity               |
+| enabled     | True                             |
+| id          | d4d4c4573e4546f2892ab65b220e1df2 |
+| name        | keystone                         |
+| type        | identity                         |
++-------------+----------------------------------+
+ogalush@ryunosuke:~$ 
+```
+
+Endpoint作成
+```
+$ openstack endpoint create --region RegionOne identity public http://192.168.0.200:5000/v3
++--------------+----------------------------------+
+| Field        | Value                            |
++--------------+----------------------------------+
+| enabled      | True                             |
+| id           | 651c611d45354aa2bea32f5935b43be7 |
+| interface    | public                           |
+| region       | RegionOne                        |
+| region_id    | RegionOne                        |
+| service_id   | d4d4c4573e4546f2892ab65b220e1df2 |
+| service_name | keystone                         |
+| service_type | identity                         |
+| url          | http://192.168.0.200:5000/v3     |
++--------------+----------------------------------+
+ogalush@ryunosuke:~$ 
+
+ogalush@ryunosuke:~$ openstack endpoint create --region RegionOne identity internal http://192.168.0.200:5000/v3
++--------------+----------------------------------+
+| Field        | Value                            |
++--------------+----------------------------------+
+| enabled      | True                             |
+| id           | 4b398962d0e64399bbf66d5ccf8b5cae |
+| interface    | internal                         |
+| region       | RegionOne                        |
+| region_id    | RegionOne                        |
+| service_id   | d4d4c4573e4546f2892ab65b220e1df2 |
+| service_name | keystone                         |
+| service_type | identity                         |
+| url          | http://192.168.0.200:5000/v3     |
++--------------+----------------------------------+
+ogalush@ryunosuke:~$ 
+
+ogalush@ryunosuke:~$ openstack endpoint create --region RegionOne identity admin http://192.168.0.200:35357/v3
++--------------+----------------------------------+
+| Field        | Value                            |
++--------------+----------------------------------+
+| enabled      | True                             |
+| id           | dd967a13566d4aabbc6bc311345d8ffa |
+| interface    | admin                            |
+| region       | RegionOne                        |
+| region_id    | RegionOne                        |
+| service_id   | d4d4c4573e4546f2892ab65b220e1df2 |
+| service_name | keystone                         |
+| service_type | identity                         |
+| url          | http://192.168.0.200:35357/v3    |
++--------------+----------------------------------+
+ogalush@ryunosuke:~$ 
+```
+
+### Create a domain, projects, users, and roles
+ドメイン作成
+```
+ogalush@ryunosuke:~$ openstack domain create --description "Default Domain" default
++-------------+----------------------------------+
+| Field       | Value                            |
++-------------+----------------------------------+
+| description | Default Domain                   |
+| enabled     | True                             |
+| id          | 7841afe520964a04aa50756aee42a5d3 |
+| name        | default                          |
++-------------+----------------------------------+
+ogalush@ryunosuke:~$
+```
+
+adminプロジェクト
+```
+ogalush@ryunosuke:~$ openstack project create --domain default --description "Admin Project" admin
++-------------+----------------------------------+
+| Field       | Value                            |
++-------------+----------------------------------+
+| description | Admin Project                    |
+| domain_id   | 7841afe520964a04aa50756aee42a5d3 |
+| enabled     | True                             |
+| id          | 290db0b57ea34427b01a6308d3f6e47c |
+| is_domain   | False                            |
+| name        | admin                            |
+| parent_id   | 7841afe520964a04aa50756aee42a5d3 |
++-------------+----------------------------------+
+ogalush@ryunosuke:~$ 
+```
+
+adminユーザ
+```
+ogalush@ryunosuke:~$ openstack user create --domain default --password-prompt admin
+User Password: <パスワードを入れる>
+Repeat User Password: <パスワードを入れる>
++-----------+----------------------------------+
+| Field     | Value                            |
++-----------+----------------------------------+
+| domain_id | 7841afe520964a04aa50756aee42a5d3 |
+| enabled   | True                             |
+| id        | 45e936fbfe18477a9d083f902bbf0270 |
+| name      | admin                            |
++-----------+----------------------------------+
+ogalush@ryunosuke:~$ 
+```
+
+adminロール
+```
+ogalush@ryunosuke:~$ openstack role create admin
++-----------+----------------------------------+
+| Field     | Value                            |
++-----------+----------------------------------+
+| domain_id | None                             |
+| id        | 8c791de47d2c49b4a396df0190bf6ac5 |
+| name      | admin                            |
++-----------+----------------------------------+
+ogalush@ryunosuke:~$ 
+```
+
+adminユーザの紐付け
+```
+$ openstack role add --project admin --user admin admin
+```
+
+サービス
+```
+ogalush@ryunosuke:~$ openstack project create --domain default --description "Service Project" service
++-------------+----------------------------------+
+| Field       | Value                            |
++-------------+----------------------------------+
+| description | Service Project                  |
+| domain_id   | 7841afe520964a04aa50756aee42a5d3 |
+| enabled     | True                             |
+| id          | 8c7d96939a92466f814c64458f3759a6 |
+| is_domain   | False                            |
+| name        | service                          |
+| parent_id   | 7841afe520964a04aa50756aee42a5d3 |
++-------------+----------------------------------+
+ogalush@ryunosuke:~$ 
+```
+
+demoプロジェクト
+```
+ogalush@ryunosuke:~$ openstack project create --domain default --description "Demo Project" demo
++-------------+----------------------------------+
+| Field       | Value                            |
++-------------+----------------------------------+
+| description | Demo Project                     |
+| domain_id   | 7841afe520964a04aa50756aee42a5d3 |
+| enabled     | True                             |
+| id          | dae2d17668e242d9a639f637d21123ff |
+| is_domain   | False                            |
+| name        | demo                             |
+| parent_id   | 7841afe520964a04aa50756aee42a5d3 |
++-------------+----------------------------------+
+ogalush@ryunosuke:~$ 
+```
+
+demoユーザ
+```
+ogalush@ryunosuke:~$ openstack user create --domain default --password-prompt demo
+User Password: <パスワードを入れる>
+Repeat User Password: <パスワードを入れる>
++-----------+----------------------------------+
+| Field     | Value                            |
++-----------+----------------------------------+
+| domain_id | 7841afe520964a04aa50756aee42a5d3 |
+| enabled   | True                             |
+| id        | 92b2fc5986d54c76b0a84c406a2edd1c |
+| name      | demo                             |
++-----------+----------------------------------+
+ogalush@ryunosuke:~$
+```
+
+userロール
+```
+ogalush@ryunosuke:~$ openstack role create user
++-----------+----------------------------------+
+| Field     | Value                            |
++-----------+----------------------------------+
+| domain_id | None                             |
+| id        | be209089532241d7b6671e6bef11f4d6 |
+| name      | user                             |
++-----------+----------------------------------+
+ogalush@ryunosuke:~$ 
+```
+
+demoユーザの紐付け
+```
+$ openstack role add --project demo --user demo user
+```
+
+### Verify operation
+一時的に設定した環境変数を外して、正常動作するか試す.
+```
+ogalush@ryunosuke:~$  unset OS_TOKEN OS_URL
+```
+
+adminユーザの確認
+```
+ogalush@ryunosuke:~$ openstack --os-auth-url http://192.168.0.200:35357/v3 --os-project-domain-name default --os-user-domain-name default   --os-project-name admin --os-username admin token issue
+Password: 
+↓ tokenを取得できればOK.
++------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Field      | Value                                                                                                                                                                                   |
++------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| expires    | 2016-04-23T08:49:42.458837Z                                                                                                                                                             |
+| id         | gAAAAABXGykWOlteI4eehJrSd22dJxBxxDLXKYaelA1OnP0T_EYmBH18pgH3PWPFXCIXR2dN3_IKoAhHRrSo8K9HMsUuJqNhfl9ct9RKEg2yZFAfDiTONkEudbWUn91CV3eTFmmQ6obSExqTACydXN2lHEItw5uN_RqBWzPnVmSzSy6WC5KSoo0 |
+| project_id | 290db0b57ea34427b01a6308d3f6e47c                                                                                                                                                        |
+| user_id    | 45e936fbfe18477a9d083f902bbf0270                                                                                                                                                        |
++------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+ogalush@ryunosuke:~$ 
+```
+
+demoユーザの確認
+```
+ogalush@ryunosuke:~$  openstack --os-auth-url http://192.168.0.200:5000/v3 --os-project-domain-name default --os-user-domain-name default  --os-project-name demo --os-username demo token issue
+Password: 
+↓ tokenを取得できればOK.
++------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Field      | Value                                                                                                                                                                                   |
++------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| expires    | 2016-04-23T08:50:59.593447Z                                                                                                                                                             |
+| id         | gAAAAABXGyljdemMLDNMq3xKvtgm1Jj6AjcQc6A3rMLsj9Qvt_0BztO0UQxvJeMgdyz95UdDi-D7Ox4VSaqTn5_8BgjL1KMtpWM7-CWRIX1WqMDrhht3RP4sz3jMviLLjDo40_OShdyJSk8v_if-UgVSMO_ABmKTPKtqQ0qjFAVOoH0tasFsZ3g |
+| project_id | dae2d17668e242d9a639f637d21123ff                                                                                                                                                        |
+| user_id    | 92b2fc5986d54c76b0a84c406a2edd1c                                                                                                                                                        |
++------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+ogalush@ryunosuke:~$ 
+```
+
+### Create OpenStack client environment scripts
+admin, demo両方の環境を操作できるように、環境変数を設定したファイルを準備する。
+
+admin環境
+```
+$ tee ~/admin-openrc << 'EOT'
+export OS_PROJECT_DOMAIN_NAME=default
+export OS_USER_DOMAIN_NAME=default
+export OS_PROJECT_NAME=admin
+export OS_USERNAME=admin
+export OS_PASSWORD=admin
+export OS_AUTH_URL=http://192.168.0.200:35357/v3
+export OS_IDENTITY_API_VERSION=3
+export OS_IMAGE_API_VERSION=2
+EOT
+
+$ cat ~/admin-openrc
+```
+demo環境
+```
+tee ~/demo-openrc << 'EOT'
+export OS_PROJECT_DOMAIN_NAME=default
+export OS_USER_DOMAIN_NAME=default
+export OS_PROJECT_NAME=demo
+export OS_USERNAME=demo
+export OS_PASSWORD=demo
+export OS_AUTH_URL=http://192.168.0.200:5000/v3
+export OS_IDENTITY_API_VERSION=3
+export OS_IMAGE_API_VERSION=2
+EOT
+
+$ cat ~/demo-openrc 
+```
+
+確認
+```
+ogalush@ryunosuke:~$ source admin-openrc 
+ogalush@ryunosuke:~$ openstack token issue
+↓ tokenを取得できればOK.
++------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Field      | Value                                                                                                                                                                                   |
++------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| expires    | 2016-04-23T08:55:28.409389Z                                                                                                                                                             |
+| id         | gAAAAABXGypwgNQkDk9FufXPDbi8sh9Azg5m03WrLcUvQo93Zi-jdJ-qycUgf9xR7uAjOj1nHiU0rcm02e3_pstrEBGekHYoS5tLs0B-Ewegj_sWvbcljjmwqACFupEcL4okLd3NO8X2MeSK-EqPzjfKfsk9zSrdqvcQd7-PL-6nEV5rG6JbShA |
+| project_id | 290db0b57ea34427b01a6308d3f6e47c                                                                                                                                                        |
+| user_id    | 45e936fbfe18477a9d083f902bbf0270                                                                                                                                                        |
++------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+
+ogalush@ryunosuke:~$ source demo-openrc 
+ogalush@ryunosuke:~$ openstack token issue
+↓ tokenを取得できればOK.
++------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Field      | Value                                                                                                                                                                                   |
++------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| expires    | 2016-04-23T08:55:39.566807Z                                                                                                                                                             |
+| id         | gAAAAABXGyp785XypHlt4U6HJpiuxUrBk-SsyJX5VvCZv2xSv8ki6_mI7py2NUJ2j-foSQSAYavcN6YBaGS3y4Id9NzhjI_a46XEndFZG6zY0v8D-OgdD0DOiheRxTaWK_GdMDxLHGcbJPTlVM3iAa_z57GgHqpEJ6lRaHwZjBmyPMrCvCGqn0k |
+| project_id | dae2d17668e242d9a639f637d21123ff                                                                                                                                                        |
+| user_id    | 92b2fc5986d54c76b0a84c406a2edd1c                                                                                                                                                        |
++------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+ogalush@ryunosuke:~$ 
+
 ```
