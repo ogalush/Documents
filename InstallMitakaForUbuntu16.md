@@ -923,6 +923,9 @@ my_ip = 192.168.0.200
 use_neutron = True
 firewall_driver = nova.virt.firewall.NoopFirewallDriver
 
+## dhcp domain
+dhcp_domain=localdomain
+
 [api_database]
 connection = mysql+pymysql://nova:password@192.168.0.200/nova_api
 
