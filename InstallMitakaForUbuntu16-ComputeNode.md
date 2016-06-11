@@ -72,6 +72,9 @@ rabbit_host = 192.168.0.200
 rabbit_userid = openstack
 rabbit_password = password
 
+## dhcp domain
+dhcp_domain=localdomain
+
 [keystone_authtoken]
 auth_uri = http://192.168.0.200:5000
 auth_url = http://192.168.0.200:35357
