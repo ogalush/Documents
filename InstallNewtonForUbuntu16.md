@@ -96,6 +96,11 @@ $ sudo vi /etc/mysql/mariadb.conf.d/50-server.cnf
 [mysqld]
 bind-address            = 192.168.0.200
 ...
+###character-set-server  = utf8mb4
+###collation-server      = utf8mb4_general_ci
+collation-server = utf8_general_ci
+character-set-server = utf8
+...
 ## for OpenStack Settings.
 default-storage-engine = innodb
 innodb_file_per_table
@@ -103,8 +108,18 @@ max_connections = 4096
 ----
 
 ※mysqldの文字コードが、デフォルト設定でutf8mb4になっている。utf8の4Byte文字も許容するCodeの模様。
-OpenStackドキュメントのutf8よりも良いと思われるのでそのままで。
-http://dev.classmethod.jp/cloud/aws/utf8mb4-on-rds-mysql/
+　http://dev.classmethod.jp/cloud/aws/utf8mb4-on-rds-mysql/
+
+[memo] MySQLの文字コードをデフォルトのutf8mb4で実施すると、あとでErrorになる。
+Document通りutf8を使用する。
+----
+・出力されたエラーメッセージ
+ogalush@ryunosuke:~$ sudo bash -c "keystone-manage db_sync" keystone
+2016-11-26 18:16:39.046 14288 ERROR oslo_db.sqlalchemy.exc_filters [-] DBAPIError exception wrapped from (pymysql.err.InternalError) (1071, u'Specified key was too long; max key length is 767 bytes') [SQL: u'\nCREATE TABLE migrate_version (\n\trepository_id VARCHAR(250) NOT NULL, \n\trepository_path TEXT, \n\tversion INTEGER, \n\tPRIMARY KEY (repository_id)\n)\n\n']
+
+・Newton on 16.04 Xenial and mysql's new default utf8mb4 charset 
+https://bugs.launchpad.net/openstack-manuals/+bug/1575688
+----
 
 反映
 $ sudo service mysql restart
@@ -164,3 +179,100 @@ tcp        0      0 192.168.0.200:11211     0.0.0.0:*               LISTEN      
 udp        0      0 192.168.0.200:11211     0.0.0.0:*                           11438/memcached 
 ~~~ Interfaceに紐づいているIPアドレスでLISTENしているのでOK. 
 ```
+
+
+## Identity service
+認証サービスであるKeyStoneをインストールする。
+### Install and configure
+#### Prerequisites
+```
+MySQLの設定
+$ sudo mysql -u root
+MariaDB [(none)]> CREATE DATABASE keystone;
+Query OK, 1 row affected (0.00 sec)
+
+MariaDB [(none)]> GRANT ALL PRIVILEGES ON keystone.* TO 'keystone'@'%' IDENTIFIED BY 'password';
+Query OK, 0 rows affected (0.00 sec)
+
+MariaDB [(none)]> FLUSH PRIVILEGES;
+Query OK, 0 rows affected (0.00 sec)
+
+MariaDB [(none)]> quit;
+```
+
+#### Install and configure components
+```
+インストール
+$ sudo apt -y install keystone
+
+設定
+$ sudo vi /etc/keystone/keystone.conf
+-----
+[database]
+## connection = sqlite:////var/lib/keystone/keystone.db
+connection = mysql+pymysql://keystone:password@192.168.0.200/keystone
+...
+[token]
+provider = fernet
+-----
+
+反映
+$ sudo bash -c "keystone-manage db_sync" keystone
+
+keystone設定
+$ sudo keystone-manage fernet_setup --keystone-user keystone --keystone-group keystone
+$ sudo keystone-manage credential_setup --keystone-user keystone --keystone-group keystone
+$ sudo keystone-manage bootstrap --bootstrap-password password --bootstrap-admin-url http://192.168.0.200:35357/v3/ --bootstrap-internal-url http://192.168.0.200:35357/v3/ --bootstrap-public-url http://192.168.0.200:5000/v3/ --bootstrap-region-id RegionOne
+```
+
+#### Configure the Apache HTTP server
+```
+httpd設定
+$ echo 'ServerName 192.168.0.200' | sudo tee -a /etc/apache2/apache2.conf 
+
+不要ファイル削除
+$ sudo rm -vf /var/lib/keystone/keystone.db
+removed '/var/lib/keystone/keystone.db'
+
+反映
+$ sudo service apache2 restart
+$ sudo service apache2 status
+● apache2.service - LSB: Apache2 web server
+   Loaded: loaded (/etc/init.d/apache2; bad; vendor preset: enabled)
+  Drop-In: /lib/systemd/system/apache2.service.d
+           └─apache2-systemd.conf
+   Active: active (running) since Sat 2016-11-26 18:33:31 JST; 2s ago
+     Docs: man:systemd-sysv-generator(8)
+  Process: 15071 ExecStop=/etc/init.d/apache2 stop (code=exited, status=0/SUCCESS)
+  Process: 15105 ExecStart=/etc/init.d/apache2 start (code=exited, status=0/SUCCESS)
+    Tasks: 95
+   Memory: 37.3M
+      CPU: 130ms
+   CGroup: /system.slice/apache2.service
+           ├─15123 /usr/sbin/apache2 -k start
+           ├─15126 (wsgi:keystone-pu -k start
+           ├─15127 (wsgi:keystone-pu -k start
+           ├─15128 (wsgi:keystone-pu -k start
+           ├─15129 (wsgi:keystone-pu -k start
+```
+
+#### Finalize the installation
+環境変数設定
+```
+$ export OS_USERNAME=admin
+$ export OS_PASSWORD=password
+$ export OS_PROJECT_NAME=admin
+$ export OS_USER_DOMAIN_NAME=default
+$ export OS_PROJECT_DOMAIN_NAME=default
+$ export OS_AUTH_URL=http://192.168.0.200:35357/v3
+$ export OS_IDENTITY_API_VERSION=3
+```
+
+### Create a domain, projects, users, and roles
+```
+Project作成
+$ openstack project create --domain default --description "Service Project" service
+```
+### Verify operation
+### Create OpenStack client environment scripts
+
