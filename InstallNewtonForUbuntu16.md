@@ -1464,6 +1464,27 @@ $ openstack flavor create --id 0 --vcpus 1 --ram 64 --disk 1 m1.nano
 +----------------------------+---------+
 ```
 
+##### Create m1.small flavor
+普段利用するsizeのflavorを作成する.
+```
+$ openstack flavor create --id 1 --vcpus 2 --ram 4096 --disk 40 m1.small --swap 4096
++----------------------------+----------+
+| Field                      | Value    |
++----------------------------+----------+
+| OS-FLV-DISABLED:disabled   | False    |
+| OS-FLV-EXT-DATA:ephemeral  | 0        |
+| disk                       | 40       |
+| id                         | 1        |
+| name                       | m1.small |
+| os-flavor-access:is_public | True     |
+| properties                 |          |
+| ram                        | 4096     |
+| rxtx_factor                | 1.0      |
+| swap                       | 4096     |
+| vcpus                      | 2        |
++----------------------------+----------+
+```
+
 ##### Generate a key pair
 ```
 ・Create keypair
