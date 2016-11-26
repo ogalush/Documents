@@ -406,3 +406,240 @@ $ openstack token issue
 | user_id    | 28e270123c6b467fb35d5c74550e6a26                                                             |
 +------------+----------------------------------------------------------------------------------------------+
 ```
+
+## Image service
+### Install and configure
+#### Prerequisites
+```
+MySQL設定
+$ sudo mysql -u root
+MariaDB [(none)]> CREATE DATABASE glance;
+Query OK, 1 row affected (0.00 sec)
+MariaDB [(none)]> GRANT ALL PRIVILEGES ON glance.* TO 'glance'@'%' IDENTIFIED BY 'password';
+Query OK, 0 rows affected (0.00 sec)
+MariaDB [(none)]> quit;
+Bye
+
+KeyStone設定
+$ source ~/admin-openrc
+$ openstack user create --domain default --password-prompt glance
+User Password: password
+Repeat User Password: password
++---------------------+----------------------------------+
+| Field               | Value                            |
++---------------------+----------------------------------+
+| domain_id           | default                          |
+| enabled             | True                             |
+| id                  | 63e3ca0770b24002b7cb103c5661b611 |
+| name                | glance                           |
+| password_expires_at | None                             |
++---------------------+----------------------------------+
+
+$ openstack role add --project service --user glance admin
+$ openstack service create --name glance --description "OpenStack Image" image
++-------------+----------------------------------+
+| Field       | Value                            |
++-------------+----------------------------------+
+| description | OpenStack Image                  |
+| enabled     | True                             |
+| id          | 9f038111b95a41c8984653c184bc9faf |
+| name        | glance                           |
+| type        | image                            |
++-------------+----------------------------------+
+
+$ openstack endpoint create --region RegionOne image public http://192.168.0.200:9292
++--------------+----------------------------------+
+| Field        | Value                            |
++--------------+----------------------------------+
+| enabled      | True                             |
+| id           | 24687c46a54d4e29b1a057878937f7ac |
+| interface    | public                           |
+| region       | RegionOne                        |
+| region_id    | RegionOne                        |
+| service_id   | 9f038111b95a41c8984653c184bc9faf |
+| service_name | glance                           |
+| service_type | image                            |
+| url          | http://192.168.0.200:9292        |
++--------------+----------------------------------+
+
+$ openstack endpoint create --region RegionOne image internal http://192.168.0.200:9292
++--------------+----------------------------------+
+| Field        | Value                            |
++--------------+----------------------------------+
+| enabled      | True                             |
+| id           | 7145be636ab544ae9c2a8456c6ef4d1e |
+| interface    | internal                         |
+| region       | RegionOne                        |
+| region_id    | RegionOne                        |
+| service_id   | 9f038111b95a41c8984653c184bc9faf |
+| service_name | glance                           |
+| service_type | image                            |
+| url          | http://192.168.0.200:9292        |
++--------------+----------------------------------+
+
+$ openstack endpoint create --region RegionOne image admin http://192.168.0.200:9292
++--------------+----------------------------------+
+| Field        | Value                            |
++--------------+----------------------------------+
+| enabled      | True                             |
+| id           | 4f8bb292030e45e1995dd33158da810f |
+| interface    | admin                            |
+| region       | RegionOne                        |
+| region_id    | RegionOne                        |
+| service_id   | 9f038111b95a41c8984653c184bc9faf |
+| service_name | glance                           |
+| service_type | image                            |
+| url          | http://192.168.0.200:9292        |
++--------------+----------------------------------+
+```
+
+#### Install and configure components
+```
+インストール
+$ sudo apt -y install glance
+
+設定
+$ sudo vi /etc/glance/glance-api.conf
+----
+[database]
+...
+connection = mysql+pymysql://glance:password@192.168.0.200/glance
+...
+[keystone_authtoken]
+auth_uri = http://192.168.0.200:5000
+auth_url = http://192.168.0.200:35357
+memcached_servers = 192.168.0.200:11211
+auth_type = password
+project_domain_name = default
+user_domain_name = default
+project_name = service
+username = glance
+password = password
+...
+[paste_deploy]
+flavor = keystone
+...
+
+[glance_store]
+stores = file,http
+default_store = file 
+filesystem_store_datadir = /var/lib/glance/images/
+----
+
+$ sudo vi /etc/glance/glance-registry.conf
+----
+[database]
+...
+connection = mysql+pymysql://glance:password@192.168.0.200/glance
+...
+[keystone_authtoken]
+auth_uri = http://192.168.0.200:5000
+auth_url = http://192.168.0.200:35357
+memcached_servers = 192.168.0.200:11211
+auth_type = password
+project_domain_name = default
+user_domain_name = default
+project_name = service
+username = glance
+password = password
+...
+
+[paste_deploy]
+flavor = keystone
+----
+
+反映
+$ sudo bash -c "glance-manage db_sync" glance
+```
+
+#### Finalize installation
+```
+$ sudo service glance-registry restart
+$ sudo service glance-registry status
+● glance-registry.service - OpenStack Image Service Registry
+   Loaded: loaded (/lib/systemd/system/glance-registry.service; enabled; vendor preset: enabled)
+   Active: active (running) since Sat 2016-11-26 19:11:23 JST; 4s ago
+  Process: 17021 ExecStartPre=/bin/chown glance:adm /var/log/glance (code=exited, status=0/SUCCESS)
+  Process: 17018 ExecStartPre=/bin/chown glance:glance /var/lock/glance /var/lib/glance (code=exited, status=
+  Process: 17014 ExecStartPre=/bin/mkdir -p /var/lock/glance /var/log/glance /var/lib/glance (code=exited, st
+ Main PID: 17025 (glance-registry)
+    Tasks: 5
+
+$ sudo service glance-api restart
+$ sudo service glance-api status
+● glance-api.service - OpenStack Image Service API
+   Loaded: loaded (/lib/systemd/system/glance-api.service; enabled; vendor preset: enabled)
+   Active: active (running) since Sat 2016-11-26 19:11:47 JST; 1s ago
+  Process: 17080 ExecStartPre=/bin/chown glance:adm /var/log/glance (code=exited, status=0/SUCCESS)
+  Process: 17074 ExecStartPre=/bin/chown glance:glance /var/lock/glance /var/lib/glance (code=exited, status=
+  Process: 17071 ExecStartPre=/bin/mkdir -p /var/lock/glance /var/log/glance /var/lib/glance (code=exited, st
+ Main PID: 17084 (glance-api)
+    Tasks: 5
+```
+
+### Verify operation
+```
+・準備
+$ source ~/admin-openrc
+
+・Cirros
+$ wget http://download.cirros-cloud.net/0.3.4/cirros-0.3.4-x86_64-disk.img
+$ openstack image create "cirros" --file cirros-0.3.4-x86_64-disk.img --disk-format qcow2 --container-format bare --public
++------------------+------------------------------------------------------+
+| Field            | Value                                                |
++------------------+------------------------------------------------------+
+| checksum         | ee1eca47dc88f4879d8a229cc70a07c6                     |
+| container_format | bare                                                 |
+| created_at       | 2016-11-26T10:13:22Z                                 |
+| disk_format      | qcow2                                                |
+| file             | /v2/images/dc894552-ee2a-4938-a4de-a5eb34323215/file |
+| id               | dc894552-ee2a-4938-a4de-a5eb34323215                 |
+| min_disk         | 0                                                    |
+| min_ram          | 0                                                    |
+| name             | cirros                                               |
+| owner            | 7d691f1c7898412d9d9fe831ca484032                     |
+| protected        | False                                                |
+| schema           | /v2/schemas/image                                    |
+| size             | 13287936                                             |
+| status           | active                                               |
+| tags             |                                                      |
+| updated_at       | 2016-11-26T10:13:22Z                                 |
+| virtual_size     | None                                                 |
+| visibility       | public                                               |
++------------------+------------------------------------------------------+
+
+・Ubuntu
+$ wget https://cloud-images.ubuntu.com/releases/16.04/release/ubuntu-16.04-server-cloudimg-amd64-disk1.img
+$ $ openstack image create "ubuntu16.04" --file ubuntu-16.04-server-cloudimg-amd64-disk1.img --disk-format qcow2 --container-format bare --public
++------------------+------------------------------------------------------+
+| Field            | Value                                                |
++------------------+------------------------------------------------------+
+| checksum         | 2957423af77cd18f2bdb4c6ef47e4597                     |
+| container_format | bare                                                 |
+| created_at       | 2016-11-26T10:16:22Z                                 |
+| disk_format      | qcow2                                                |
+| file             | /v2/images/53640dba-24a1-4370-aa29-ff9c674e7495/file |
+| id               | 53640dba-24a1-4370-aa29-ff9c674e7495                 |
+| min_disk         | 0                                                    |
+| min_ram          | 0                                                    |
+| name             | ubuntu16.04                                          |
+| owner            | 7d691f1c7898412d9d9fe831ca484032                     |
+| protected        | False                                                |
+| schema           | /v2/schemas/image                                    |
+| size             | 314179584                                            |
+| status           | active                                               |
+| tags             |                                                      |
+| updated_at       | 2016-11-26T10:16:23Z                                 |
+| virtual_size     | None                                                 |
+| visibility       | public                                               |
++------------------+------------------------------------------------------+
+
+確認
+$ openstack image list
++--------------------------------------+-------------+--------+
+| ID                                   | Name        | Status |
++--------------------------------------+-------------+--------+
+| 53640dba-24a1-4370-aa29-ff9c674e7495 | ubuntu16.04 | active |
+| dc894552-ee2a-4938-a4de-a5eb34323215 | cirros      | active |
++--------------------------------------+-------------+--------+
+```
