@@ -40,5 +40,79 @@ $ sudo apt -y install python-openstackclient
 ## Compute service
 ### Install and configure a compute node
 #### Install and configure components
+```
+インストール
+$ sudo apt -y install nova-compute
+
+設定
+$ sudo vi /etc/nova/nova.conf
+----
+[DEFAULT]
+...
+transport_url = rabbit://openstack:password@192.168.0.200
+auth_strategy = keystone
+my_ip = 192.168.0.210
+use_neutron = True
+firewall_driver = nova.virt.firewall.NoopFirewallDriver
+
+[database]
+connection = mysql+pymysql://nova:password@192.168.0.200/nova
+
+[api_database]
+connection = mysql+pymysql://nova:password@192.168.0.200/nova_api
+...
+[keystone_authtoken]
+auth_uri = http://192.168.0.200:5000
+auth_url = http://192.168.0.200:35357
+memcached_servers = 192.168.0.200:11211
+auth_type = password
+project_domain_name = default
+user_domain_name = default
+project_name = service
+username = nova
+password = password
+----
+
+[vnc]
+enabled = True
+vncserver_listen = 0.0.0.0
+vncserver_proxyclient_address = $my_ip
+novncproxy_base_url = http://192.168.0.200:6080/vnc_auto.html
+vnc_keymap=ja
+
+[glance]
+api_servers = http://192.168.0.200:9292
+
+[oslo_concurrency]
+lock_path = /var/lib/nova/tmp
+```
+
 #### Finalize installation
+```
+確認
+$ egrep -c '(vmx|svm)' /proc/cpuinfo
+4
+→ 1以上のため設定変更不要。
+
+$ sudo grep 'virt_type' /etc/nova/nova-compute.conf
+virt_type=kvm
+
+反映
+$ sudo service nova-compute restart
+```
 ### Verify operation
+ComputeNodeのサービスが追加されたのでOK.
+```
+ogalush@ryunosuke:~$ source ~/admin-openrc 
+ogalush@ryunosuke:~$ openstack compute service list
++----+------------------+-----------+----------+---------+-------+----------------------------+
+| ID | Binary           | Host      | Zone     | Status  | State | Updated At                 |
++----+------------------+-----------+----------+---------+-------+----------------------------+
+|  4 | nova-consoleauth | ryunosuke | internal | enabled | up    | 2016-11-26T13:32:05.000000 |
+|  5 | nova-scheduler   | ryunosuke | internal | enabled | up    | 2016-11-26T13:32:07.000000 |
+|  6 | nova-conductor   | ryunosuke | internal | enabled | up    | 2016-11-26T13:32:08.000000 |
+|  7 | nova-compute     | ryunosuke | nova     | enabled | up    | 2016-11-26T13:32:04.000000 |
+|  8 | nova-compute     | hayao     | nova     | enabled | up    | 2016-11-26T13:32:02.000000 |
+~~~ 今回追加したComputeNode.
++----+------------------+-----------+----------+---------+-------+----------------------------+
+```
