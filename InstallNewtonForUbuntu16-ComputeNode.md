@@ -116,3 +116,79 @@ ogalush@ryunosuke:~$ openstack compute service list
 ~~~ 今回追加したComputeNode.
 +----+------------------+-----------+----------+---------+-------+----------------------------+
 ```
+
+## Networking service
+### Install and configure compute node
+#### Install the components
+```
+$ sudo apt -y install neutron-linuxbridge-agent
+```
+#### Configure the common component
+```
+$ sudo vi /etc/neutron/neutron.conf
+----
+[DEFAULT]
+...
+transport_url = rabbit://openstack:password@192.168.0.200
+auth_strategy = keystone
+...
+
+[keystone_authtoken]
+auth_uri = http://192.168.0.200:5000
+auth_url = http://192.168.0.200:35357
+memcached_servers = 192.168.0.200:11211
+auth_type = password
+project_domain_name = default
+user_domain_name = default
+project_name = service
+username = neutron
+password = password
+----
+```
+
+#### Configure networking options
+「Networking Option 2: Self-service networks」を選ぶ.
+##### Configure the Linux bridge agent
+```
+$ sudo vi /etc/neutron/plugins/ml2/linuxbridge_agent.ini
+----
+[linux_bridge]
+physical_interface_mappings = provider:enp3s0
+
+...
+
+[vxlan]
+enable_vxlan = True
+local_ip = 192.168.0.210
+l2_population = True
+
+[securitygroup]
+enable_security_group = True
+firewall_driver = neutron.agent.linux.iptables_firewall.IptablesFirewallDriver
+----
+```
+
+#### Configure the Compute service to use the Networking service
+```
+$ sudo vi /etc/nova/nova.conf
+----
+...
+[neutron]
+url = http://192.168.0.200:9696
+auth_url = http://192.168.0.200:35357
+auth_type = password
+project_domain_name = default
+user_domain_name = default
+region_name = RegionOne
+project_name = service
+username = neutron
+password = password
+----
+```
+#### Finalize installation
+```
+$ echo 'nova-compute
+neutron-linuxbridge-agent' | awk '{print "sudo service "$1" restart"}' | bash -x
+```
+
+### Verify operation
