@@ -787,6 +787,7 @@ lock_path = /var/lib/nova/tmp
 [vnc]
 vncserver_listen = $my_ip
 vncserver_proxyclient_address = $my_ip
+vnc_keymap=ja
 
 [glance]
 api_servers = http://192.168.0.200:9292
@@ -796,6 +797,9 @@ api_servers = http://192.168.0.200:9292
 $ sudo bash -c "nova-manage api_db sync" nova
 $ sudo bash -c "nova-manage db sync" nova
 ```
+
+※vnc_keymapで日本語キーボード対応する。  
+http://qiita.com/kure/items/a005bf5f9ddd18c54ad1
 
 #### Finalize installation
 ```
