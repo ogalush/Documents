@@ -1632,7 +1632,7 @@ $ openstack server list
 +--------------------------------------+----------------------+--------+----------------------+------------+
 | de8207c9-5bc7-4d40-9d58-6d5fe8474992 | selfservice-instance | ACTIVE | selfservice=10.0.0.7 | cirros     |
 +--------------------------------------+----------------------+--------+----------------------+------------+
-~~~ ACTIVEになっているので起動している状況。
+~~~ 仮想Instanceが起動している状況.(ACTIVEになっているので)
 
 $ openstack console url show selfservice-instance
 +-------+------------------------------------------------------------------------------------+
@@ -1642,4 +1642,41 @@ $ openstack console url show selfservice-instance
 | url   | http://192.168.0.200:6080/vnc_auto.html?token=d0a6d3b7-df4b-426a-9224-453bf60ed08c |
 +-------+------------------------------------------------------------------------------------+
 ~~~ 上記URLでコンソールを閲覧できる.
+```
+
+DashboardからUbuntu16.04のインスタンスを起動してみる。
+```
+$ nova list
++--------------------------------------+------+--------+------------+-------------+-------------------------------------+
+| ID                                   | Name | Status | Task State | Power State | Networks                            |
++--------------------------------------+------+--------+------------+-------------+-------------------------------------+
+| f1e8dbad-7b87-4879-a159-acfe0b695057 | test | ACTIVE | -          | Running     | selfservice=10.0.0.6, 192.168.0.101 |
++--------------------------------------+------+--------+------------+-------------+-------------------------------------+
+
+$ ssh -i ~/.ssh/id_rsa_chef ubuntu@192.168.0.101
+Welcome to Ubuntu 16.04.1 LTS (GNU/Linux 4.4.0-47-generic x86_64)
+
+ * Documentation:  https://help.ubuntu.com
+ * Management:     https://landscape.canonical.com
+ * Support:        https://ubuntu.com/advantage
+
+  Get cloud support with Ubuntu Advantage Cloud Guest:
+    http://www.ubuntu.com/business/services/cloud
+
+0 packages can be updated.
+0 updates are security updates.
+
+
+Last login: Sun Nov 27 01:16:51 2016 from 192.168.0.220
+ubuntu@test:~$ 
+ubuntu@test:~$ ifconfig ens3
+ens3      Link encap:Ethernet  HWaddr fa:16:3e:60:e9:41  
+          inet addr:10.0.0.6  Bcast:10.0.0.255  Mask:255.255.255.0
+          inet6 addr: fe80::f816:3eff:fe60:e941/64 Scope:Link
+          UP BROADCAST RUNNING MULTICAST  MTU:1450  Metric:1
+          RX packets:12795 errors:0 dropped:0 overruns:0 frame:0
+          TX packets:12852 errors:0 dropped:0 overruns:0 carrier:0
+          collisions:0 txqueuelen:1000 
+          RX bytes:109568534 (109.5 MB)  TX bytes:1228270 (1.2 MB)
+→ 仮想インスタンスへのログイン完了。
 ```
