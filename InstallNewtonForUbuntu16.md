@@ -272,7 +272,137 @@ $ export OS_IDENTITY_API_VERSION=3
 ```
 Project作成
 $ openstack project create --domain default --description "Service Project" service
-```
-### Verify operation
-### Create OpenStack client environment scripts
++-------------+----------------------------------+
+| Field       | Value                            |
++-------------+----------------------------------+
+| description | Service Project                  |
+| domain_id   | default                          |
+| enabled     | True                             |
+| id          | 140a73faaa904dc49b1b21b2cecd1db2 |
+| is_domain   | False                            |
+| name        | service                          |
+| parent_id   | default                          |
++-------------+----------------------------------+
 
+$ openstack project create --domain default --description "Demo Project" demo
++-------------+----------------------------------+
+| Field       | Value                            |
++-------------+----------------------------------+
+| description | Demo Project                     |
+| domain_id   | default                          |
+| enabled     | True                             |
+| id          | f79866ddad734d739c7fd0511d284b55 |
+| is_domain   | False                            |
+| name        | demo                             |
+| parent_id   | default                          |
++-------------+----------------------------------+
+
+User作成
+$ openstack user create --domain default --password-prompt demo
+User Password: password
+Repeat User Password: password
++---------------------+----------------------------------+
+| Field               | Value                            |
++---------------------+----------------------------------+
+| domain_id           | default                          |
+| enabled             | True                             |
+| id                  | 28e270123c6b467fb35d5c74550e6a26 |
+| name                | demo                             |
+| password_expires_at | None                             |
++---------------------+----------------------------------+
+
+Role作成
+$ openstack role create user
++-----------+----------------------------------+
+| Field     | Value                            |
++-----------+----------------------------------+
+| domain_id | None                             |
+| id        | 146d43aa973a49c793495fe3bb71f524 |
+| name      | user                             |
++-----------+----------------------------------+
+
+Role追加
+$ openstack role add --project demo --user demo user
+
+```
+
+### Verify operation
+```
+・admin user, request an authentication token:
+$ unset OS_AUTH_URL OS_PASSWORD
+$ openstack --os-auth-url http://192.168.0.200:35357/v3 --os-project-domain-name default --os-user-domain-name default --os-project-name admin --os-username admin token issue
+Password: password
++------------+----------------------------------------------------------------------------------------------+
+| Field      | Value                                                                                        |
++------------+----------------------------------------------------------------------------------------------+
+| expires    | 2016-11-26 10:44:26+00:00                                                                    |
+| id         | gAAAAABYOVl6o6lPIcKXVyEQebeA8pfJ2hKLHKlxIfQMZsaMTW53x2_JARdXMP2oqInZmLzP1BHjWklKomrY5a-wgFRB |
+|            | FP4VYbJGlNWEZbJOMuQVviHonftnWUCrgVBQxPANoJ2vHYFuEP7qy40l4kOlGjnFqrntxyqSZ104C6oh5mthOldMvaQ  |
+| project_id | 7d691f1c7898412d9d9fe831ca484032                                                             |
+| user_id    | 49f7f89501284e82ad403b392d0effbc                                                             |
++------------+----------------------------------------------------------------------------------------------+
+
+・As the demo user, request an authentication token:
+$ openstack --os-auth-url http://192.168.0.200:5000/v3 --os-project-domain-name default --os-user-domain-name default --os-project-name demo --os-username demo token issue
+Password: password
++------------+----------------------------------------------------------------------------------------------+
+| Field      | Value                                                                                        |
++------------+----------------------------------------------------------------------------------------------+
+| expires    | 2016-11-26 10:45:59+00:00                                                                    |
+| id         | gAAAAABYOVnXVreD4xHixg8iAA9PwlBOBw9QWH10wzKVnmjmkKa83fnIWY8Dy3WQ-G46AiJ9GPqJFWRbbkbyiXduw6nm |
+|            | xFDdWxxV1MiPO6y5W8dqrKpfBvYzvJJvj2Z0S28tK6FJg9NvEKHxTqDt_VBKntls6jeAzlrsOo0SKhXY50ld-55l0-Q  |
+| project_id | f79866ddad734d739c7fd0511d284b55                                                             |
+| user_id    | 28e270123c6b467fb35d5c74550e6a26                                                             |
++------------+----------------------------------------------------------------------------------------------+
+```
+
+### Create OpenStack client environment scripts
+OpenStackを操作するための環境設定ファイルを作成する。
+```
+・adminユーザ用
+$ echo 'export OS_PROJECT_DOMAIN_NAME=default
+export OS_USER_DOMAIN_NAME=default
+export OS_PROJECT_NAME=admin
+export OS_USERNAME=admin
+export OS_PASSWORD=password
+export OS_AUTH_URL=http://192.168.0.200:35357/v3
+export OS_IDENTITY_API_VERSION=3
+export OS_IMAGE_API_VERSION=2' > ~/admin-openrc
+
+$ source ~/admin-openrc
+$ openstack token issue
++------------+----------------------------------------------------------------------------------------------+
+| Field      | Value                                                                                        |
++------------+----------------------------------------------------------------------------------------------+
+| expires    | 2016-11-26 10:49:59+00:00                                                                    |
+| id         | gAAAAABYOVrH27u9KToGo1zz_K0iJdEpCZ1yn66ucsB_GVVh_w-bfXql_wO2oYRkOSAT0G4a26GH9V-              |
+|            | X8kMW6WZtjXoYYQHD6mHLDfWzZnX5uphaLraD1GuynL3PJDfQswHqXpFvnU-                                 |
+|            | 1n53g6EkSaCFdqjO2B08NB3ZwX9lcjPJ_G9hmnBAsDN8                                                 |
+| project_id | 7d691f1c7898412d9d9fe831ca484032                                                             |
+| user_id    | 49f7f89501284e82ad403b392d0effbc                                                             |
++------------+----------------------------------------------------------------------------------------------+
+
+
+・demoユーザ用
+$ echo 'export OS_PROJECT_DOMAIN_NAME=default
+export OS_USER_DOMAIN_NAME=default
+export OS_PROJECT_NAME=demo
+export OS_USERNAME=demo
+export OS_PASSWORD=password
+export OS_AUTH_URL=http://192.168.0.200:5000/v3
+export OS_IDENTITY_API_VERSION=3
+export OS_IMAGE_API_VERSION=2' > ~/demo-openrc
+
+$ source ~/demo-openrc
+$ openstack token issue
++------------+----------------------------------------------------------------------------------------------+
+| Field      | Value                                                                                        |
++------------+----------------------------------------------------------------------------------------------+
+| expires    | 2016-11-26 10:50:43+00:00                                                                    |
+| id         | gAAAAABYOVrzYn9eeQ-VU_5WdZGXZcjwhTxrhyIU3SeYtjYbFyoSbN0dHVUKdkAxcUqujjXNBYq4H-               |
+|            | V_UUvQAoeqGCR8raJEC9phcF6Y--                                                                 |
+|            | JLSvLlIV_QnvApWzScvYDmsB1E5nQYRCgx9FFB4GXCWAmOnXlM5ZvOjARUJ_UvKGb67CXWVbeCMro                |
+| project_id | f79866ddad734d739c7fd0511d284b55                                                             |
+| user_id    | 28e270123c6b467fb35d5c74550e6a26                                                             |
++------------+----------------------------------------------------------------------------------------------+
+```
