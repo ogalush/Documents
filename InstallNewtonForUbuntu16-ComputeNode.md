@@ -192,3 +192,23 @@ neutron-linuxbridge-agent' | awk '{print "sudo service "$1" restart"}' | bash -x
 ```
 
 ### Verify operation
+```
+$ source ~/admin-openrc
+$ openstack network agent list
++----------------------+--------------------+-----------+-------------------+-------+-------+----------------------+
+| ID                   | Agent Type         | Host      | Availability Zone | Alive | State | Binary               |
++----------------------+--------------------+-----------+-------------------+-------+-------+----------------------+
+| 11bb11d7-60db-4ac8   | L3 agent           | ryunosuke | nova              | True  | UP    | neutron-l3-agent     |
+| -ae6a-2c0c1dd9714d   |                    |           |                   |       |       |                      |
+| 5eb81530-7d5d-491d-  | Linux bridge agent | hayao     | None              | True  | UP    | neutron-linuxbridge- |
+| bb04-31446233c362    |                    |           |                   |       |       | agent                |
+~~~ ComputeNodeのAgentが追加できているのでOK.
+| 78e44279-cb2b-4097   | DHCP agent         | ryunosuke | nova              | True  | UP    | neutron-dhcp-agent   |
+| -b53c-3e678b76b3af   |                    |           |                   |       |       |                      |
+| a024d45d-568d-4553-a | Linux bridge agent | ryunosuke | None              | True  | UP    | neutron-linuxbridge- |
+| 5d7-b91379903295     |                    |           |                   |       |       | agent                |
+| b5a36da3-d4ee-40cc-b | Metadata agent     | ryunosuke | None              | True  | UP    | neutron-metadata-    |
+| 811-3732d36e27ae     |                    |           |                   |       |       | agent                |
++----------------------+--------------------+-----------+-------------------+-------+-------+----------------------+
+ogalush@ryunosuke:~$ 
+```
