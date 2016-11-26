@@ -1,7 +1,8 @@
 ## Install OpenStack Newton on Ubuntu 16.04(ComputeNode)
 
 ドキュメント: [OpenStack Docs](http://docs.openstack.org/newton/install-guide-ubuntu/)  
-インストール先: hayao(192.168.0.210)
+インストール先: hayao(192.168.0.210)  
+Repo: https://github.com/ogalush/Newton-InstallConfigs
 ```
 ogalush@livaserver:~$ ssh -c aes128-ctr -A ogalush@192.168.0.210
 Welcome to Ubuntu 16.04.1 LTS (GNU/Linux 4.4.0-47-generic x86_64)
