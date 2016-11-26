@@ -79,7 +79,6 @@ $ sudo apt -y install python-openstackclient
 ```
 
 ### SQL database
-#### Install and configure components¶
 ```
 $ sudo apt -y install mariadb-server python-pymysql
 
@@ -127,7 +126,41 @@ Thanks for using MariaDB!
 ```
 
 ### Message queue
-#### Install and configure components¶
+```
+インストール
+$ sudo apt -y install rabbitmq-server
+
+設定
+$ sudo rabbitmqctl add_user openstack password
+Creating user "openstack" ...
+
+$ sudo rabbitmqctl set_permissions openstack ".*" ".*" ".*"
+Setting permissions for user "openstack" in vhost "/" ...
+```
 
 ### Memcached
+#### Install and configure components
+```
+インストール
+$ sudo apt -y install memcached python-memcache
 
+設定
+$ sudo sed -i 's/-l 127.0.0.1/-l 192.168.0.200/g' /etc/memcached.conf 
+$ sudo service memcached restart
+$ sudo service memcached status
+● memcached.service - memcached daemon
+   Loaded: loaded (/lib/systemd/system/memcached.service; enabled; vendor preset: enabled)
+   Active: active (running) since Sat 2016-11-26 18:01:36 JST; 5s ago
+ Main PID: 11438 (memcached)
+    Tasks: 6
+   Memory: 548.0K
+      CPU: 3ms
+   CGroup: /system.slice/memcached.service
+           └─11438 /usr/bin/memcached -m 64 -p 11211 -u memcache -l 192.168.0.200
+
+確認
+$ sudo netstat -lpn |grep 11211
+tcp        0      0 192.168.0.200:11211     0.0.0.0:*               LISTEN      11438/memcached 
+udp        0      0 192.168.0.200:11211     0.0.0.0:*                           11438/memcached 
+~~~ Interfaceに紐づいているIPアドレスでLISTENしているのでOK. 
+```
