@@ -1204,3 +1204,48 @@ $ openstack network agent list
 | 811-3732d36e27ae     |                    |           |                   |       |       | agent                |
 +----------------------+--------------------+-----------+-------------------+-------+-------+----------------------+
 ```
+
+## Dashboard
+### Install and configure
+#### Install and configure components
+```
+インストール
+$ sudo apt -y install openstack-dashboard
+
+設定
+$ sudo vi /etc/openstack-dashboard/local_settings.py
+----
+OPENSTACK_HOST = "192.168.0.200"
+ALLOWED_HOSTS = ['*', ]
+...
+SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
+CACHES = {
+    'default': {
+         'BACKEND': 'django.core.cache.backends.memcached.MemcachedCache',
+         'LOCATION': '192.168.0.200:11211',
+    }
+}
+...
+OPENSTACK_KEYSTONE_URL = "http://%s:5000/v3" % OPENSTACK_HOST
+OPENSTACK_KEYSTONE_MULTIDOMAIN_SUPPORT = True
+OPENSTACK_API_VERSIONS = {
+    "identity": 3,
+    "image": 2,
+    "volume": 2,
+}
+OPENSTACK_KEYSTONE_DEFAULT_DOMAIN = "default"
+OPENSTACK_KEYSTONE_DEFAULT_ROLE = "user"
+OPENSTACK_NEUTRON_NETWORK → defaultのまま
+TIME_ZONE = "Asia/Tokyo"
+----
+```
+
+#### Finalize installation
+```
+反映
+$ sudo service apache2 reload
+```
+
+### Verify operation
+OpenStack DashboardへログインできればOK.(admin, demoユーザ)  
+http://192.168.0.200/horizon/
