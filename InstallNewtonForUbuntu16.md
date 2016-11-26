@@ -14,7 +14,7 @@ ogalush@ryunosuke:~$
 ### Network Time Protocol (NTP)
 ntpdがdefaultでinstallされているので対応なし
 ```
-ogalush@ryunosuke:~$ ntpq -p
+$ ntpq -p
      remote           refid      st t when poll reach   delay   offset  jitter
 ==============================================================================
  0.ubuntu.pool.n .POOL.          16 p    -   64    0    0.000    0.000   0.000
@@ -30,9 +30,104 @@ ogalush@ryunosuke:~$ ntpq -p
 ogalush@ryunosuke:~$ 
 ```
 
-
 ### OpenStack packages
+#### Enable the OpenStack repository
+```
+$ sudo apt install software-properties-common
+Reading package lists... Done
+Building dependency tree       
+Reading state information... Done
+software-properties-common is already the newest version (0.96.20.4).
+~~~ 既に入っている。
+0 upgraded, 0 newly installed, 0 to remove and 0 not upgraded.
+
+$ sudo add-apt-repository cloud-archive:newton
+ Ubuntu Cloud Archive for OpenStack Newton
+ More info: https://wiki.ubuntu.com/ServerTeam/CloudArchive
+Press [ENTER] to continue or ctrl-c to cancel adding it
+
+Reading package lists...
+Building dependency tree...
+Reading state information...
+The following NEW packages will be installed:
+  ubuntu-cloud-keyring
+0 upgraded, 1 newly installed, 0 to remove and 0 not upgraded.
+Need to get 5,086 B of archives.
+After this operation, 34.8 kB of additional disk space will be used.
+Get:1 http://jp.archive.ubuntu.com/ubuntu xenial/universe amd64 ubuntu-cloud-keyring all 2012.08.14 [5,086 B]
+Fetched 5,086 B in 0s (111 kB/s)
+Selecting previously unselected package ubuntu-cloud-keyring.
+(Reading database ... 138021 files and directories currently installed.)
+Preparing to unpack .../ubuntu-cloud-keyring_2012.08.14_all.deb ...
+Unpacking ubuntu-cloud-keyring (2012.08.14) ...
+Setting up ubuntu-cloud-keyring (2012.08.14) ...
+Importing ubuntu-cloud.archive.canonical.com keyring
+OK
+Processing ubuntu-cloud.archive.canonical.com removal keyring
+gpg: /etc/apt/trustdb.gpg: trustdb created
+OK
+ogalush@ryunosuke:~$
+```
+
+#### Finalize the installation
+```
+$ sudo apt -y update && sudo apt -y dist-upgrade
+→ 通常のPackageUpdateが行われる。
+
+$ sudo apt -y install python-openstackclient
+→ PythonクライアントがインストールされればOK.
+```
+
 ### SQL database
+#### Install and configure components¶
+```
+$ sudo apt -y install mariadb-server python-pymysql
+
+MySQLのbind-address設定が50-server.cnfに入っているので、編集する。
+$ sudo grep -iRH 'bind-address' /etc/mysql/
+/etc/mysql/mariadb.conf.d/50-server.cnf:bind-address            = 127.0.0.1
+
+バックアップ
+$ sudo cp -pv /etc/mysql/mariadb.conf.d/50-server.cnf ~
+'/etc/mysql/mariadb.conf.d/50-server.cnf' -> '/home/ogalush/50-server.cnf'
+
+設定変更
+$ sudo vi /etc/mysql/mariadb.conf.d/50-server.cnf
+----
+[mysqld]
+bind-address            = 192.168.0.200
+...
+## for OpenStack Settings.
+default-storage-engine = innodb
+innodb_file_per_table
+max_connections = 4096
+----
+
+※mysqldの文字コードが、デフォルト設定でutf8mb4になっている。utf8の4Byte文字も許容するCodeの模様。
+OpenStackドキュメントのutf8よりも良いと思われるのでそのままで。
+http://dev.classmethod.jp/cloud/aws/utf8mb4-on-rds-mysql/
+
+反映
+$ sudo service mysql restart
+$ sudo service mysql status
+● mysql.service - LSB: Start and stop the mysql database server daemon
+   Loaded: loaded (/etc/init.d/mysql; bad; vendor preset: enabled)
+   Active: active (running) since Sat 2016-11-26 17:52:38 JST; 2s ago
+     Docs: man:systemd-sysv-generator(8)
+
+Security Settings.
+$ sudo mysql_secure_installation
+Set root password? [Y/n] n
+ ... skipping.
+Remove anonymous users? [Y/n] y
+Disallow root login remotely? [Y/n] y
+Remove test database and access to it? [Y/n] y
+Reload privilege tables now? [Y/n] y
+Thanks for using MariaDB!
+```
+
 ### Message queue
+#### Install and configure components¶
+
 ### Memcached
 
