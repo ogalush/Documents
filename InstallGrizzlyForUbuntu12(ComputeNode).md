@@ -7,7 +7,7 @@ Copyright (c) Takehiko OGASAWARA 2013 All Rights Reserved.
 -->
 <div id='title'>　</div>    
 
-# Compute nodeを追加する方法
+# Compute nodeを追加する方法(grizzly)
 
 ### 準備
 バックアップディレクトリ作成
