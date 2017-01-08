@@ -9,8 +9,7 @@ Copyright (c) Takehiko OGASAWARA 2013 All Rights Reserved.
 
 # GrizzlyをCentOSへインストールする方法
 
-Reference From
-http://docs.openstack.org/grizzly/basic-install/yum/content/basic-install_controller.html>
+Reference: http://docs.openstack.org/grizzly/basic-install/yum/content/basic-install_controller.html
 
 バックアップディレクトリ作成
 ```
