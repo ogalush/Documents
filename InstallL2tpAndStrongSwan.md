@@ -1,6 +1,8 @@
 # はじめに
 本ドキュメントは、L2TP+StrongSwanを使用したL2TP+IPSecのVPNを構築する手順である.  
-参考: [strongSwan + xl2tpd でVPN(L2TP/IPsec)を構築する](http://qiita.com/namoshika/items/30c348b56474d422ef64)
+参考:  
+* [strongSwan + xl2tpd でVPN(L2TP/IPsec)を構築する](http://qiita.com/namoshika/items/30c348b56474d422ef64)
+* [xl2tpd + strongswan でVPN構築し、iPhone6から接続](http://qiita.com/tukiyo3/items/dcfe2b584c8ac60cb5c9)
 
 # 環境
 Ubuntu 14.04(x86_64)  
@@ -117,6 +119,20 @@ $ sudo vim /etc/ppp/chap-secrets
 ----
 ```
 
+### strongswan
+DNSを追記する.
+```
+charon {
+        load_modular = yes
+        plugins {
+                include strongswan.d/charon/*.conf
+        }
+       dns1=8.8.8.8
+       dns2=8.8.4.4
+}
+include strongswan.d/*.conf
+```
+
 ### sysctl
 ```
 $ sudo vim /etc/sysctl.conf
@@ -149,3 +165,12 @@ Restarting xl2tpd: xl2tpd.
 
 ## 接続確認
 スマホからVPN L2TP IPSec(PSK)で接続確認してつながればOK.
+接続状況
+```
+$ sudo ipsec status
+Security Associations (1 up, 0 connecting):
+    L2TP-NAT[1]: ESTABLISHED 91 seconds ago, 192.168.0.220[192.168.0.220]...192.168.0.12[192.168.0.12]
+    L2TP-NAT{1}:  INSTALLED, TRANSPORT, ESP SPIs: cb5b46d0_i 0c61c87d_o
+    L2TP-NAT{1}:   192.168.0.220/32[udp/l2f] === 192.168.0.12/32[udp]
+→ 同じLANからは接続できているが、ルータがプロトコル50,51を通さないためにそとからの確認はできず...
+```
