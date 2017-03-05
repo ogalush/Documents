@@ -172,5 +172,5 @@ Security Associations (1 up, 0 connecting):
     L2TP-NAT[1]: ESTABLISHED 91 seconds ago, 192.168.0.220[192.168.0.220]...192.168.0.12[192.168.0.12]
     L2TP-NAT{1}:  INSTALLED, TRANSPORT, ESP SPIs: cb5b46d0_i 0c61c87d_o
     L2TP-NAT{1}:   192.168.0.220/32[udp/l2f] === 192.168.0.12/32[udp]
-→ 同じLANからは接続できているが、ルータがプロトコル50,51を通さないためにそとからの確認はできず...
 ```
+→ 同じLANからは接続できているが、ルータがプロトコル50,51を通さないためにInternet側からの確認はできず... orz.
