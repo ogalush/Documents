@@ -145,3 +145,7 @@ Restarting xl2tpd: xl2tpd.
 [atermサポートページ](http://www.aterm.jp/function/guide8/list-data/j-all/bl/k/m01_m34.html)を参考にする.  
 * InBound UDP500, 4500をL2TP+IPSecサーバ宛にポートフォワードする.  
 * プロトコル番号: 50, 51を開放する.
+→ プロトコル番号単位で開放できるルータが限られているので、開放できない場合は諦める..orz.
+
+## 接続確認
+スマホからVPN L2TP IPSec(PSK)で接続確認してつながればOK.
