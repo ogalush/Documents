@@ -122,6 +122,7 @@ $ sudo vim /etc/ppp/chap-secrets
 ### strongswan
 DNSを追記する.
 ```
+$ sudo vim /etc/strongswan.conf
 charon {
         load_modular = yes
         plugins {
