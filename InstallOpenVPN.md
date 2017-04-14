@@ -253,19 +253,70 @@ $ sudo service openvpn status
 ```
 
 ## Macクライアントの設定
-### 証明書のダウンロード
-OpenVPNサーバで作成したclientkeyをダウンロードする.
+### クライアント設定ファイルの準備
+OpenVPNサーバでクライアント用設定ファイルを作成する.
 ```
-$ scp 192.168.0.220:~/openvpn-ca/keys/client* ~/Downloads/.
+$ mkdir -pv ~/client-configs/files
+$ cd ~/client-configs
+$ cp -v /usr/share/doc/openvpn/examples/sample-config-files/client.conf base.conf
+
+$ vim base.conf
+----
+remote 192.168.0.220 1194
+#ca ca.crt
+#cert client.crt
+#key client.key
+----
+```
+  
+以下のコマンドでファイルを作成する.
+```
+$ vim ~/client-configs/make_config.sh
+----
+#!/bin/bash
+
+# First argument: Client identifier
+
+KEY_DIR=~/openvpn-ca/keys
+OUTPUT_DIR=~/client-configs/files
+BASE_CONFIG=~/client-configs/base.conf
+
+cat ${BASE_CONFIG} \
+    <(echo -e '<ca>') \
+    ${KEY_DIR}/ca.crt \
+    <(echo -e '</ca>\n<cert>') \
+    ${KEY_DIR}/${1}.crt \
+    <(echo -e '</cert>\n<key>') \
+    ${KEY_DIR}/${1}.key \
+    <(echo -e '</key>\n<tls-auth>') \
+    ${KEY_DIR}/ta.key \
+    <(echo -e '</tls-auth>') \
+    > ${OUTPUT_DIR}/${1}.ovpn
+----
+→ シェルが作成されている.
+$ chmod -v 755 ~/client-configs/make_config.sh
+$ ./make_config.sh client1
+$ ls -al ~/client-configs/files/client1.ovpn
+→ client1.ovpnファイルがあればOK.
+```
+
+### 設定ファイルのダウンロード
+OpenVPNサーバで作成したclient設定をダウンロードする.
+```
+$ scp 192.168.0.220:~/client-configs/files/client1.ovpn ~/Downloads/.
 client1.crt     100% 5550     1.8MB/s   00:00    
 client1.csr     100% 1094   410.9KB/s   00:00    
 client1.key     100% 1704   578.8KB/s   00:00   
 ```
 ### Tunnelblick の取得
-OpenVPN対応の無料Clientがあるのでインストールする.
+OpenVPN対応の無料Clientがあるのでインストールする.  
 [Tunnelblick 	free software for OpenVPN on OS X and macOS](https://tunnelblick.net/downloads.html)のダウンロードを開く.  
 ダウンロード先: [Tunnelblick 3.7.0](https://tunnelblick.net/release/Tunnelblick_3.7.0_build_4790.dmg)  
 
+### Tunnelblick のインストール
+ダウンロードパッケージをダブルクリックしてインストールを進める.  
+- 変更のチェック: 「変更のチェック」を押す.
+- 設定ファイルがある.
 
 
 # 参考
