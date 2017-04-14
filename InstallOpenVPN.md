@@ -236,6 +236,10 @@ group nogroup
 ;dh dh1024.pem
 dh dh2048.pem
 → ファイル名を修正する.
+
+push "route 192.168.0.0 255.255.255.0"
+→ 192.168.0.0はVPNServer経由にする.
+push "dhcp-option DNS 192.168.0.254"
 ----
 ```
 
@@ -263,6 +267,7 @@ $ cp -v /usr/share/doc/openvpn/examples/sample-config-files/client.conf base.con
 $ vim base.conf
 ----
 remote 192.168.0.220 1194
+tls-auth ta.key 1
 #ca ca.crt
 #cert client.crt
 #key client.key
@@ -304,9 +309,7 @@ $ ls -al ~/client-configs/files/client1.ovpn
 OpenVPNサーバで作成したclient設定をダウンロードする.
 ```
 $ scp 192.168.0.220:~/client-configs/files/client1.ovpn ~/Downloads/.
-client1.crt     100% 5550     1.8MB/s   00:00    
-client1.csr     100% 1094   410.9KB/s   00:00    
-client1.key     100% 1704   578.8KB/s   00:00   
+scp 192.168.0.220:~/openvpn-ca/keys/ta.key  ~/Downloads/.
 ```
 ### Tunnelblick の取得
 OpenVPN対応の無料Clientがあるのでインストールする.  
@@ -317,7 +320,14 @@ OpenVPN対応の無料Clientがあるのでインストールする.
 ダウンロードパッケージをダブルクリックしてインストールを進める.  
 - 変更のチェック: 「変更のチェック」を押す.
 - 設定ファイルがある.
+- VPNを追加
+- client1.ovpnをドラッグして追加する.
+- VPN接続先が登録されればOK.
+- 接続先登録後、ta.keyは削除する.(秘密鍵なので)
+- その後、VPN接続でサーバへ接続できれば完了.
 
+## ルータのポート開放
+ルータの管理画面でUDP 1194をOpenVPNサーバへ転送する設定にする.
 
 # 参考
 - [OpenVPN.Net](https://openvpn.net/)
