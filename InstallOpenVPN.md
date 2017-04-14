@@ -379,3 +379,4 @@ OpenVPN対応の無料Clientがあるのでインストールする.
 # 参考
 - [OpenVPN.Net](https://openvpn.net/)
 - [Ubuntu 16.04 の OpenVPN サーバの設定](http://transitive.info/2016/05/21/openvpn-on-ubuntu-1604/)
+- [OpenVPN and Routing and IPtables](https://serverfault.com/questions/570164/openvpn-and-routing-and-iptables)
