@@ -5,8 +5,8 @@
 ## 環境
 |マシン|OS|IPアドレス|
 |---|---|---|
-|VPNServer|Ubuntu16.04(x86_64)|192.168.0.220|
-|クライアント|MaxOS Sierra(10.12.4)|192.168.0.X|
+|VPNServer|Ubuntu16.04(x86_64)|192.168.0.220/24|
+|クライアント|MaxOS Sierra(10.12.4)|192.168.0.X/24|
 
 ## VPNServer インストール
 ### パッケージインストール
@@ -251,6 +251,21 @@ $ sudo service openvpn status
  * VPN 'server' is running
 → サーバが起動すればOK.
 ```
+
+## Macクライアントの設定
+### 証明書のダウンロード
+OpenVPNサーバで作成したclientkeyをダウンロードする.
+```
+$ scp 192.168.0.220:~/openvpn-ca/keys/client* ~/Downloads/.
+client1.crt     100% 5550     1.8MB/s   00:00    
+client1.csr     100% 1094   410.9KB/s   00:00    
+client1.key     100% 1704   578.8KB/s   00:00   
+```
+### Tunnelblick の取得
+OpenVPN対応の無料Clientがあるのでインストールする.
+[Tunnelblick 	free software for OpenVPN on OS X and macOS](https://tunnelblick.net/downloads.html)のダウンロードを開く.  
+ダウンロード先: [Tunnelblick 3.7.0](https://tunnelblick.net/release/Tunnelblick_3.7.0_build_4790.dmg)  
+
 
 
 # 参考
