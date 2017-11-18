@@ -41,7 +41,8 @@ label hd
 ```
 
 ### preeseed.cfg の作成
-Ubuntuの自動インストール用Configファイルを作成する.
+Ubuntuの自動インストール用Configファイルを作成する.  
+参考: https://help.ubuntu.com/lts/installation-guide/example-preseed.txt
 ```
 $ sudo vim dvdr/preseed/preseed.cfg
 ----
@@ -62,24 +63,28 @@ d-i netcfg/get_hostname string localhost
 
 # Mirror settings
 d-i mirror/country string manual
-d-i mirror/http/hostname string archive.ubuntu.com
+d-i mirror/http/hostname jp.archive.ubuntu.com
 d-i mirror/http/directory string /ubuntu
+#d-i mirror/http/hostname string archive.ubuntu.com
+#d-i mirror/http/directory string /ubuntu
 d-i mirror/http/proxy string
 
 # Clock and time zone setup
 d-i clock-setup/utc boolean true
 d-i time/zone string Asia/Tokyo
 d-i clock-setup/ntp boolean true
-d-i clock-setup/ntp-server string 0.pool.ntp.org
+d-i clock-setup/ntp-server string ntp.nict.jp
 
 # Partitioning
 d-i partman-auto/disk string /dev/sda
 d-i partman-auto/method string regular
 d-i partman-auto/choose_recipe select atomic
+d-i partman/default_filesystem string xfs
 d-i partman-partitioning/confirm_write_new_label boolean true
 d-i partman/choose_partition select finish
 d-i partman/confirm boolean true
 d-i partman/confirm_nooverwrite boolean true
+d-i partman/mount_style select traditional
 
 # Base system installation
 d-i base-installer/kernel/image string linux-server
@@ -115,13 +120,13 @@ d-i finish-install/reboot_in_progress note
 
 # This first command is run as early as possible, just after
 # preseeding is read.
-d-i preseed/late_command string apt-install axel bash-completion chrony curl dnsutils fping git httpie httping jq libxml2-utils lsof man nmap open-vm-tools psmisc sshpass tcpdump screen tree unzip vim-nox wget zip zsh; in-target apt-get -y update; in-target apt-get -y upgrade; in-target apt-get -y clean;
+d-i preseed/late_command string apt-install axel bash-completion chrony curl dnsutils fping git httpie httping jq libxml2-utils lsof man nmap open-vm-tools psmisc sshpass tcpdump screen tree unzip vim-nox wget zip zsh ntp ntpdate ansible mtr traceroute cpufrequtils; in-target apt-get -y update; in-target apt-get -y upgrade; in-target apt-get -y clean;
 ----
 ```
 
 ### .iso の保存
 ```
-$ sudo genisoimage -N -J -R -D -V "PRESEED" -o ubuntu-16.04.3-server-amd64.proceed.iso -b isolinux/isolinux.bin -c isolinux/boot.cat -no-emul-boot -boot-load-size 4 -boot-info-table dvdr
+$ sudo genisoimage -N -J -R -D -V "PRESEED" -o ubuntu-16.04.3-server-amd64.preceed.iso -b isolinux/isolinux.bin -c isolinux/boot.cat -no-emul-boot -boot-load-size 4 -boot-info-table dvdr
 ```
 
 ## 編集したISOをUSBメモリへ出力する.
