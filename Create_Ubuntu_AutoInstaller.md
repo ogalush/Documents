@@ -65,9 +65,9 @@ d-i netcfg/get_hostname string localhost
 d-i mirror/country string manual
 d-i mirror/http/hostname string ftp.iij.ad.jp
 d-i mirror/http/directory string /pub/linux/ubuntu/archive/
+d-i mirror/http/proxy string
 #d-i mirror/http/hostname string archive.ubuntu.com
 #d-i mirror/http/directory string /ubuntu
-d-i mirror/http/proxy string
 
 # Clock and time zone setup
 d-i clock-setup/utc boolean false
@@ -106,7 +106,7 @@ d-i user-setup/encrypt-home boolean false
 
 # Package selection
 tasksel tasksel/first multiselect none
-d-i pkgsel/include string openssh-server
+d-i pkgsel/include string openssh-server curl dnsutils fping git jq libxml2-utils lsof man nmap sshpass tcpdump screen tree unzip wget zip zsh ntp ntpdate ansible mtr traceroute cpufrequtils
 d-i pkgsel/upgrade select none
 d-i pkgsel/update-policy select none
 popularity-contest popularity-contest/participate boolean false
@@ -120,7 +120,7 @@ d-i finish-install/reboot_in_progress note
 
 # This first command is run as early as possible, just after
 # preseeding is read.
-d-i preseed/late_command string apt-install axel bash-completion chrony curl dnsutils fping git httpie httping jq libxml2-utils lsof man nmap open-vm-tools psmisc sshpass tcpdump screen tree unzip vim-nox wget zip zsh ntp ntpdate ansible mtr traceroute cpufrequtils; in-target apt-get -y update; in-target apt-get -y upgrade; in-target apt-get -y clean;
+d-i preseed/late_command string in-target apt-get -y update; in-target apt-get -y upgrade; in-target apt-get -y clean;
 ----
 ```
 
