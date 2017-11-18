@@ -70,7 +70,7 @@ d-i mirror/http/directory string /pub/linux/ubuntu/archive/
 d-i mirror/http/proxy string
 
 # Clock and time zone setup
-d-i clock-setup/utc boolean true
+d-i clock-setup/utc boolean false
 d-i time/zone string Asia/Tokyo
 d-i clock-setup/ntp boolean true
 d-i clock-setup/ntp-server string ntp.nict.jp
