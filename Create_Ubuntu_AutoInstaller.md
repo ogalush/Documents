@@ -125,7 +125,7 @@ $ sudo genisoimage -N -J -R -D -V "PRESEED" -o ubuntu-16.04.3-server-amd64.proce
 ```
 
 ## 編集したISOをUSBメモリへ出力する.
-macOSでiso→usbメモリへ出力する.
+macOSでiso→usbメモリへ出力する.  
 参考: http://marmotte.pyrites.jp/blog/2015/01/04/create-bootable-usb-from-iso-file/
 
 ### Disk確認
