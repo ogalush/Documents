@@ -63,8 +63,8 @@ d-i netcfg/get_hostname string localhost
 
 # Mirror settings
 d-i mirror/country string manual
-d-i mirror/http/hostname jp.archive.ubuntu.com
-d-i mirror/http/directory string /ubuntu
+d-i mirror/http/hostname string ftp.iij.ad.jp
+d-i mirror/http/directory string /pub/linux/ubuntu/archive/
 #d-i mirror/http/hostname string archive.ubuntu.com
 #d-i mirror/http/directory string /ubuntu
 d-i mirror/http/proxy string
