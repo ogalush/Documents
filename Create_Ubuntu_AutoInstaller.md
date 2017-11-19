@@ -1,9 +1,15 @@
 # Ubuntu 自動インストールDiskの作成方法
 ## 概要
-OSバージョン: ubuntu 16.04.3 + macOS High Sierra(10.13.1)  
+毎回Ubuntuを手動インストールしていて手間がかかるので自動セットアップしてくれるように整える.  
+対象のOSバージョン: Ubuntu 16.04.3
+使用した環境:  
+```
+・Ubuntuマシン(OSイメージ作成用): Ubuntu 16.04.3
+・macOS High Sierra(10.13.1)  
+```
 参考: http://sig9.hatenablog.com/entry/2016/09/10/120000
 
-## 準備
+## 準備 @Linux
 ### パッケージインストール
 ```
 $ sudo apt-get -y install syslinux mtools mbr genisoimage dvd+rw-tools
@@ -129,7 +135,7 @@ d-i preseed/late_command string in-target apt-get -y update; in-target apt-get -
 $ sudo genisoimage -N -J -R -D -V "PRESEED" -o ubuntu-16.04.3-server-amd64.preceed.iso -b isolinux/isolinux.bin -c isolinux/boot.cat -no-emul-boot -boot-load-size 4 -boot-info-table dvdr
 ```
 
-## 編集したISOをUSBメモリへ出力する.
+## ISOをUSBメモリへ出力する. @macOS
 macOSでiso→usbメモリへ出力する.  
 参考: http://marmotte.pyrites.jp/blog/2015/01/04/create-bootable-usb-from-iso-file/
 
@@ -174,4 +180,5 @@ $ sudo dd if=ubuntu-16.04.3-server-amd64.preceed.iso of=/dev/disk2 bs=4028
 $ diskutil eject /dev/disk2
 ```
 
-あとはUbuntuインストール機でUSBディスクで起動させてインストールさせる.
+あとはUbuntuインストール機でUSBディスクで起動させてインストールさせる.  
+VirtualBoxの場合は、Linuxで作成したisoファイルをBootDiskとして読み込ませれば動く.
