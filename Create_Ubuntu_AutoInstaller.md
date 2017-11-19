@@ -166,7 +166,7 @@ Unmount of all volumes on disk2 was successful
 
 ### USBディスクへ書込み
 ```
-$ sudo dd if=ubuntu-16.04.3-server-amd64.proceed.iso of=/dev/disk2 bs=4028
+$ sudo dd if=ubuntu-16.04.3-server-amd64.preceed.iso of=/dev/disk2 bs=4028
 ```
 
 ### USBディスクの取外し
