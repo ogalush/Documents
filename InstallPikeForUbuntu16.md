@@ -1239,3 +1239,158 @@ $ sudo systemctl status apache2
 #### アクセス確認
 [http://192.168.0.200/horizon/](http://192.168.0.200/horizon/)
 → ログインできればOK.
+
+## インスタンス作成準備
+### ネットワーク作成
+#### Ext-Net
+```
+$ source ~/admin-openrc.sh
+$ neutron net-create --shared --provider:physical_network provider --provider:network_type flat provider
++---------------------------+--------------------------------------+
+| Field                     | Value                                |
++---------------------------+--------------------------------------+
+| admin_state_up            | True                                 |
+| availability_zone_hints   |                                      |
+| availability_zones        |                                      |
+| created_at                | 2018-01-20T17:48:54Z                 |
+| description               |                                      |
+| id                        | 4d03b6f5-0312-44f9-99c2-41561f11ccd8 |
+| ipv4_address_scope        |                                      |
+| ipv6_address_scope        |                                      |
+| is_default                | False                                |
+| mtu                       | 1500                                 |
+| name                      | provider                             |
+| port_security_enabled     | True                                 |
+| project_id                | dbad62d177f4454f83fffa93accaaff4     |
+| provider:network_type     | flat                                 |
+| provider:physical_network | provider                             |
+| provider:segmentation_id  |                                      |
+| revision_number           | 2                                    |
+| router:external           | False                                |
+| shared                    | True                                 |
+| status                    | ACTIVE                               |
+| subnets                   |                                      |
+| tags                      |                                      |
+| tenant_id                 | dbad62d177f4454f83fffa93accaaff4     |
+| updated_at                | 2018-01-20T17:48:54Z                 |
++---------------------------+--------------------------------------+
+
+$ neutron subnet-create --name provider --allocation-pool start=192.168.0.230,end=192.168.0.240 --dns-nameserver 192.168.0.254 --gateway 192.168.0.254 provider 192.168.0.0/24
++-------------------+----------------------------------------------------+
+| Field             | Value                                              |
++-------------------+----------------------------------------------------+
+| allocation_pools  | {"start": "192.168.0.230", "end": "192.168.0.240"} |
+| cidr              | 192.168.0.0/24                                     |
+| created_at        | 2018-01-20T17:49:43Z                               |
+| description       |                                                    |
+| dns_nameservers   | 192.168.0.254                                      |
+| enable_dhcp       | True                                               |
+| gateway_ip        | 192.168.0.254                                      |
+| host_routes       |                                                    |
+| id                | 358784b1-b69c-43a2-91c7-3eb74a0a3697               |
+| ip_version        | 4                                                  |
+| ipv6_address_mode |                                                    |
+| ipv6_ra_mode      |                                                    |
+| name              | provider                                           |
+| network_id        | 4d03b6f5-0312-44f9-99c2-41561f11ccd8               |
+| project_id        | dbad62d177f4454f83fffa93accaaff4                   |
+| revision_number   | 0                                                  |
+| service_types     |                                                    |
+| subnetpool_id     |                                                    |
+| tags              |                                                    |
+| tenant_id         | dbad62d177f4454f83fffa93accaaff4                   |
+| updated_at        | 2018-01-20T17:49:43Z                               |
++-------------------+----------------------------------------------------+
+```
+
+#### Internal-Net
+```
+$ source ~/demo-openrc.sh
+$ neutron net-create selfservice
++-------------------------+--------------------------------------+
+| Field                   | Value                                |
++-------------------------+--------------------------------------+
+| admin_state_up          | True                                 |
+| availability_zone_hints |                                      |
+| availability_zones      |                                      |
+| created_at              | 2018-01-20T17:50:49Z                 |
+| description             |                                      |
+| id                      | 2de82445-e5a1-40bb-b738-0d98641d4132 |
+| ipv4_address_scope      |                                      |
+| ipv6_address_scope      |                                      |
+| is_default              | False                                |
+| mtu                     | 1450                                 |
+| name                    | selfservice                          |
+| port_security_enabled   | True                                 |
+| project_id              | b0a6faa402c24bc0ae8aeba6289cdcd5     |
+| revision_number         | 2                                    |
+| router:external         | False                                |
+| shared                  | False                                |
+| status                  | ACTIVE                               |
+| subnets                 |                                      |
+| tags                    |                                      |
+| tenant_id               | b0a6faa402c24bc0ae8aeba6289cdcd5     |
+| updated_at              | 2018-01-20T17:50:49Z                 |
++-------------------------+--------------------------------------+
+
+$ neutron subnet-create --name selfservice  --dns-nameserver 192.168.0.220 --gateway 10.0.0.1 selfservice 10.0.0.0/24
++-------------------+--------------------------------------------+
+| Field             | Value                                      |
++-------------------+--------------------------------------------+
+| allocation_pools  | {"start": "10.0.0.2", "end": "10.0.0.254"} |
+| cidr              | 10.0.0.0/24                                |
+| created_at        | 2018-01-20T17:51:47Z                       |
+| description       |                                            |
+| dns_nameservers   | 192.168.0.220                              |
+| enable_dhcp       | True                                       |
+| gateway_ip        | 10.0.0.1                                   |
+| host_routes       |                                            |
+| id                | 76180669-eca3-4560-8991-e7aab8780f60       |
+| ip_version        | 4                                          |
+| ipv6_address_mode |                                            |
+| ipv6_ra_mode      |                                            |
+| name              | selfservice                                |
+| network_id        | 2de82445-e5a1-40bb-b738-0d98641d4132       |
+| project_id        | b0a6faa402c24bc0ae8aeba6289cdcd5           |
+| revision_number   | 0                                          |
+| service_types     |                                            |
+| subnetpool_id     |                                            |
+| tags              |                                            |
+| tenant_id         | b0a6faa402c24bc0ae8aeba6289cdcd5           |
+| updated_at        | 2018-01-20T17:51:47Z                       |
++-------------------+--------------------------------------------+
+```
+
+### Router
+```
+$ source ~/admin-openrc.sh
+$ neutron net-update provider --router:external
+Updated network: provider
+$ source ~/demo-openrc.sh
+$ neutron router-create router
++-------------------------+--------------------------------------+
+| Field                   | Value                                |
++-------------------------+--------------------------------------+
+| admin_state_up          | True                                 |
+| availability_zone_hints |                                      |
+| availability_zones      |                                      |
+| created_at              | 2018-01-20T17:53:44Z                 |
+| description             |                                      |
+| external_gateway_info   |                                      |
+| flavor_id               |                                      |
+| id                      | d5bbf14b-a5c5-4c83-8126-75148e459433 |
+| name                    | router                               |
+| project_id              | b0a6faa402c24bc0ae8aeba6289cdcd5     |
+| revision_number         | 1                                    |
+| routes                  |                                      |
+| status                  | ACTIVE                               |
+| tags                    |                                      |
+| tenant_id               | b0a6faa402c24bc0ae8aeba6289cdcd5     |
+| updated_at              | 2018-01-20T17:53:44Z                 |
++-------------------------+--------------------------------------+
+
+$ neutron router-interface-add router selfservice
+Connection to neutron failed: Failed to connect Neutron server
+$ neutron router-gateway-set router provider
+Set gateway for router router
+```
