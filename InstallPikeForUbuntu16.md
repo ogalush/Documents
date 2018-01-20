@@ -46,8 +46,6 @@ ogalush@ryunosuke:~$ ntpq -p
 ogalush@ryunosuke:~$ 
 ```
 
-### 
-
 ## Keystone Installation Tutorial
 [Document](https://docs.openstack.org/keystone/pike/install/)
 ### Install and configure
@@ -150,8 +148,8 @@ $ export OS_IDENTITY_API_VERSION=3
 ```
 
 ### Create a domain, projects, users, and roles
+#### Service Project
 ```
-## Service Project
 $ openstack project create --domain default --description "Service Project" service
 +-------------+----------------------------------+
 | Field       | Value                            |
@@ -164,8 +162,9 @@ $ openstack project create --domain default --description "Service Project" serv
 | name        | service                          |
 | parent_id   | default                          |
 +-------------+----------------------------------+
-
-## Demo Project
+```
+#### Demo Project
+```
 $ openstack project create --domain default --description "Demo Project" demo
 +-------------+----------------------------------+
 | Field       | Value                            |
@@ -178,8 +177,10 @@ $ openstack project create --domain default --description "Demo Project" demo
 | name        | demo                             |
 | parent_id   | default                          |
 +-------------+----------------------------------+
+```
 
-## Demo User
+#### Demo User
+```
 $ openstack user create --domain default --password-prompt demo
 User Password: (パスワードを入力)
 Repeat User Password: (パスワードを入力)
@@ -193,8 +194,10 @@ Repeat User Password: (パスワードを入力)
 | options             | {}                               |
 | password_expires_at | None                             |
 +---------------------+----------------------------------+ 
+```
 
-## User Role
+#### User Role
+```
 $ openstack role create user
 +-----------+----------------------------------+
 | Field     | Value                            |
@@ -203,8 +206,9 @@ $ openstack role create user
 | id        | 73304461e01e48e28fb0bfa53b550391 |
 | name      | user                             |
 +-----------+----------------------------------+
-
-## Add the user role to the demo project and user
+```
+#### Add the user role to the demo project and user
+```
 $ openstack role add --project demo --user demo user
 ```
 
@@ -286,3 +290,188 @@ $ openstack token issue                                                         
 $ source ~/demo-openrc.sh
 $ openstack token issue                                                                         +------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+                              | Field      | Value                                                                                                                                                                                   |                              +------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+                              | expires    | 2018-01-20T16:30:22+0000                                                                                                                                                                |                              | id         | gAAAAABaY2CO-LLhP3zfLsInbSH21a05J9Fr_LE0sp7DKzsQ5fZa9J6zYyc_V6SW6P0iy2VgqW8wIjFrPM4s9KnmFzAkcKo6bbVO_T-en5aqRIr3gq2Xn9soZiU1Rq5nh2Rhl3mm311xbXNR8o9SsIg7Qe9PLtYxQVyLWGPC_qo3LIfmEX3EF24 |                              | project_id | b0a6faa402c24bc0ae8aeba6289cdcd5                                                                                                                                                        |                              | user_id    | aea8ca8d30c74b56b17a91b1e030588a                                                                                                                                                        |                              +------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+                              ogalush@ryunosuke:~$ 
 ```
+
+## Grance Install
+[Document](https://docs.openstack.org/glance/pike/install/)
+
+### Install and configure (Ubuntu)
+#### Create Glance DB
+```
+$ sudo mysql
+MariaDB [(none)]> CREATE DATABASE glance;
+MariaDB [(none)]> GRANT ALL PRIVILEGES ON glance.* TO 'glance'@'%' IDENTIFIED BY 'password';
+MariaDB [(none)]> FLUSH PRIVILEGES;
+MariaDB [(none)]> quit;
+```
+
+#### Create Glance User
+```
+$ source ~/admin-openrc.sh
+$ openstack user create --domain default --password-prompt glance
+User Password:
+Repeat User Password:
++---------------------+----------------------------------+
+| Field               | Value                            |
++---------------------+----------------------------------+
+| domain_id           | default                          |
+| enabled             | True                             |
+| id                  | a8fa1ef195e04a38b91ac220b4fedf20 |
+| name                | glance                           |
+| options             | {}                               |
+| password_expires_at | None                             |
++---------------------+----------------------------------+
+```
+
+#### Add the admin role to the glance user and service project
+```
+$ openstack role add --project service --user glance admin
+```
+
+#### Create the glance service entity
+```
+$ openstack service create --name glance --description "OpenStack Image" image
++-------------+----------------------------------+
+| Field       | Value                            |
++-------------+----------------------------------+
+| description | OpenStack Image                  |
+| enabled     | True                             |
+| id          | b30b73fba5e547ac9741c13f985a0cb7 |
+| name        | glance                           |
+| type        | image                            |
++-------------+----------------------------------+
+```
+
+#### Create the Image service API endpoints
+```
+$ openstack endpoint create --region RegionOne image public http://ryunosuke:9292
++--------------+----------------------------------+
+| Field        | Value                            |
++--------------+----------------------------------+
+| enabled      | True                             |
+| id           | 6f823cc8666941759dba6716aeb8fd90 |
+| interface    | public                           |
+| region       | RegionOne                        |
+| region_id    | RegionOne                        |
+| service_id   | b30b73fba5e547ac9741c13f985a0cb7 |
+| service_name | glance                           |
+| service_type | image                            |
+| url          | http://ryunosuke:9292            |
++--------------+----------------------------------+
+
+$ openstack endpoint create --region RegionOne image internal http://ryunosuke:9292
++--------------+----------------------------------+
+| Field        | Value                            |
++--------------+----------------------------------+
+| enabled      | True                             |
+| id           | 4ff2ec8b04be4a909042a77078483257 |
+| interface    | internal                         |
+| region       | RegionOne                        |
+| region_id    | RegionOne                        |
+| service_id   | b30b73fba5e547ac9741c13f985a0cb7 |
+| service_name | glance                           |
+| service_type | image                            |
+| url          | http://ryunosuke:9292            |
++--------------+----------------------------------+
+
+$ openstack endpoint create --region RegionOne image admin http://ryunosuke:9292
++--------------+----------------------------------+
+| Field        | Value                            |
++--------------+----------------------------------+
+| enabled      | True                             |
+| id           | a17b8bc2eca040ae8f4604c0902c89cd |
+| interface    | admin                            |
+| region       | RegionOne                        |
+| region_id    | RegionOne                        |
+| service_id   | b30b73fba5e547ac9741c13f985a0cb7 |
+| service_name | glance                           |
+| service_type | image                            |
+| url          | http://ryunosuke:9292            |
++--------------+----------------------------------+
+```
+
+### Install and configure components
+#### Install the packages
+```
+$ sudo apt install -y glance
+```
+
+#### Config
+```
+$ sudo vim /etc/glance/glance-api.conf
+----
+[database]
+connection = mysql+pymysql://glance:password@ryunosuke/glance
+...
+[keystone_authtoken]
+auth_uri = http://ryunosuke:5000
+auth_url = http://ryunosuke:35357
+memcached_servers = ryunosuke:11211
+auth_type = password
+project_domain_name = default
+user_domain_name = default
+project_name = service
+username = glance
+password = password
+...
+[paste_deploy]
+flavor = keystone
+...
+[glance_store]
+stores = file,http
+default_store = file 
+filesystem_store_datadir = /var/lib/glance/images/
+----
+
+$ sudo vim /etc/glance/glance-registry.conf
+----
+[database]
+connection = mysql+pymysql://glance:password@ryunosuke/glance
+...
+[keystone_authtoken]
+auth_uri = http://ryunosuke:5000
+auth_url = http://ryunosuke:35357
+memcached_servers = ryunosuke:11211
+auth_type = password
+project_domain_name = default
+user_domain_name = default
+project_name = service
+username = glance
+password = password
+...
+[paste_deploy]
+flavor = keystone
+----
+
+$ sudo bash -c "glance-manage db_sync" glance
+...
+Upgraded database to: pike01, current revision(s): pike01
+
+$ sudo service glance-registry restart
+$ sudo service glance-registry status
+$ sudo service glance-api restart
+$ sudo service glance-api status
+```
+
+### Verify operation
+#### Craete OS Image.
+```
+$ source ~/admin-openrc.sh
+$ wget http://download.cirros-cloud.net/0.3.5/cirros-0.3.5-x86_64-disk.img
+$ openstack image create "cirros" --file cirros-0.3.5-x86_64-disk.img --disk-format qcow2 --container-format bare --public
++------------------+------------------------------------------------------+                                        | Field            | Value                                                |                                        +------------------+------------------------------------------------------+                                        | checksum         | f8ab98ff5e73ebab884d80c9dc9c7290                     |                                        | container_format | bare                                                 |                                        | created_at       | 2018-01-20T15:58:19Z                                 |                                        | disk_format      | qcow2                                                |                                        | file             | /v2/images/351ec2ce-8cca-4a11-a007-0c6de84926ac/file |                                        | id               | 351ec2ce-8cca-4a11-a007-0c6de84926ac                 |                                        | min_disk         | 0                                                    |                                        | min_ram          | 0                                                    |                                        | name             | cirros                                               |                                        | owner            | dbad62d177f4454f83fffa93accaaff4                     |                                        | protected        | False                                                |                                        | schema           | /v2/schemas/image                                    |                                        | size             | 13267968                                             |                                        | status           | active                                               |                                        | tags             |                                                      |                                        | updated_at       | 2018-01-20T15:58:19Z                                 |                                        
+| virtual_size     | None                                                 |
+| visibility       | public                                               |
++------------------+------------------------------------------------------+
+→ 表示されればOK.
+```
+
+#### Confirm upload of the image and validate attributes
+```
+$ openstack image list
++--------------------------------------+--------+--------+
+| ID                                   | Name   | Status |
++--------------------------------------+--------+--------+
+| 351ec2ce-8cca-4a11-a007-0c6de84926ac | cirros | active |
++--------------------------------------+--------+--------+
+```
+
