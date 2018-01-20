@@ -93,6 +93,13 @@ innodb_file_per_table
 collation-server = utf8_general_ci
 character-set-server = utf8
 ----
+
+$ sudo vim /etc/mysql/mariadb.conf.d/50-client.cnf
+----
+##default-character-set = utf8mb4
+default-character-set = utf8
+----
+
 $ sudo service mysql restart
 $ sudo service mysql status
 ● mysql.service - LSB: Start and stop the mysql database server daemon
@@ -1393,4 +1400,9 @@ $ neutron router-interface-add router selfservice
 Connection to neutron failed: Failed to connect Neutron server
 $ neutron router-gateway-set router provider
 Set gateway for router router
+```
+
+### Security Rules
+```
+$ source ~/admin-openrc.sh
 ```
