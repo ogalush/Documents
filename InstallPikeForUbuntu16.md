@@ -1186,3 +1186,56 @@ neutron CLI is deprecated and will be removed in the future. Use openstack CLI i
 | e93e074e-8833-4f99-bb3b-aadf431535b5 | Linux bridge agent | ryunosuke |                   | :-)   | True           | neutron-linuxbridge-agent |
 +--------------------------------------+--------------------+-----------+-------------------+-------+----------------+---------------------------+
 ```
+
+## Horizon
+[Document](https://docs.openstack.org/horizon/pike/install/install-ubuntu.html)
+
+### Install and configure for Ubuntu
+#### Install the packages
+```
+$ sudo apt install -y openstack-dashboard
+```
+#### Edit the /etc/openstack-dashboard/local_settings.py file and complete the following actions
+```
+$ sudo vim /etc/openstack-dashboard/local_settings.py
+----
+##OPENSTACK_HOST = "127.0.0.1"
+OPENSTACK_HOST = "ryunosuke"
+...
+SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
+CACHES = { 
+    'default': {
+        'BACKEND': 'django.core.cache.backends.memcached.MemcachedCache',
+        'LOCATION': 'ryunosuke:11211',
+    },  
+}
+...
+##OPENSTACK_KEYSTONE_URL = "http://%s:5000/v2.0" % OPENSTACK_HOST
+OPENSTACK_KEYSTONE_URL = "http://%s:5000/v3" % OPENSTACK_HOST
+...
+OPENSTACK_KEYSTONE_MULTIDOMAIN_SUPPORT = True
+...
+OPENSTACK_API_VERSIONS = {
+    "identity": 3,
+    "image": 2,
+    "volume": 2,
+}
+...
+OPENSTACK_KEYSTONE_DEFAULT_DOMAIN = 'default'
+...
+##OPENSTACK_KEYSTONE_DEFAULT_ROLE = "_member_"
+OPENSTACK_KEYSTONE_DEFAULT_ROLE = "user"
+...
+##TIME_ZONE = "UTC"
+TIME_ZONE = "Asia/Tokyo"
+----
+```
+#### Restart
+```
+$ sudo systemctl restart apache2
+$ sudo systemctl status apache2
+```
+
+#### アクセス確認
+[http://192.168.0.200/horizon/](http://192.168.0.200/horizon/)
+→ ログインできればOK.
