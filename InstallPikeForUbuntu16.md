@@ -46,6 +46,35 @@ ogalush@ryunosuke:~$ ntpq -p
 ogalush@ryunosuke:~$ 
 ```
 
+### RabbitMQ
+#### Install
+```
+$ sudo apt install -y rabbitmq-server
+$ sudo rabbitmqctl add_user openstack password
+Creating user "openstack" ...
+$ sudo rabbitmqctl set_permissions openstack ".*" ".*" ".*"
+Setting permissions for user "openstack" in vhost "/" ...
+```
+#### Config
+```
+$ sudo vim /etc/rabbitmq/rabbitmq-env.conf
+NODE_IP_ADDRESS=0.0.0.0
+$ sudo service rabbitmq-server restart
+controller# service rabbitmq-server restart
+```
+
+### Memcached
+#### Install
+```
+$ sudo apt install -y memcached python-memcache
+$ sudo vim /etc/memcached.conf
+----
+-l 0.0.0.0
+----
+$ sudo service memcached restart
+$ sudo service memcached status
+```
+
 ## Keystone Installation Tutorial
 [Document](https://docs.openstack.org/keystone/pike/install/)
 ### Install and configure
@@ -475,3 +504,423 @@ $ openstack image list
 +--------------------------------------+--------+--------+
 ```
 
+## Compute service
+[Document](https://docs.openstack.org/nova/pike/install/)
+
+### Create DataBase
+```
+$ sudo mysql
+MariaDB [(none)]> CREATE DATABASE nova_api;
+MariaDB [(none)]> CREATE DATABASE nova;
+MariaDB [(none)]> CREATE DATABASE nova_cell0;
+MariaDB [(none)]> GRANT ALL PRIVILEGES ON nova_api.* TO 'nova'@'%' IDENTIFIED BY 'password';
+MariaDB [(none)]> GRANT ALL PRIVILEGES ON nova.* TO 'nova'@'%' IDENTIFIED BY 'password';
+MariaDB [(none)]> GRANT ALL PRIVILEGES ON nova_cell0.* TO 'nova'@'%' IDENTIFIED BY 'password';
+MariaDB [(none)]> quit;
+```
+
+### Create the Compute service credentials
+#### Create Nove User
+```
+$ source ~/admin-openrc.sh
+$ openstack user create --domain default --password-prompt nova
+User Password:
+Repeat User Password:
++---------------------+----------------------------------+
+| Field               | Value                            |
++---------------------+----------------------------------+
+| domain_id           | default                          |
+| enabled             | True                             |
+| id                  | 43665f157dc54699a197c78461672eba |
+| name                | nova                             |
+| options             | {}                               |
+| password_expires_at | None                             |
++---------------------+----------------------------------+
+```
+
+#### Add the admin role to the nova user
+```
+$ openstack role add --project service --user nova admin
+```
+
+#### Create the nova service entity
+```
+$ openstack service create --name nova --description "OpenStack Compute" compute
++-------------+----------------------------------+
+| Field       | Value                            |
++-------------+----------------------------------+
+| description | OpenStack Compute                |
+| enabled     | True                             |
+| id          | 0f3b5cdb31b24f568e9c04a6345a1b9c |
+| name        | nova                             |
+| type        | compute                          |
++-------------+----------------------------------+
+```
+
+### Create the Compute API service endpoints
+```
+$ openstack endpoint create --region RegionOne compute public http://ryunosuke:8774/v2.1
++--------------+----------------------------------+
+| Field        | Value                            |
++--------------+----------------------------------+
+| enabled      | True                             |
+| id           | c87e20a2192543f8bb55292668508384 |
+| interface    | public                           |
+| region       | RegionOne                        |
+| region_id    | RegionOne                        |
+| service_id   | 0f3b5cdb31b24f568e9c04a6345a1b9c |
+| service_name | nova                             |
+| service_type | compute                          |
+| url          | http://ryunosuke:8774/v2.1       |
++--------------+----------------------------------+
+
+$ openstack endpoint create --region RegionOne compute internal http://ryunosuke:8774/v2.1
++--------------+----------------------------------+
+| Field        | Value                            |
++--------------+----------------------------------+
+| enabled      | True                             |
+| id           | 40c677547be0496d9f00fcb46cf0e974 |
+| interface    | internal                         |
+| region       | RegionOne                        |
+| region_id    | RegionOne                        |
+| service_id   | 0f3b5cdb31b24f568e9c04a6345a1b9c |
+| service_name | nova                             |
+| service_type | compute                          |
+| url          | http://ryunosuke:8774/v2.1       |
++--------------+----------------------------------+
+
+$ openstack endpoint create --region RegionOne compute admin http://ryunosuke:8774/v2.1
++--------------+----------------------------------+
+| Field        | Value                            |
++--------------+----------------------------------+
+| enabled      | True                             |
+| id           | 9976714db7054a03b2af175651696b33 |
+| interface    | admin                            |
+| region       | RegionOne                        |
+| region_id    | RegionOne                        |
+| service_id   | 0f3b5cdb31b24f568e9c04a6345a1b9c |
+| service_name | nova                             |
+| service_type | compute                          |
+| url          | http://ryunosuke:8774/v2.1       |
++--------------+----------------------------------+
+```
+
+### Create a Placement service user using your chosen PLACEMENT_PASS
+```
+$ openstack user create --domain default --password-prompt placement
+User Password:
+Repeat User Password:
++---------------------+----------------------------------+
+| Field               | Value                            |
++---------------------+----------------------------------+
+| domain_id           | default                          |
+| enabled             | True                             |
+| id                  | 7dee00c6f28c4a958eadbe787589637d |
+| name                | placement                        |
+| options             | {}                               |
+| password_expires_at | None                             |
++---------------------+----------------------------------+
+```
+
+### Add the Placement user to the service project with the admin role:
+```
+$ openstack role add --project service --user placement admin
+```
+
+### Create the Placement API entry in the service catalog:
+```
+$ openstack service create --name placement --description "Placement API" placement
++-------------+----------------------------------+
+| Field       | Value                            |
++-------------+----------------------------------+
+| description | Placement API                    |
+| enabled     | True                             |
+| id          | bc4acb202a5246a1bc70c8a0a42c5a5d |
+| name        | placement                        |
+| type        | placement                        |
++-------------+----------------------------------+
+```
+
+### Create the Placement API service endpoints
+```
+$ openstack endpoint create --region RegionOne placement public http://ryunosuke:8778
++--------------+----------------------------------+
+| Field        | Value                            |
++--------------+----------------------------------+
+| enabled      | True                             |
+| id           | 6bb6a2557ed94e78aabefccd57f1eb90 |
+| interface    | public                           |
+| region       | RegionOne                        |
+| region_id    | RegionOne                        |
+| service_id   | bc4acb202a5246a1bc70c8a0a42c5a5d |
+| service_name | placement                        |
+| service_type | placement                        |
+| url          | http://ryunosuke:8778            |
++--------------+----------------------------------+
+
+$ openstack endpoint create --region RegionOne placement internal http://ryunosuke:8778
++--------------+----------------------------------+
+| Field        | Value                            |
++--------------+----------------------------------+
+| enabled      | True                             |
+| id           | 9d8599220baa46c297bdbfd01c39570f |
+| interface    | internal                         |
+| region       | RegionOne                        |
+| region_id    | RegionOne                        |
+| service_id   | bc4acb202a5246a1bc70c8a0a42c5a5d |
+| service_name | placement                        |
+| service_type | placement                        |
+| url          | http://ryunosuke:8778            |
++--------------+----------------------------------+
+
+$ openstack endpoint create --region RegionOne placement admin http://ryunosuke:8778
++--------------+----------------------------------+
+| Field        | Value                            |
++--------------+----------------------------------+
+| enabled      | True                             |
+| id           | 1b76a8bb643a42cd9dc411511113c6f6 |
+| interface    | admin                            |
+| region       | RegionOne                        |
+| region_id    | RegionOne                        |
+| service_id   | bc4acb202a5246a1bc70c8a0a42c5a5d |
+| service_name | placement                        |
+| service_type | placement                        |
+| url          | http://ryunosuke:8778            |
++--------------+----------------------------------+
+```
+
+### Install and configure components
+#### Install the packages
+```
+$ sudo apt install -y nova-api nova-conductor nova-consoleauth nova-novncproxy nova-scheduler nova-placement-api
+```
+
+#### Edit the /etc/nova/nova.conf file and complete the following actions:
+```
+$ sudo vim /etc/nova/nova.conf
+----
+[DEFAULT]
+transport_url = rabbit://openstack:password@ryunosuke
+my_ip = 192.168.0.200
+use_neutron = True
+firewall_driver = nova.virt.firewall.NoopFirewallDriver
+...
+[api_database]
+##connection = sqlite:////var/lib/nova/nova_api.sqlite
+connection = mysql+pymysql://nova:password@ryunosuke/nova_api
+....
+
+[database]
+###connection = sqlite:////var/lib/nova/nova.sqlite
+connection = mysql+pymysql://nova:password@ryunosuke/nova
+...
+[api]
+auth_strategy = keystone
+...
+[keystone_authtoken]
+auth_uri = http://ryunosuke:5000
+auth_url = http://ryunosuke:35357
+memcached_servers = ryunosuke:11211
+auth_type = password
+project_domain_name = default
+user_domain_name = default
+project_name = service
+username = nova
+password = password
+...
+[vnc]
+enabled = true
+vncserver_listen = $my_ip
+vncserver_proxyclient_address = $my_ip
+...
+[glance]
+api_servers = http://ryunosuke:9292
+...
+[oslo_concurrency]
+lock_path = /var/lib/nova/tmp
+...
+[placement]
+# ...
+os_region_name = RegionOne
+project_domain_name = default
+project_name = service
+auth_type = password
+user_domain_name = default
+auth_url = http://ryunosuke:35357/v3
+username = placement
+password = password
+----
+```
+
+### Populate the nova-api database
+```
+$ sudo bash -c "nova-manage api_db sync" nova
+```
+### Register the cell0 database
+```
+$ sudo bash -c "nova-manage cell_v2 map_cell0" nova
+```
+
+### Create the cell1 cell
+```
+$ sudo bash -c "nova-manage cell_v2 create_cell --name=cell1 --verbose" nova
+a8b57c68-460a-4795-bd2c-3aad1f4f20bd
+```
+
+### Populate the nova database
+```
+$ sudo bash -c "nova-manage db sync" nova
+```
+
+### Verify nova cell0 and cell1 are registered correctly
+```
+$ sudo nova-manage cell_v2 list_cells
++-------+--------------------------------------+-----------------------------------+------------------------------------------------+
+|  Name |                 UUID                 |           Transport URL           |              Database Connection               |
++-------+--------------------------------------+-----------------------------------+------------------------------------------------+
+| cell0 | 00000000-0000-0000-0000-000000000000 |               none:/              | mysql+pymysql://nova:****@ryunosuke/nova_cell0 |
+| cell1 | a8b57c68-460a-4795-bd2c-3aad1f4f20bd | rabbit://openstack:****@ryunosuke |    mysql+pymysql://nova:****@ryunosuke/nova    |
++-------+--------------------------------------+-----------------------------------+------------------------------------------------+
+→ 表示されればOK.
+```
+
+### Restart the Compute services
+```
+$ for i in 'nova-api' 'nova-consoleauth' 'nova-scheduler' 'nova-conductor'; do sudo service $i restart; done
+$ for i in 'nova-api' 'nova-consoleauth' 'nova-scheduler' 'nova-conductor'; do sudo service $i status; done
+```
+
+### Install and configure a compute node for Ubuntu
+```
+$ sudo apt install -y nova-compute
+```
+
+### Edit the /etc/nova/nova.conf file and complete the following actions:
+```
+$ sudo vim /etc/nova/nova.conf
+----
+Controller設定分に加え.
+[vnc]
+novncproxy_base_url = http://ryunosuke:6080/vnc_auto.html
+[scheduler]
+discover_hosts_in_cells_interval = 300
+----
+```
+
+#### Edit the /etc/nova/nova-compute.conf
+```
+$ sudo vim /etc/nova/nova-compute.conf
+----
+[libvirt]
+virt_type=kvm
+~~~~ KVMのまま.
+----
+```
+
+### Restart Nova Compute
+```
+$ sudo service nova-compute restart
+$ sudo service nova-compute status
+```
+
+### Add the compute node to the cell database
+#### Source the admin credentials to enable admin-only CLI commands, then confirm there are compute hosts in the database:
+```
+$ source ~/admin-openrc.sh
+$ openstack compute service list --service nova-compute
++----+--------------+-----------+------+---------+-------+----------------------------+
+| ID | Binary       | Host      | Zone | Status  | State | Updated At                 |
++----+--------------+-----------+------+---------+-------+----------------------------+
+|  9 | nova-compute | ryunosuke | nova | enabled | up    | 2018-01-20T16:47:23.000000 |
++----+--------------+-----------+------+---------+-------+----------------------------+
+```
+
+#### Discover compute hosts
+```
+$ sudo bash -c "nova-manage cell_v2 discover_hosts --verbose" nova
+Found 2 cell mappings.
+Skipping cell0 since it does not contain hosts.
+Getting compute nodes from cell 'cell1': a8b57c68-460a-4795-bd2c-3aad1f4f20bd
+Found 1 unmapped computes in cell: a8b57c68-460a-4795-bd2c-3aad1f4f20bd
+Checking host mapping for compute host 'ryunosuke': db1298ca-ca57-48c1-9de5-30f880befc8a
+Creating host mapping for compute host 'ryunosuke': db1298ca-ca57-48c1-9de5-30f880befc8a
+→ 見つかっているのでOK.
+```
+
+#### Restart Nova Services.
+```
+$ for i in 'nova-api' 'nova-consoleauth' 'nova-scheduler' 'nova-conductor' 'nova-compute'; do sudo systemctl restart $i ; done
+$ for i in 'nova-api' 'nova-consoleauth' 'nova-scheduler' 'nova-conductor' 'nova-compute'; do sudo systemctl status $i ; done
+```
+
+### Verify operation
+```
+$ source ~/admin-openrc.sh
+$ openstack compute service list
++----+------------------+-----------+----------+---------+-------+----------------------------+
+| ID | Binary           | Host      | Zone     | Status  | State | Updated At                 |
++----+------------------+-----------+----------+---------+-------+----------------------------+
+|  1 | nova-scheduler   | ryunosuke | internal | enabled | up    | 2018-01-20T16:51:48.000000 |
+|  5 | nova-consoleauth | ryunosuke | internal | enabled | up    | 2018-01-20T16:51:47.000000 |
+|  6 | nova-conductor   | ryunosuke | internal | enabled | up    | 2018-01-20T16:51:48.000000 |
+|  9 | nova-compute     | ryunosuke | nova     | enabled | up    | 2018-01-20T16:51:50.000000 |
++----+------------------+-----------+----------+---------+-------+----------------------------+
+
+$ openstack catalog list
++-----------+-----------+----------------------------------------+
+| Name      | Type      | Endpoints                              |
++-----------+-----------+----------------------------------------+
+| nova      | compute   | RegionOne                              |
+|           |           |   internal: http://ryunosuke:8774/v2.1 |
+|           |           | RegionOne                              |
+|           |           |   admin: http://ryunosuke:8774/v2.1    |
+|           |           | RegionOne                              |
+|           |           |   public: http://ryunosuke:8774/v2.1   |
+|           |           |                                        |
+| keystone  | identity  | RegionOne                              |
+|           |           |   admin: http://ryunosuke:35357/v3/    |
+|           |           | RegionOne                              |
+|           |           |   internal: http://ryunosuke:5000/v3/  |
+|           |           | RegionOne                              |
+|           |           |   public: http://ryunosuke:5000/v3/    |
+|           |           |                                        |
+| glance    | image     | RegionOne                              |
+|           |           |   internal: http://ryunosuke:9292      |
+|           |           | RegionOne                              |
+|           |           |   public: http://ryunosuke:9292        |
+|           |           | RegionOne                              |
+|           |           |   admin: http://ryunosuke:9292         |
+|           |           |                                        |
+| placement | placement | RegionOne                              |
+|           |           |   admin: http://ryunosuke:8778         |
+|           |           | RegionOne                              |
+|           |           |   public: http://ryunosuke:8778        |
+|           |           | RegionOne                              |
+|           |           |   internal: http://ryunosuke:8778      |
+|           |           |                                        |
++-----------+-----------+----------------------------------------+
+
+$ openstack image list
++--------------------------------------+--------+--------+
+| ID                                   | Name   | Status |
++--------------------------------------+--------+--------+
+| 351ec2ce-8cca-4a11-a007-0c6de84926ac | cirros | active |
++--------------------------------------+--------+--------+
+
+$ sudo nova-status upgrade check
++---------------------------+
+| Upgrade Check Results     |
++---------------------------+
+| Check: Cells v2           |
+| Result: Success           |
+| Details: None             |
++---------------------------+
+| Check: Placement API      |
+| Result: Success           |
+| Details: None             |
++---------------------------+
+| Check: Resource Providers |
+| Result: Success           |
+| Details: None             |
++---------------------------+
+```
