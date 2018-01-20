@@ -853,7 +853,7 @@ $ for i in 'nova-api' 'nova-consoleauth' 'nova-scheduler' 'nova-conductor' 'nova
 $ for i in 'nova-api' 'nova-consoleauth' 'nova-scheduler' 'nova-conductor' 'nova-compute'; do sudo systemctl status $i ; done
 ```
 
-### Verify operation
+#### Verify operation
 ```
 $ source ~/admin-openrc.sh
 $ openstack compute service list
@@ -923,4 +923,251 @@ $ sudo nova-status upgrade check
 | Result: Success           |
 | Details: None             |
 +---------------------------+
+```
+
+## Neutron
+[Document](https://docs.openstack.org/neutron/pike/install/install-ubuntu.html)
+
+### Create Neutron User
+```
+$ sudo mysql
+MariaDB [(none)]> CREATE DATABASE neutron;
+MariaDB [(none)]> GRANT ALL PRIVILEGES ON neutron.* TO 'neutron'@'%' IDENTIFIED BY 'password';
+Query OK, 0 rows affected (0.00 sec)
+MariaDB [(none)]> FLUSH PRIVILEGES;
+MariaDB [(none)]> quit;
+```
+
+### Source the admin credentials to gain access to admin-only CLI commands:
+#### Create the neutron user
+```
+$ source ~/admin-openrc.sh 
+$ openstack user create --domain default --password-prompt neutron
+User Password:
+Repeat User Password:
++---------------------+----------------------------------+
+| Field               | Value                            |
++---------------------+----------------------------------+
+| domain_id           | default                          |
+| enabled             | True                             |
+| id                  | e93734590f77414f8deace4be183fc96 |
+| name                | neutron                          |
+| options             | {}                               |
+| password_expires_at | None                             |
++---------------------+----------------------------------+
+```
+
+#### Add the admin role to the neutron user
+```
+$ openstack role add --project service --user neutron admin
+```
+
+#### Create the neutron service entity
+```
+$ openstack service create --name neutron --description "OpenStack Networking" network
++-------------+----------------------------------+
+| Field       | Value                            |
++-------------+----------------------------------+
+| description | OpenStack Networking             |
+| enabled     | True                             |
+| id          | 8c0c4c02a596486cb75928e0c6ff7be7 |
+| name        | neutron                          |
+| type        | network                          |
++-------------+----------------------------------+
+```
+
+### Create the Networking service API endpoints
+```
+$ openstack endpoint create --region RegionOne network public http://ryunosuke:9696
++--------------+----------------------------------+
+| Field        | Value                            |
++--------------+----------------------------------+
+| enabled      | True                             |
+| id           | 801c49161c924b1fbf13a63e3ba14048 |
+| interface    | public                           |
+| region       | RegionOne                        |
+| region_id    | RegionOne                        |
+| service_id   | 8c0c4c02a596486cb75928e0c6ff7be7 |
+| service_name | neutron                          |
+| service_type | network                          |
+| url          | http://ryunosuke:9696            |
++--------------+----------------------------------+
+
+$ openstack endpoint create --region RegionOne network internal http://ryunosuke:9696
++--------------+----------------------------------+
+| Field        | Value                            |
++--------------+----------------------------------+
+| enabled      | True                             |
+| id           | 648f037a5c234fb48a28c37d5950684c |
+| interface    | internal                         |
+| region       | RegionOne                        |
+| region_id    | RegionOne                        |
+| service_id   | 8c0c4c02a596486cb75928e0c6ff7be7 |
+| service_name | neutron                          |
+| service_type | network                          |
+| url          | http://ryunosuke:9696            |
++--------------+----------------------------------+
+
+$ openstack endpoint create --region RegionOne network admin http://ryunosuke:9696
++--------------+----------------------------------+
+| Field        | Value                            |
++--------------+----------------------------------+
+| enabled      | True                             |
+| id           | 9a64f156708b4f078ae63f7ea967badf |
+| interface    | admin                            |
+| region       | RegionOne                        |
+| region_id    | RegionOne                        |
+| service_id   | 8c0c4c02a596486cb75928e0c6ff7be7 |
+| service_name | neutron                          |
+| service_type | network                          |
+| url          | http://ryunosuke:9696            |
++--------------+----------------------------------+
+```
+
+### Networking Option 2: Self-service networks
+[Document](https://docs.openstack.org/neutron/pike/install/controller-install-option2-ubuntu.html)
+#### Install
+```
+$ sudo apt install -y neutron-server neutron-plugin-ml2 neutron-linuxbridge-agent neutron-l3-agent neutron-dhcp-agent neutron-metadata-agent
+```
+
+#### /etc/neutron/neutron.conf
+```
+$ sudo vim /etc/neutron/neutron.conf
+----
+[DEFAULT]
+...
+core_plugin = ml2
+service_plugins = router
+allow_overlapping_ips = true
+transport_url = rabbit://openstack:password@ryunosuke
+auth_strategy = keystone
+notify_nova_on_port_status_changes = true
+notify_nova_on_port_data_changes = true
+...
+[database]
+##connection = sqlite:////var/lib/neutron/neutron.sqlite
+connection = mysql+pymysql://neutron:password@ryunosuke/neutron
+...
+[keystone_authtoken]
+auth_uri = http://ryunosuke:5000
+auth_url = http://ryunosuke:35357
+memcached_servers = ryunosuke:11211
+auth_type = password
+project_domain_name = default
+user_domain_name = default
+project_name = service
+username = neutron
+password = password
+...
+[nova]
+auth_url = http://ryunosuke:35357
+auth_type = password
+project_domain_name = default
+user_domain_name = default
+region_name = RegionOne
+project_name = service
+username = nova
+password = password
+----
+```
+
+#### /etc/neutron/plugins/ml2/ml2_conf.ini
+```
+$ sudo vim /etc/neutron/plugins/ml2/ml2_conf.ini
+----
+[ml2]
+type_drivers = flat,vlan,vxlan
+tenant_network_types = vxlan
+mechanism_drivers = linuxbridge,l2population
+extension_drivers = port_security
+...
+[ml2_type_flat]
+flat_networks = provider
+...
+[ml2_type_vxlan]
+vni_ranges = 1:1000
+...
+[securitygroup]
+enable_ipset = true
+----
+```
+
+#### Edit the /etc/neutron/plugins/ml2/linuxbridge_agent.ini file and complete the following actions
+```
+$ sudo vim /etc/neutron/plugins/ml2/linuxbridge_agent.ini
+----
+[linux_bridge]
+physical_interface_mappings = provider:enp3s0
+...
+[vxlan]
+enable_vxlan = true
+local_ip = 192.168.0.200
+l2_population = true
+...
+[securitygroup]
+enable_security_group = true
+firewall_driver = neutron.agent.linux.iptables_firewall.IptablesFirewallDriver
+----
+```
+#### /etc/neutron/l3_agent.ini
+```
+$ sudo vim /etc/neutron/l3_agent.ini
+----
+[DEFAULT]
+interface_driver = linuxbridge
+----
+```
+
+#### /etc/neutron/dhcp_agent.ini
+```
+$ sudo vim /etc/neutron/dhcp_agent.ini
+----
+[DEFAULT]
+interface_driver = linuxbridge
+dhcp_driver = neutron.agent.linux.dhcp.Dnsmasq
+enable_isolated_metadata = true
+----
+```
+#### Edit the /etc/neutron/metadata_agent.ini file and complete the following actions
+```
+$ sudo vim /etc/neutron/metadata_agent.ini
+----
+[DEFAULT]
+nova_metadata_host = ryunosuke
+metadata_proxy_shared_secret = password
+----
+```
+
+#### /etc/nova/nova.conf
+```
+$ sudo vim /etc/nova/nova.conf
+----
+[neutron]
+url = http://ryunosuke:9696
+auth_url = http://ryunosuke:35357
+auth_type = password
+project_domain_name = default
+user_domain_name = default
+region_name = RegionOne
+project_name = service
+username = neutron
+password = password
+service_metadata_proxy = true
+metadata_proxy_shared_secret = password
+----
+```
+
+#### Finalize installation¶
+```
+$ sudo bash -c "neutron-db-manage --config-file /etc/neutron/neutron.conf --config-file /etc/neutron/plugins/ml2/ml2_conf.ini upgrade head" neutron
+...
+INFO  [alembic.runtime.migration] Running upgrade f83a0b2964d0 -> fd38cd995cc0, change shared attribute for firewall resource
+  OK
+```
+
+#### Restart Services.
+```
+$ for i in 'nova-api' 'nova-compute' 'neutron-server' 'neutron-linuxbridge-agent' 'neutron-dhcp-agent' 'neutron-metadata-agent' 'neutron-l3-agent'; do sudo systemctl restart $i ; done
+$ for i in 'nova-api' 'nova-compute' 'neutron-server' 'neutron-linuxbridge-agent' 'neutron-dhcp-agent' 'neutron-metadata-agent' 'neutron-l3-agent'; do sudo systemctl status $i ; done
 ```
