@@ -1,13 +1,13 @@
 ## Install OpenStack Pike on Ubuntu 16.04
 ドキュメント: [OpenStack Docs](https://docs.openstack.org/install-guide/openstack-services.html)  
 [OpenStack Pike 構築手順書(Ubuntu 16.04LTS版)](https://www.gitbook.com/book/virtualtech/openstack-pike-docs/details)  
-インストール先: ryunosuke(192.168.0.200)  
+インストール先: 192.168.0.200(192.168.0.200)  
 ```
 ogalush@livaserver:~$ ssh -c aes128-ctr -A ogalush@192.168.0.200
 Welcome to Ubuntu 16.04.3 LTS (GNU/Linux 4.4.0-109-generic x86_64)
-ogalush@ryunosuke:~$ uname -a
-Linux ryunosuke 4.4.0-109-generic #132-Ubuntu SMP Tue Jan 9 19:52:39 UTC 2018 x86_64 x86_64 x86_64 GNU/Linux
-ogalush@ryunosuke:~$
+ogalush@192.168.0.200:~$ uname -a
+Linux 192.168.0.200 4.4.0-109-generic #132-Ubuntu SMP Tue Jan 9 19:52:39 UTC 2018 x86_64 x86_64 x86_64 GNU/Linux
+ogalush@192.168.0.200:~$
 ```
 「Minimal deployment」の最小構成を構築する. 
 
@@ -26,7 +26,7 @@ $ sudo apt-get -y update && sudo apt-get -y upgrade && sudo apt-get -y dist-upgr
 ```
 $ ntpq -p
 → 時刻同期していればOK.
-ogalush@ryunosuke:~$ ntpq -p
+ogalush@192.168.0.200:~$ ntpq -p
      remote           refid      st t when poll reach   delay   offset  jitter
 ==============================================================================
  0.ubuntu.pool.n .POOL.          16 p    -   64    0    0.000    0.000   0.000
@@ -43,7 +43,7 @@ ogalush@ryunosuke:~$ ntpq -p
 *sv01.azsx.net   103.1.106.69     2 u    3   64   77    9.597   -2.385  49.716
 +balthasar.gimas 181.170.187.161  3 u    4   64   77   68.825   30.177  77.336
 +sv1.localdomain 133.243.238.163  2 u   67   64   37    5.650   -8.568  49.828
-ogalush@ryunosuke:~$ 
+ogalush@192.168.0.200:~$ 
 ```
 
 ### RabbitMQ
@@ -110,7 +110,7 @@ $ netstat -ln |grep 3306
 tcp        0      0 0.0.0.0:3306            0.0.0.0:*               LISTEN  
 → 0.0.0.0でLISTENできていればOK.
 
-ogalush@ryunosuke:/etc/mysql$ sudo /usr/bin/mysql_secure_installation
+ogalush@192.168.0.200:/etc/mysql$ sudo /usr/bin/mysql_secure_installation
 ----
 Enter current password for root (enter for none): 
 Set root password? [Y/n] n
@@ -143,7 +143,7 @@ $ sudo vim /etc/keystone/keystone.conf
 ----
 [database]
 ##connection = sqlite:////var/lib/keystone/keystone.db
-connection = mysql+pymysql://keystone:password@ryunosuke/keystone
+connection = mysql+pymysql://keystone:password@192.168.0.200/keystone
 ...
 [token]
 provider = fernet
@@ -156,7 +156,7 @@ $ sudo bash -c "keystone-manage db_sync" keystone
 # 設定
 $ sudo keystone-manage fernet_setup --keystone-user keystone --keystone-group keystone
 $ sudo keystone-manage credential_setup --keystone-user keystone --keystone-group keystone
-$ sudo keystone-manage bootstrap --bootstrap-password password --bootstrap-admin-url http://ryunosuke:35357/v3/ --bootstrap-internal-url http://ryunosuke:5000/v3/ --bootstrap-public-url http://ryunosuke:5000/v3/ --bootstrap-region-id RegionOne
+$ sudo keystone-manage bootstrap --bootstrap-password password --bootstrap-admin-url http://192.168.0.200:35357/v3/ --bootstrap-internal-url http://192.168.0.200:5000/v3/ --bootstrap-public-url http://192.168.0.200:5000/v3/ --bootstrap-region-id RegionOne
 ```
 
 ### Configure the Apache HTTP server
@@ -164,7 +164,7 @@ install
 ```
 $ sudo vim /etc/apache2/apache2.conf
 ----
-ServerName ryunosuke
+ServerName 192.168.0.200
 ----
 $ sudo apachectl configtest
 Syntax OK
@@ -179,7 +179,7 @@ $ export OS_PASSWORD=password
 $ export OS_PROJECT_NAME=admin
 $ export OS_USER_DOMAIN_NAME=default
 $ export OS_PROJECT_DOMAIN_NAME=default
-$ export OS_AUTH_URL=http://ryunosuke:35357/v3
+$ export OS_AUTH_URL=http://192.168.0.200:35357/v3
 $ export OS_IDENTITY_API_VERSION=3
 ```
 
@@ -256,7 +256,7 @@ $ sudo vim /etc/keystone/keystone-paste.ini
 
 ## Admin User.
 $ unset OS_AUTH_URL OS_PASSWORD
-$ openstack --os-auth-url http://ryunosuke:35357/v3 --os-project-domain-name default --os-user-domain-name default --os-project-name admin --os-username admin token issue
+$ openstack --os-auth-url http://192.168.0.200:35357/v3 --os-project-domain-name default --os-user-domain-name default --os-project-name admin --os-username admin token issue
 Password: 
 +------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
 | Field      | Value                                                                                                                                                                                   |
@@ -269,7 +269,7 @@ Password:
 → 表示がでればOK.
 
 ## Demo User
-$ openstack --os-auth-url http://ryunosuke:5000/v3 --os-project-domain-name default --os-user-domain-name default --os-project-name demo --os-username demo token issue
+$ openstack --os-auth-url http://192.168.0.200:5000/v3 --os-project-domain-name default --os-user-domain-name default --os-project-name demo --os-username demo token issue
 Password: 
 +------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
 | Field      | Value                                                                                                                                                                                   |
@@ -293,7 +293,7 @@ export OS_USER_DOMAIN_NAME=default
 export OS_PROJECT_NAME=admin
 export OS_USERNAME=admin
 export OS_PASSWORD=password
-export OS_AUTH_URL=http://ryunosuke:35357/v3
+export OS_AUTH_URL=http://192.168.0.200:35357/v3
 export OS_IDENTITY_API_VERSION=3
 export OS_IMAGE_API_VERSION=2
 _EOT_
@@ -309,7 +309,7 @@ export OS_USER_DOMAIN_NAME=default
 export OS_PROJECT_NAME=demo
 export OS_USERNAME=demo
 export OS_PASSWORD=password
-export OS_AUTH_URL=http://ryunosuke:5000/v3
+export OS_AUTH_URL=http://192.168.0.200:5000/v3
 export OS_IDENTITY_API_VERSION=3
 export OS_IMAGE_API_VERSION=2
 _EOT_
@@ -324,7 +324,7 @@ $ source ~/admin-openrc.sh
 $ openstack token issue                                                                         +------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+                              | Field      | Value                                                                                                                                                                                   |                              +------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+                              | expires    | 2018-01-20T16:30:11+0000                                                                                                                                                                |                              | id         | gAAAAABaY2CDJ_FYY1bG8WpDR0JJoxLFvsNu4qr2IRRXYuIFnwuzPkiX8XDoPIK5P3vvuBGLTq1QCjS_esQPXHAaCxMl55q0eg1hHXFZlRKTtkAek1kUMXeqRFWSyyRgrnolRXq4FleB6wNxj5rvHxTP_OCRxYcxaxuYTTuBcp9grtAwUEI8Llk |                              | project_id | dbad62d177f4454f83fffa93accaaff4                                                                                                                                                        |                              | user_id    | 20eb2d8d578b40f1a5f240a773c7085f                                                                                                                                                        |                              +------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+    
 
 $ source ~/demo-openrc.sh
-$ openstack token issue                                                                         +------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+                              | Field      | Value                                                                                                                                                                                   |                              +------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+                              | expires    | 2018-01-20T16:30:22+0000                                                                                                                                                                |                              | id         | gAAAAABaY2CO-LLhP3zfLsInbSH21a05J9Fr_LE0sp7DKzsQ5fZa9J6zYyc_V6SW6P0iy2VgqW8wIjFrPM4s9KnmFzAkcKo6bbVO_T-en5aqRIr3gq2Xn9soZiU1Rq5nh2Rhl3mm311xbXNR8o9SsIg7Qe9PLtYxQVyLWGPC_qo3LIfmEX3EF24 |                              | project_id | b0a6faa402c24bc0ae8aeba6289cdcd5                                                                                                                                                        |                              | user_id    | aea8ca8d30c74b56b17a91b1e030588a                                                                                                                                                        |                              +------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+                              ogalush@ryunosuke:~$ 
+$ openstack token issue                                                                         +------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+                              | Field      | Value                                                                                                                                                                                   |                              +------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+                              | expires    | 2018-01-20T16:30:22+0000                                                                                                                                                                |                              | id         | gAAAAABaY2CO-LLhP3zfLsInbSH21a05J9Fr_LE0sp7DKzsQ5fZa9J6zYyc_V6SW6P0iy2VgqW8wIjFrPM4s9KnmFzAkcKo6bbVO_T-en5aqRIr3gq2Xn9soZiU1Rq5nh2Rhl3mm311xbXNR8o9SsIg7Qe9PLtYxQVyLWGPC_qo3LIfmEX3EF24 |                              | project_id | b0a6faa402c24bc0ae8aeba6289cdcd5                                                                                                                                                        |                              | user_id    | aea8ca8d30c74b56b17a91b1e030588a                                                                                                                                                        |                              +------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+                              ogalush@192.168.0.200:~$ 
 ```
 
 ## Grance Install
@@ -379,7 +379,7 @@ $ openstack service create --name glance --description "OpenStack Image" image
 
 #### Create the Image service API endpoints
 ```
-$ openstack endpoint create --region RegionOne image public http://ryunosuke:9292
+$ openstack endpoint create --region RegionOne image public http://192.168.0.200:9292
 +--------------+----------------------------------+
 | Field        | Value                            |
 +--------------+----------------------------------+
@@ -391,10 +391,10 @@ $ openstack endpoint create --region RegionOne image public http://ryunosuke:929
 | service_id   | b30b73fba5e547ac9741c13f985a0cb7 |
 | service_name | glance                           |
 | service_type | image                            |
-| url          | http://ryunosuke:9292            |
+| url          | http://192.168.0.200:9292            |
 +--------------+----------------------------------+
 
-$ openstack endpoint create --region RegionOne image internal http://ryunosuke:9292
+$ openstack endpoint create --region RegionOne image internal http://192.168.0.200:9292
 +--------------+----------------------------------+
 | Field        | Value                            |
 +--------------+----------------------------------+
@@ -406,10 +406,10 @@ $ openstack endpoint create --region RegionOne image internal http://ryunosuke:9
 | service_id   | b30b73fba5e547ac9741c13f985a0cb7 |
 | service_name | glance                           |
 | service_type | image                            |
-| url          | http://ryunosuke:9292            |
+| url          | http://192.168.0.200:9292            |
 +--------------+----------------------------------+
 
-$ openstack endpoint create --region RegionOne image admin http://ryunosuke:9292
+$ openstack endpoint create --region RegionOne image admin http://192.168.0.200:9292
 +--------------+----------------------------------+
 | Field        | Value                            |
 +--------------+----------------------------------+
@@ -421,7 +421,7 @@ $ openstack endpoint create --region RegionOne image admin http://ryunosuke:9292
 | service_id   | b30b73fba5e547ac9741c13f985a0cb7 |
 | service_name | glance                           |
 | service_type | image                            |
-| url          | http://ryunosuke:9292            |
+| url          | http://192.168.0.200:9292            |
 +--------------+----------------------------------+
 ```
 
@@ -436,12 +436,12 @@ $ sudo apt install -y glance
 $ sudo vim /etc/glance/glance-api.conf
 ----
 [database]
-connection = mysql+pymysql://glance:password@ryunosuke/glance
+connection = mysql+pymysql://glance:password@192.168.0.200/glance
 ...
 [keystone_authtoken]
-auth_uri = http://ryunosuke:5000
-auth_url = http://ryunosuke:35357
-memcached_servers = ryunosuke:11211
+auth_uri = http://192.168.0.200:5000
+auth_url = http://192.168.0.200:35357
+memcached_servers = 192.168.0.200:11211
 auth_type = password
 project_domain_name = default
 user_domain_name = default
@@ -461,12 +461,12 @@ filesystem_store_datadir = /var/lib/glance/images/
 $ sudo vim /etc/glance/glance-registry.conf
 ----
 [database]
-connection = mysql+pymysql://glance:password@ryunosuke/glance
+connection = mysql+pymysql://glance:password@192.168.0.200/glance
 ...
 [keystone_authtoken]
-auth_uri = http://ryunosuke:5000
-auth_url = http://ryunosuke:35357
-memcached_servers = ryunosuke:11211
+auth_uri = http://192.168.0.200:5000
+auth_url = http://192.168.0.200:35357
+memcached_servers = 192.168.0.200:11211
 auth_type = password
 project_domain_name = default
 user_domain_name = default
@@ -566,7 +566,7 @@ $ openstack service create --name nova --description "OpenStack Compute" compute
 
 ### Create the Compute API service endpoints
 ```
-$ openstack endpoint create --region RegionOne compute public http://ryunosuke:8774/v2.1
+$ openstack endpoint create --region RegionOne compute public http://192.168.0.200:8774/v2.1
 +--------------+----------------------------------+
 | Field        | Value                            |
 +--------------+----------------------------------+
@@ -578,10 +578,10 @@ $ openstack endpoint create --region RegionOne compute public http://ryunosuke:8
 | service_id   | 0f3b5cdb31b24f568e9c04a6345a1b9c |
 | service_name | nova                             |
 | service_type | compute                          |
-| url          | http://ryunosuke:8774/v2.1       |
+| url          | http://192.168.0.200:8774/v2.1       |
 +--------------+----------------------------------+
 
-$ openstack endpoint create --region RegionOne compute internal http://ryunosuke:8774/v2.1
+$ openstack endpoint create --region RegionOne compute internal http://192.168.0.200:8774/v2.1
 +--------------+----------------------------------+
 | Field        | Value                            |
 +--------------+----------------------------------+
@@ -593,10 +593,10 @@ $ openstack endpoint create --region RegionOne compute internal http://ryunosuke
 | service_id   | 0f3b5cdb31b24f568e9c04a6345a1b9c |
 | service_name | nova                             |
 | service_type | compute                          |
-| url          | http://ryunosuke:8774/v2.1       |
+| url          | http://192.168.0.200:8774/v2.1       |
 +--------------+----------------------------------+
 
-$ openstack endpoint create --region RegionOne compute admin http://ryunosuke:8774/v2.1
+$ openstack endpoint create --region RegionOne compute admin http://192.168.0.200:8774/v2.1
 +--------------+----------------------------------+
 | Field        | Value                            |
 +--------------+----------------------------------+
@@ -608,7 +608,7 @@ $ openstack endpoint create --region RegionOne compute admin http://ryunosuke:87
 | service_id   | 0f3b5cdb31b24f568e9c04a6345a1b9c |
 | service_name | nova                             |
 | service_type | compute                          |
-| url          | http://ryunosuke:8774/v2.1       |
+| url          | http://192.168.0.200:8774/v2.1       |
 +--------------+----------------------------------+
 ```
 
@@ -650,7 +650,7 @@ $ openstack service create --name placement --description "Placement API" placem
 
 ### Create the Placement API service endpoints
 ```
-$ openstack endpoint create --region RegionOne placement public http://ryunosuke:8778
+$ openstack endpoint create --region RegionOne placement public http://192.168.0.200:8778
 +--------------+----------------------------------+
 | Field        | Value                            |
 +--------------+----------------------------------+
@@ -662,10 +662,10 @@ $ openstack endpoint create --region RegionOne placement public http://ryunosuke
 | service_id   | bc4acb202a5246a1bc70c8a0a42c5a5d |
 | service_name | placement                        |
 | service_type | placement                        |
-| url          | http://ryunosuke:8778            |
+| url          | http://192.168.0.200:8778            |
 +--------------+----------------------------------+
 
-$ openstack endpoint create --region RegionOne placement internal http://ryunosuke:8778
+$ openstack endpoint create --region RegionOne placement internal http://192.168.0.200:8778
 +--------------+----------------------------------+
 | Field        | Value                            |
 +--------------+----------------------------------+
@@ -677,10 +677,10 @@ $ openstack endpoint create --region RegionOne placement internal http://ryunosu
 | service_id   | bc4acb202a5246a1bc70c8a0a42c5a5d |
 | service_name | placement                        |
 | service_type | placement                        |
-| url          | http://ryunosuke:8778            |
+| url          | http://192.168.0.200:8778            |
 +--------------+----------------------------------+
 
-$ openstack endpoint create --region RegionOne placement admin http://ryunosuke:8778
+$ openstack endpoint create --region RegionOne placement admin http://192.168.0.200:8778
 +--------------+----------------------------------+
 | Field        | Value                            |
 +--------------+----------------------------------+
@@ -692,7 +692,7 @@ $ openstack endpoint create --region RegionOne placement admin http://ryunosuke:
 | service_id   | bc4acb202a5246a1bc70c8a0a42c5a5d |
 | service_name | placement                        |
 | service_type | placement                        |
-| url          | http://ryunosuke:8778            |
+| url          | http://192.168.0.200:8778            |
 +--------------+----------------------------------+
 ```
 
@@ -707,27 +707,27 @@ $ sudo apt install -y nova-api nova-conductor nova-consoleauth nova-novncproxy n
 $ sudo vim /etc/nova/nova.conf
 ----
 [DEFAULT]
-transport_url = rabbit://openstack:password@ryunosuke
+transport_url = rabbit://openstack:password@192.168.0.200
 my_ip = 192.168.0.200
 use_neutron = True
 firewall_driver = nova.virt.firewall.NoopFirewallDriver
 ...
 [api_database]
 ##connection = sqlite:////var/lib/nova/nova_api.sqlite
-connection = mysql+pymysql://nova:password@ryunosuke/nova_api
+connection = mysql+pymysql://nova:password@192.168.0.200/nova_api
 ....
 
 [database]
 ###connection = sqlite:////var/lib/nova/nova.sqlite
-connection = mysql+pymysql://nova:password@ryunosuke/nova
+connection = mysql+pymysql://nova:password@192.168.0.200/nova
 ...
 [api]
 auth_strategy = keystone
 ...
 [keystone_authtoken]
-auth_uri = http://ryunosuke:5000
-auth_url = http://ryunosuke:35357
-memcached_servers = ryunosuke:11211
+auth_uri = http://192.168.0.200:5000
+auth_url = http://192.168.0.200:35357
+memcached_servers = 192.168.0.200:11211
 auth_type = password
 project_domain_name = default
 user_domain_name = default
@@ -741,7 +741,7 @@ vncserver_listen = $my_ip
 vncserver_proxyclient_address = $my_ip
 ...
 [glance]
-api_servers = http://ryunosuke:9292
+api_servers = http://192.168.0.200:9292
 ...
 [oslo_concurrency]
 lock_path = /var/lib/nova/tmp
@@ -753,7 +753,7 @@ project_domain_name = default
 project_name = service
 auth_type = password
 user_domain_name = default
-auth_url = http://ryunosuke:35357/v3
+auth_url = http://192.168.0.200:35357/v3
 username = placement
 password = password
 ----
@@ -785,8 +785,8 @@ $ sudo nova-manage cell_v2 list_cells
 +-------+--------------------------------------+-----------------------------------+------------------------------------------------+
 |  Name |                 UUID                 |           Transport URL           |              Database Connection               |
 +-------+--------------------------------------+-----------------------------------+------------------------------------------------+
-| cell0 | 00000000-0000-0000-0000-000000000000 |               none:/              | mysql+pymysql://nova:****@ryunosuke/nova_cell0 |
-| cell1 | a8b57c68-460a-4795-bd2c-3aad1f4f20bd | rabbit://openstack:****@ryunosuke |    mysql+pymysql://nova:****@ryunosuke/nova    |
+| cell0 | 00000000-0000-0000-0000-000000000000 |               none:/              | mysql+pymysql://nova:****@192.168.0.200/nova_cell0 |
+| cell1 | a8b57c68-460a-4795-bd2c-3aad1f4f20bd | rabbit://openstack:****@192.168.0.200 |    mysql+pymysql://nova:****@192.168.0.200/nova    |
 +-------+--------------------------------------+-----------------------------------+------------------------------------------------+
 → 表示されればOK.
 ```
@@ -808,7 +808,7 @@ $ sudo vim /etc/nova/nova.conf
 ----
 Controller設定分に加え.
 [vnc]
-novncproxy_base_url = http://ryunosuke:6080/vnc_auto.html
+novncproxy_base_url = http://192.168.0.200:6080/vnc_auto.html
 [scheduler]
 discover_hosts_in_cells_interval = 300
 ----
@@ -838,7 +838,7 @@ $ openstack compute service list --service nova-compute
 +----+--------------+-----------+------+---------+-------+----------------------------+
 | ID | Binary       | Host      | Zone | Status  | State | Updated At                 |
 +----+--------------+-----------+------+---------+-------+----------------------------+
-|  9 | nova-compute | ryunosuke | nova | enabled | up    | 2018-01-20T16:47:23.000000 |
+|  9 | nova-compute | 192.168.0.200 | nova | enabled | up    | 2018-01-20T16:47:23.000000 |
 +----+--------------+-----------+------+---------+-------+----------------------------+
 ```
 
@@ -849,8 +849,8 @@ Found 2 cell mappings.
 Skipping cell0 since it does not contain hosts.
 Getting compute nodes from cell 'cell1': a8b57c68-460a-4795-bd2c-3aad1f4f20bd
 Found 1 unmapped computes in cell: a8b57c68-460a-4795-bd2c-3aad1f4f20bd
-Checking host mapping for compute host 'ryunosuke': db1298ca-ca57-48c1-9de5-30f880befc8a
-Creating host mapping for compute host 'ryunosuke': db1298ca-ca57-48c1-9de5-30f880befc8a
+Checking host mapping for compute host '192.168.0.200': db1298ca-ca57-48c1-9de5-30f880befc8a
+Creating host mapping for compute host '192.168.0.200': db1298ca-ca57-48c1-9de5-30f880befc8a
 → 見つかっているのでOK.
 ```
 
@@ -867,10 +867,10 @@ $ openstack compute service list
 +----+------------------+-----------+----------+---------+-------+----------------------------+
 | ID | Binary           | Host      | Zone     | Status  | State | Updated At                 |
 +----+------------------+-----------+----------+---------+-------+----------------------------+
-|  1 | nova-scheduler   | ryunosuke | internal | enabled | up    | 2018-01-20T16:51:48.000000 |
-|  5 | nova-consoleauth | ryunosuke | internal | enabled | up    | 2018-01-20T16:51:47.000000 |
-|  6 | nova-conductor   | ryunosuke | internal | enabled | up    | 2018-01-20T16:51:48.000000 |
-|  9 | nova-compute     | ryunosuke | nova     | enabled | up    | 2018-01-20T16:51:50.000000 |
+|  1 | nova-scheduler   | 192.168.0.200 | internal | enabled | up    | 2018-01-20T16:51:48.000000 |
+|  5 | nova-consoleauth | 192.168.0.200 | internal | enabled | up    | 2018-01-20T16:51:47.000000 |
+|  6 | nova-conductor   | 192.168.0.200 | internal | enabled | up    | 2018-01-20T16:51:48.000000 |
+|  9 | nova-compute     | 192.168.0.200 | nova     | enabled | up    | 2018-01-20T16:51:50.000000 |
 +----+------------------+-----------+----------+---------+-------+----------------------------+
 
 $ openstack catalog list
@@ -878,32 +878,32 @@ $ openstack catalog list
 | Name      | Type      | Endpoints                              |
 +-----------+-----------+----------------------------------------+
 | nova      | compute   | RegionOne                              |
-|           |           |   internal: http://ryunosuke:8774/v2.1 |
+|           |           |   internal: http://192.168.0.200:8774/v2.1 |
 |           |           | RegionOne                              |
-|           |           |   admin: http://ryunosuke:8774/v2.1    |
+|           |           |   admin: http://192.168.0.200:8774/v2.1    |
 |           |           | RegionOne                              |
-|           |           |   public: http://ryunosuke:8774/v2.1   |
+|           |           |   public: http://192.168.0.200:8774/v2.1   |
 |           |           |                                        |
 | keystone  | identity  | RegionOne                              |
-|           |           |   admin: http://ryunosuke:35357/v3/    |
+|           |           |   admin: http://192.168.0.200:35357/v3/    |
 |           |           | RegionOne                              |
-|           |           |   internal: http://ryunosuke:5000/v3/  |
+|           |           |   internal: http://192.168.0.200:5000/v3/  |
 |           |           | RegionOne                              |
-|           |           |   public: http://ryunosuke:5000/v3/    |
+|           |           |   public: http://192.168.0.200:5000/v3/    |
 |           |           |                                        |
 | glance    | image     | RegionOne                              |
-|           |           |   internal: http://ryunosuke:9292      |
+|           |           |   internal: http://192.168.0.200:9292      |
 |           |           | RegionOne                              |
-|           |           |   public: http://ryunosuke:9292        |
+|           |           |   public: http://192.168.0.200:9292        |
 |           |           | RegionOne                              |
-|           |           |   admin: http://ryunosuke:9292         |
+|           |           |   admin: http://192.168.0.200:9292         |
 |           |           |                                        |
 | placement | placement | RegionOne                              |
-|           |           |   admin: http://ryunosuke:8778         |
+|           |           |   admin: http://192.168.0.200:8778         |
 |           |           | RegionOne                              |
-|           |           |   public: http://ryunosuke:8778        |
+|           |           |   public: http://192.168.0.200:8778        |
 |           |           | RegionOne                              |
-|           |           |   internal: http://ryunosuke:8778      |
+|           |           |   internal: http://192.168.0.200:8778      |
 |           |           |                                        |
 +-----------+-----------+----------------------------------------+
 
@@ -985,7 +985,7 @@ $ openstack service create --name neutron --description "OpenStack Networking" n
 
 ### Create the Networking service API endpoints
 ```
-$ openstack endpoint create --region RegionOne network public http://ryunosuke:9696
+$ openstack endpoint create --region RegionOne network public http://192.168.0.200:9696
 +--------------+----------------------------------+
 | Field        | Value                            |
 +--------------+----------------------------------+
@@ -997,10 +997,10 @@ $ openstack endpoint create --region RegionOne network public http://ryunosuke:9
 | service_id   | 8c0c4c02a596486cb75928e0c6ff7be7 |
 | service_name | neutron                          |
 | service_type | network                          |
-| url          | http://ryunosuke:9696            |
+| url          | http://192.168.0.200:9696            |
 +--------------+----------------------------------+
 
-$ openstack endpoint create --region RegionOne network internal http://ryunosuke:9696
+$ openstack endpoint create --region RegionOne network internal http://192.168.0.200:9696
 +--------------+----------------------------------+
 | Field        | Value                            |
 +--------------+----------------------------------+
@@ -1012,10 +1012,10 @@ $ openstack endpoint create --region RegionOne network internal http://ryunosuke
 | service_id   | 8c0c4c02a596486cb75928e0c6ff7be7 |
 | service_name | neutron                          |
 | service_type | network                          |
-| url          | http://ryunosuke:9696            |
+| url          | http://192.168.0.200:9696            |
 +--------------+----------------------------------+
 
-$ openstack endpoint create --region RegionOne network admin http://ryunosuke:9696
+$ openstack endpoint create --region RegionOne network admin http://192.168.0.200:9696
 +--------------+----------------------------------+
 | Field        | Value                            |
 +--------------+----------------------------------+
@@ -1027,7 +1027,7 @@ $ openstack endpoint create --region RegionOne network admin http://ryunosuke:96
 | service_id   | 8c0c4c02a596486cb75928e0c6ff7be7 |
 | service_name | neutron                          |
 | service_type | network                          |
-| url          | http://ryunosuke:9696            |
+| url          | http://192.168.0.200:9696            |
 +--------------+----------------------------------+
 ```
 
@@ -1047,19 +1047,19 @@ $ sudo vim /etc/neutron/neutron.conf
 core_plugin = ml2
 service_plugins = router
 allow_overlapping_ips = true
-transport_url = rabbit://openstack:password@ryunosuke
+transport_url = rabbit://openstack:password@192.168.0.200
 auth_strategy = keystone
 notify_nova_on_port_status_changes = true
 notify_nova_on_port_data_changes = true
 ...
 [database]
 ##connection = sqlite:////var/lib/neutron/neutron.sqlite
-connection = mysql+pymysql://neutron:password@ryunosuke/neutron
+connection = mysql+pymysql://neutron:password@192.168.0.200/neutron
 ...
 [keystone_authtoken]
-auth_uri = http://ryunosuke:5000
-auth_url = http://ryunosuke:35357
-memcached_servers = ryunosuke:11211
+auth_uri = http://192.168.0.200:5000
+auth_url = http://192.168.0.200:35357
+memcached_servers = 192.168.0.200:11211
 auth_type = password
 project_domain_name = default
 user_domain_name = default
@@ -1068,7 +1068,7 @@ username = neutron
 password = password
 ...
 [nova]
-auth_url = http://ryunosuke:35357
+auth_url = http://192.168.0.200:35357
 auth_type = password
 project_domain_name = default
 user_domain_name = default
@@ -1141,7 +1141,7 @@ enable_isolated_metadata = true
 $ sudo vim /etc/neutron/metadata_agent.ini
 ----
 [DEFAULT]
-nova_metadata_host = ryunosuke
+nova_metadata_host = 192.168.0.200
 metadata_proxy_shared_secret = password
 ----
 ```
@@ -1151,8 +1151,8 @@ metadata_proxy_shared_secret = password
 $ sudo vim /etc/nova/nova.conf
 ----
 [neutron]
-url = http://ryunosuke:9696
-auth_url = http://ryunosuke:35357
+url = http://192.168.0.200:9696
+auth_url = http://192.168.0.200:35357
 auth_type = password
 project_domain_name = default
 user_domain_name = default
@@ -1187,10 +1187,10 @@ neutron CLI is deprecated and will be removed in the future. Use openstack CLI i
 +--------------------------------------+--------------------+-----------+-------------------+-------+----------------+---------------------------+
 | id                                   | agent_type         | host      | availability_zone | alive | admin_state_up | binary                    |
 +--------------------------------------+--------------------+-----------+-------------------+-------+----------------+---------------------------+
-| 373df810-0011-459b-a14f-ad3989c25cdb | DHCP agent         | ryunosuke | nova              | :-)   | True           | neutron-dhcp-agent        |
-| 7f0270c0-63fa-4b22-9adb-1007edb2a568 | Metadata agent     | ryunosuke |                   | :-)   | True           | neutron-metadata-agent    |
-| b6251ea8-2b1b-4886-b1e9-22f262837495 | L3 agent           | ryunosuke | nova              | :-)   | True           | neutron-l3-agent          |
-| e93e074e-8833-4f99-bb3b-aadf431535b5 | Linux bridge agent | ryunosuke |                   | :-)   | True           | neutron-linuxbridge-agent |
+| 373df810-0011-459b-a14f-ad3989c25cdb | DHCP agent         | 192.168.0.200 | nova              | :-)   | True           | neutron-dhcp-agent        |
+| 7f0270c0-63fa-4b22-9adb-1007edb2a568 | Metadata agent     | 192.168.0.200 |                   | :-)   | True           | neutron-metadata-agent    |
+| b6251ea8-2b1b-4886-b1e9-22f262837495 | L3 agent           | 192.168.0.200 | nova              | :-)   | True           | neutron-l3-agent          |
+| e93e074e-8833-4f99-bb3b-aadf431535b5 | Linux bridge agent | 192.168.0.200 |                   | :-)   | True           | neutron-linuxbridge-agent |
 +--------------------------------------+--------------------+-----------+-------------------+-------+----------------+---------------------------+
 ```
 
@@ -1207,13 +1207,13 @@ $ sudo apt install -y openstack-dashboard
 $ sudo vim /etc/openstack-dashboard/local_settings.py
 ----
 ##OPENSTACK_HOST = "127.0.0.1"
-OPENSTACK_HOST = "ryunosuke"
+OPENSTACK_HOST = "192.168.0.200"
 ...
 SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
 CACHES = { 
     'default': {
         'BACKEND': 'django.core.cache.backends.memcached.MemcachedCache',
-        'LOCATION': 'ryunosuke:11211',
+        'LOCATION': '192.168.0.200:11211',
     },  
 }
 ...
