@@ -1171,3 +1171,18 @@ INFO  [alembic.runtime.migration] Running upgrade f83a0b2964d0 -> fd38cd995cc0, 
 $ for i in 'nova-api' 'nova-compute' 'neutron-server' 'neutron-linuxbridge-agent' 'neutron-dhcp-agent' 'neutron-metadata-agent' 'neutron-l3-agent'; do sudo systemctl restart $i ; done
 $ for i in 'nova-api' 'nova-compute' 'neutron-server' 'neutron-linuxbridge-agent' 'neutron-dhcp-agent' 'neutron-metadata-agent' 'neutron-l3-agent'; do sudo systemctl status $i ; done
 ```
+
+#### 確認
+```
+$ source ~/admin-openrc.sh
+$ neutron agent-list
+neutron CLI is deprecated and will be removed in the future. Use openstack CLI instead.
++--------------------------------------+--------------------+-----------+-------------------+-------+----------------+---------------------------+
+| id                                   | agent_type         | host      | availability_zone | alive | admin_state_up | binary                    |
++--------------------------------------+--------------------+-----------+-------------------+-------+----------------+---------------------------+
+| 373df810-0011-459b-a14f-ad3989c25cdb | DHCP agent         | ryunosuke | nova              | :-)   | True           | neutron-dhcp-agent        |
+| 7f0270c0-63fa-4b22-9adb-1007edb2a568 | Metadata agent     | ryunosuke |                   | :-)   | True           | neutron-metadata-agent    |
+| b6251ea8-2b1b-4886-b1e9-22f262837495 | L3 agent           | ryunosuke | nova              | :-)   | True           | neutron-l3-agent          |
+| e93e074e-8833-4f99-bb3b-aadf431535b5 | Linux bridge agent | ryunosuke |                   | :-)   | True           | neutron-linuxbridge-agent |
++--------------------------------------+--------------------+-----------+-------------------+-------+----------------+---------------------------+
+```
