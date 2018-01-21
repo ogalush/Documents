@@ -1435,7 +1435,6 @@ $ neutron router-gateway-set router provider
 Set gateway for router router
 ```
 
-### Security Rules
-```
-$ source ~/admin-openrc.sh
-```
+### インスタンス作成
+HorizonへログインしてWebUIからインスタンスを作成する.  
+インスタンスが動作すればOK.
