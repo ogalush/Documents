@@ -1161,9 +1161,11 @@ interface_driver = linuxbridge
 $ sudo vim /etc/neutron/dhcp_agent.ini
 ----
 [DEFAULT]
-interface_driver = linuxbridge
+interface_driver = neutron.agent.linux.interface.BridgeInterfaceDriver
 dhcp_driver = neutron.agent.linux.dhcp.Dnsmasq
-enable_isolated_metadata = true
+nova_metadata_host = 192.168.0.200
+metadata_proxy_shared_secret = password
+enable_isolated_metadata = True
 ----
 ```
 #### Edit the /etc/neutron/metadata_agent.ini file and complete the following actions
