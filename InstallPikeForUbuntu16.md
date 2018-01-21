@@ -496,7 +496,24 @@ $ sudo service glance-api status
 $ source ~/admin-openrc.sh
 $ wget http://download.cirros-cloud.net/0.3.5/cirros-0.3.5-x86_64-disk.img
 $ openstack image create "cirros" --file cirros-0.3.5-x86_64-disk.img --disk-format qcow2 --container-format bare --public
-+------------------+------------------------------------------------------+                                        | Field            | Value                                                |                                        +------------------+------------------------------------------------------+                                        | checksum         | f8ab98ff5e73ebab884d80c9dc9c7290                     |                                        | container_format | bare                                                 |                                        | created_at       | 2018-01-20T15:58:19Z                                 |                                        | disk_format      | qcow2                                                |                                        | file             | /v2/images/351ec2ce-8cca-4a11-a007-0c6de84926ac/file |                                        | id               | 351ec2ce-8cca-4a11-a007-0c6de84926ac                 |                                        | min_disk         | 0                                                    |                                        | min_ram          | 0                                                    |                                        | name             | cirros                                               |                                        | owner            | dbad62d177f4454f83fffa93accaaff4                     |                                        | protected        | False                                                |                                        | schema           | /v2/schemas/image                                    |                                        | size             | 13267968                                             |                                        | status           | active                                               |                                        | tags             |                                                      |                                        | updated_at       | 2018-01-20T15:58:19Z                                 |                                        
++------------------+------------------------------------------------------+ 
+| Field            | Value                                                |                                        +------------------+------------------------------------------------------+
+| checksum         | f8ab98ff5e73ebab884d80c9dc9c7290                     |
+| container_format | bare                                                 |
+| created_at       | 2018-01-20T15:58:19Z                                 |
+| disk_format      | qcow2                                                |
+| file             | /v2/images/351ec2ce-8cca-4a11-a007-0c6de84926ac/file |
+| id               | 351ec2ce-8cca-4a11-a007-0c6de84926ac                 | 
+| min_disk         | 0                                                    |
+| min_ram          | 0                                                    |
+| name             | cirros                                               | 
+| owner            | dbad62d177f4454f83fffa93accaaff4                     |
+| protected        | False                                                |
+| schema           | /v2/schemas/image                                    |
+| size             | 13267968                                             |
+| status           | active                                               |
+| tags             |                                                      |
+| updated_at       | 2018-01-20T15:58:19Z                                 |
 | virtual_size     | None                                                 |
 | visibility       | public                                               |
 +------------------+------------------------------------------------------+
