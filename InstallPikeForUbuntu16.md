@@ -288,6 +288,7 @@ Password:
 ```
 $ cat << _EOT_ > ~/admin-openrc.sh
 #!/bin/bash
+
 export OS_PROJECT_DOMAIN_NAME=default
 export OS_USER_DOMAIN_NAME=default
 export OS_PROJECT_NAME=admin
@@ -304,6 +305,8 @@ mode of '/home/ogalush/admin-openrc.sh' changed from 0664 (rw-rw-r--) to 0755 (r
 #### demo-openrc
 ```
 $ cat << _EOT_ > ~/demo-openrc.sh
+#!/bin/bash
+
 export OS_PROJECT_DOMAIN_NAME=default
 export OS_USER_DOMAIN_NAME=default
 export OS_PROJECT_NAME=demo
@@ -321,10 +324,9 @@ mode of '/home/ogalush/demo-openrc.sh' changed from 0664 (rw-rw-r--) to 0755 (rw
 表示がでればOK.
 ```
 $ source ~/admin-openrc.sh
-$ openstack token issue                                                                         +------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+                              | Field      | Value                                                                                                                                                                                   |                              +------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+                              | expires    | 2018-01-20T16:30:11+0000                                                                                                                                                                |                              | id         | gAAAAABaY2CDJ_FYY1bG8WpDR0JJoxLFvsNu4qr2IRRXYuIFnwuzPkiX8XDoPIK5P3vvuBGLTq1QCjS_esQPXHAaCxMl55q0eg1hHXFZlRKTtkAek1kUMXeqRFWSyyRgrnolRXq4FleB6wNxj5rvHxTP_OCRxYcxaxuYTTuBcp9grtAwUEI8Llk |                              | project_id | dbad62d177f4454f83fffa93accaaff4                                                                                                                                                        |                              | user_id    | 20eb2d8d578b40f1a5f240a773c7085f                                                                                                                                                        |                              +------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+    
-
+$ openstack token issue                                                                           
 $ source ~/demo-openrc.sh
-$ openstack token issue                                                                         +------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+                              | Field      | Value                                                                                                                                                                                   |                              +------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+                              | expires    | 2018-01-20T16:30:22+0000                                                                                                                                                                |                              | id         | gAAAAABaY2CO-LLhP3zfLsInbSH21a05J9Fr_LE0sp7DKzsQ5fZa9J6zYyc_V6SW6P0iy2VgqW8wIjFrPM4s9KnmFzAkcKo6bbVO_T-en5aqRIr3gq2Xn9soZiU1Rq5nh2Rhl3mm311xbXNR8o9SsIg7Qe9PLtYxQVyLWGPC_qo3LIfmEX3EF24 |                              | project_id | b0a6faa402c24bc0ae8aeba6289cdcd5                                                                                                                                                        |                              | user_id    | aea8ca8d30c74b56b17a91b1e030588a                                                                                                                                                        |                              +------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+                              ogalush@192.168.0.200:~$ 
+$ openstack token issue                                                                         
 ```
 
 ## Grance Install
