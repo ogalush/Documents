@@ -22,6 +22,17 @@ $ sudo add-apt-repository cloud-archive:pike
 $ sudo apt-get -y update && sudo apt-get -y upgrade && sudo apt-get -y dist-upgrade
 ```
 
+### disable IPv6
+```
+$ sudo vim /etc/sysctl.conf
+----
+net.ipv6.conf.all.disable_ipv6 = 1
+net.ipv6.conf.default.disable_ipv6 = 1
+----
+$ sudo sysctl -p
+$ sudo shutdown -r now
+```
+
 ### ntp
 ```
 $ ntpq -p
