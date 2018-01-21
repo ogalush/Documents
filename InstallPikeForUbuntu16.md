@@ -769,6 +769,7 @@ password = password
 enabled = true
 vncserver_listen = $my_ip
 vncserver_proxyclient_address = $my_ip
+keymap = ja
 ...
 [glance]
 api_servers = http://192.168.0.200:9292
