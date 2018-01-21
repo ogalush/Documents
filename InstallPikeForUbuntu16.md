@@ -69,7 +69,7 @@ Setting permissions for user "openstack" in vhost "/" ...
 #### Config
 ```
 $ sudo vim /etc/rabbitmq/rabbitmq-env.conf
-NODE_IP_ADDRESS=0.0.0.0
+NODE_IP_ADDRESS=192.168.0.200
 $ sudo service rabbitmq-server restart
 controller# service rabbitmq-server restart
 ```
