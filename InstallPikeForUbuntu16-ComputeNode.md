@@ -137,3 +137,91 @@ Creating host mapping for compute host 'hayao': 5b0f2d34-4a88-4a49-8b4d-de69eb23
 ```
 
 ## Neutron
+[Document](https://docs.openstack.org/neutron/pike/install/compute-install-ubuntu.html)
+### Install
+```
+$ sudo apt -y install neutron-linuxbridge-agent
+```
+
+### Configure the common component
+#### neutron.conf
+```
+$ sudo vim /etc/neutron/neutron.conf
+----
+[DEFAULT]
+...
+transport_url = rabbit://openstack:password@192.168.0.200
+auth_strategy = keystone
+...
+[keystone_authtoken]
+auth_uri = http://192.168.0.200:5000
+auth_url = http://192.168.0.200:35357
+memcached_servers = 192.168.0.200:11211
+auth_type = password
+project_domain_name = default
+user_domain_name = default
+project_name = service
+username = neutron
+password = password
+...
+----
+```
+#### linuxbridge_agent.ini
+```
+$ sudo vim /etc/neutron/plugins/ml2/linuxbridge_agent.ini
+----
+[linux_bridge]
+physical_interface_mappings = provider:enp3s0
+...
+[securitygroup]
+enable_security_group = true
+firewall_driver = neutron.agent.linux.iptables_firewall.IptablesFirewallDriver
+
+[vxlan]
+enable_vxlan = true
+local_ip = 192.168.0.210
+l2_population = true
+----
+```
+
+#### Networking Option 2: Self-service networks
+[Document](https://docs.openstack.org/neutron/pike/install/compute-install-ubuntu.html)
+```
+$ sudo vim /etc/nova/nova.conf
+----
+[neutron]
+...
+url = http://192.168.0.200:9696
+auth_url = http://192.168.0.200:35357
+auth_type = password
+project_domain_name = default
+user_domain_name = default
+region_name = RegionOne
+project_name = service
+username = neutron
+password = password
+----
+```
+
+#### Finalize installation
+```
+$ sudo service nova-compute restart
+$ sudo service neutron-linuxbridge-agent restart
+```
+
+### Verify operation
+[Document](https://docs.openstack.org/neutron/pike/install/verify.html)
+```
+Controller$ source ~/admin-openrc.sh 
+$ openstack network agent list
++--------------------------------------+--------------------+-----------+-------------------+-------+-------+---------------------------+
+| ID                                   | Agent Type         | Host      | Availability Zone | Alive | State | Binary                    |
++--------------------------------------+--------------------+-----------+-------------------+-------+-------+---------------------------+
+| 31ef0da4-25aa-4234-94c3-8263dd43cfe3 | Metadata agent     | ryunosuke | None              | :-)   | UP    | neutron-metadata-agent    |
+| 3ea12f80-fc02-4a35-b2d7-f186b6f11a32 | Linux bridge agent | hayao     | None              | :-)   | UP    | neutron-linuxbridge-agent |
+| 52f10a5f-49a5-4283-bc43-e8e098a6de93 | DHCP agent         | ryunosuke | nova              | :-)   | UP    | neutron-dhcp-agent        |
+| 769d3833-89c4-4f80-93e4-3f4d1c112dd7 | L3 agent           | ryunosuke | nova              | :-)   | UP    | neutron-l3-agent          |
+| b39bdc1f-a70f-405c-852a-107e9a141cc9 | Linux bridge agent | ryunosuke | None              | :-)   | UP    | neutron-linuxbridge-agent |
++--------------------------------------+--------------------+-----------+-------------------+-------+-------+---------------------------+
+→ 新ホストのレコードが表示されればOK. 
+```
