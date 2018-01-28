@@ -77,6 +77,7 @@ enabled = True
 vncserver_listen = 0.0.0.0
 vncserver_proxyclient_address = $my_ip
 novncproxy_base_url = http://192.168.0.200:6080/vnc_auto.html
+keymap = ja
 ...
 [glance]
 api_servers = http://192.168.0.200:9292
