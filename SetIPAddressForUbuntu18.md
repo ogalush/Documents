@@ -9,7 +9,7 @@ ogalush@ryunosuke:~$ ifconfig
 enp3s0: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500
         inet 192.168.0.200  netmask 255.255.255.0  broadcast 192.168.0.255
         inet6 fe80::82ee:73ff:fe63:f007  prefixlen 64  scopeid 0x20<link>
-        inet6 2400:2410:a741:fc00:82ee:73ff:fe63:f007  prefixlen 64  scopeid 0x0<global>
+        inet6 ...(略)...  prefixlen 64  scopeid 0x0<global>
         ether 80:ee:73:63:f0:07  txqueuelen 1000  (Ethernet)
         RX packets 60242  bytes 89488196 (89.4 MB)
         RX errors 0  dropped 0  overruns 0  frame 0
