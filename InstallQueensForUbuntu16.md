@@ -346,3 +346,181 @@ $ openstack token issue
 | user_id    | 2ca851b69cbe4ed5b328f6f17b373405                                                                                                                                                        |
 +------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
 ```
+
+
+## glance installation for Queens
+[Document URL](https://docs.openstack.org/glance/queens/install/)
+
+### Prerequisites
+```
+$ sudo mysql
+mysql> CREATE DATABASE glance;
+mysql> GRANT ALL PRIVILEGES ON glance.* TO 'glance'@'%' IDENTIFIED BY 'password';
+mysql> FLUSH PRIVILEGES;
+mysql> quit;
+
+$ source ~/admin-openrc
+$ openstack user create --domain default --password-prompt glance
+User Password:
+Repeat User Password:
++---------------------+----------------------------------+
+| Field               | Value                            |
++---------------------+----------------------------------+
+| domain_id           | default                          |
+| enabled             | True                             |
+| id                  | 0a0233491ef04ca58de2c590461f29b1 |
+| name                | glance                           |
+| options             | {}                               |
+| password_expires_at | None                             |
++---------------------+----------------------------------+
+
+$ openstack role add --project service --user glance admin
+$ openstack service create --name glance --description "OpenStack Image" image
++-------------+----------------------------------+
+| Field       | Value                            |
++-------------+----------------------------------+
+| description | OpenStack Image                  |
+| enabled     | True                             |
+| id          | a420bb01c22045c692a1d686c5427ec5 |
+| name        | glance                           |
+| type        | image                            |
++-------------+----------------------------------+
+
+$ openstack endpoint create --region RegionOne image public http://192.168.0.200:9292
++--------------+----------------------------------+
+| Field        | Value                            |
++--------------+----------------------------------+
+| enabled      | True                             |
+| id           | 135c73eb4d284b5093d3273b09d18d4f |
+| interface    | public                           |
+| region       | RegionOne                        |
+| region_id    | RegionOne                        |
+| service_id   | a420bb01c22045c692a1d686c5427ec5 |
+| service_name | glance                           |
+| service_type | image                            |
+| url          | http://192.168.0.200:9292        |
++--------------+----------------------------------+
+
+$ openstack endpoint create --region RegionOne image internal http://192.168.0.200:9292
++--------------+----------------------------------+
+| Field        | Value                            |
++--------------+----------------------------------+
+| enabled      | True                             |
+| id           | 15a24b4b60d24218bf5e20c2de333388 |
+| interface    | internal                         |
+| region       | RegionOne                        |
+| region_id    | RegionOne                        |
+| service_id   | a420bb01c22045c692a1d686c5427ec5 |
+| service_name | glance                           |
+| service_type | image                            |
+| url          | http://192.168.0.200:9292        |
++--------------+----------------------------------+
+
+$ openstack endpoint create --region RegionOne image admin http://192.168.0.200:9292
++--------------+----------------------------------+
+| Field        | Value                            |
++--------------+----------------------------------+
+| enabled      | True                             |
+| id           | 8d302ddc6dbf41e5b57ff77d3c012f62 |
+| interface    | admin                            |
+| region       | RegionOne                        |
+| region_id    | RegionOne                        |
+| service_id   | a420bb01c22045c692a1d686c5427ec5 |
+| service_name | glance                           |
+| service_type | image                            |
+| url          | http://192.168.0.200:9292        |
++--------------+----------------------------------+
+```
+
+### Install and configure
+```
+$ sudo apt -y install glance
+
+$ sudo vim /etc/glance/glance-api.conf
+----
+[database]
+connection = mysql+pymysql://glance:password@192.168.0.200/glance
+##connection = sqlite:////var/lib/glance/glance.sqlite
+...
+[keystone_authtoken]
+auth_uri = http://192.168.0.200:5000
+auth_url = http://192.168.0.200:5000
+memcached_servers = 192.168.0.200:11211
+auth_type = password
+project_domain_name = default
+user_domain_name = default
+project_name = service
+username = glance
+password = password
+...
+[paste_deploy]
+flavor = keystone
+...
+[glance_store]
+stores = file,http
+default_store = file
+filesystem_store_datadir = /var/lib/glance/images/
+----
+
+$ sudo vim /etc/glance/glance-registry.conf
+----
+[database]
+connection = mysql+pymysql://glance:password@192.168.0.200/glance
+##connection = sqlite:////var/lib/glance/glance.sqlite
+...
+[keystone_authtoken]
+auth_uri = http://192.168.0.200:5000
+auth_url = http://192.168.0.200:5000
+memcached_servers = 192.168.0.200:11211
+auth_type = password
+project_domain_name = default
+user_domain_name = default
+project_name = service
+username = glance
+password = password
+...
+[paste_deploy]
+flavor = keystone
+----
+
+$ sudo bash -c "glance-manage db_sync" glance
+
+$ sudo service glance-registry restart
+$ sudo service glance-api restart
+```
+
+### Verify operation
+```
+$ source ~/admin-openrc
+$ wget http://download.cirros-cloud.net/0.4.0/cirros-0.4.0-x86_64-disk.img
+$ openstack image create "cirros" --file cirros-0.4.0-x86_64-disk.img --disk-format qcow2 --container-format bare --public
++------------------+------------------------------------------------------+
+| Field            | Value                                                |
++------------------+------------------------------------------------------+
+| checksum         | 443b7623e27ecf03dc9e01ee93f67afe                     |
+| container_format | bare                                                 |
+| created_at       | 2018-06-17T11:16:20Z                                 |
+| disk_format      | qcow2                                                |
+| file             | /v2/images/f3e81692-4e7e-4167-a5d0-c683264ed265/file |
+| id               | f3e81692-4e7e-4167-a5d0-c683264ed265                 |
+| min_disk         | 0                                                    |
+| min_ram          | 0                                                    |
+| name             | cirros                                               |
+| owner            | a77a45043cc943c398841d12d5ddfa05                     |
+| protected        | False                                                |
+| schema           | /v2/schemas/image                                    |
+| size             | 12716032                                             |
+| status           | active                                               |
+| tags             |                                                      |
+| updated_at       | 2018-06-17T11:16:20Z                                 |
+| virtual_size     | None                                                 |
+| visibility       | public                                               |
++------------------+------------------------------------------------------+
+
+$ openstack image list
++--------------------------------------+--------+--------+
+| ID                                   | Name   | Status |
++--------------------------------------+--------+--------+
+| f3e81692-4e7e-4167-a5d0-c683264ed265 | cirros | active |
++--------------------------------------+--------+--------+
+```
