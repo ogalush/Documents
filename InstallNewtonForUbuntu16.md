@@ -1430,7 +1430,7 @@ ogalush@ryunosuke:~$
 ```
 ・Create Flavor
 $ source ~/admin-openrc
-$ openstack flavor create --id 0 --vcpus 1 --ram 64 --disk 1 m1.nano
+$ openstack flavor create --id 0 --vcpus 1 --ram 1024 --disk 1 m1.nano
 +----------------------------+---------+
 | Field                      | Value   |
 +----------------------------+---------+
@@ -1441,7 +1441,7 @@ $ openstack flavor create --id 0 --vcpus 1 --ram 64 --disk 1 m1.nano
 | name                       | m1.nano |
 | os-flavor-access:is_public | True    |
 | properties                 |         |
-| ram                        | 64      |
+| ram                        | 1024    |
 | rxtx_factor                | 1.0     |
 | swap                       |         |
 | vcpus                      | 1       |
