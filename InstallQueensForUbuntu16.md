@@ -871,6 +871,249 @@ Option "os_region_name" from group "placement" is deprecated. Use option "region
 | Result: Success           |
 | Details: None             |
 +---------------------------+
+```
 
+## neutron installation for Queens
+[Neutron Document](https://docs.openstack.org/neutron/queens/install/)
+
+### Prerequisites
+```
+$ sudo mysql
+mysql> CREATE DATABASE neutron;
+mysql> GRANT ALL PRIVILEGES ON neutron.* TO 'neutron'@'%' IDENTIFIED BY 'password';
+mysql> FLUSH PRIVILEGES;
+mysql> quit;
+
+$ source ~/admin-openrc
+$ openstack user create --domain default --password-prompt neutron
+User Password:
+Repeat User Password:
++---------------------+----------------------------------+
+| Field               | Value                            |
++---------------------+----------------------------------+
+| domain_id           | default                          |
+| enabled             | True                             |
+| id                  | 62b9043451b04961b0d742a4664339ed |
+| name                | neutron                          |
+| options             | {}                               |
+| password_expires_at | None                             |
++---------------------+----------------------------------+
+
+$ openstack role add --project service --user neutron admin
+$ openstack service create --name neutron --description "OpenStack Networking" network
++-------------+----------------------------------+
+| Field       | Value                            |
++-------------+----------------------------------+
+| description | OpenStack Networking             |
+| enabled     | True                             |
+| id          | 5c024bf352314c13a03202573020e1a1 |
+| name        | neutron                          |
+| type        | network                          |
++-------------+----------------------------------+
+
+$ openstack endpoint create --region RegionOne network public http://192.168.0.200:9696
++--------------+----------------------------------+
+| Field        | Value                            |
++--------------+----------------------------------+
+| enabled      | True                             |
+| id           | 60110c15aa0d4d6ca1dd0369446921c9 |
+| interface    | public                           |
+| region       | RegionOne                        |
+| region_id    | RegionOne                        |
+| service_id   | 5c024bf352314c13a03202573020e1a1 |
+| service_name | neutron                          |
+| service_type | network                          |
+| url          | http://192.168.0.200:9696        |
++--------------+----------------------------------+
+
+$ openstack endpoint create --region RegionOne network internal http://192.168.0.200:9696
++--------------+----------------------------------+
+| Field        | Value                            |
++--------------+----------------------------------+
+| enabled      | True                             |
+| id           | cee38df48b6a4df1a37871408f00a352 |
+| interface    | internal                         |
+| region       | RegionOne                        |
+| region_id    | RegionOne                        |
+| service_id   | 5c024bf352314c13a03202573020e1a1 |
+| service_name | neutron                          |
+| service_type | network                          |
+| url          | http://192.168.0.200:9696        |
++--------------+----------------------------------+
+
+$ openstack endpoint create --region RegionOne network admin http://192.168.0.200:9696
++--------------+----------------------------------+
+| Field        | Value                            |
++--------------+----------------------------------+
+| enabled      | True                             |
+| id           | 97d4f0635e8a4e4d85fec0690316b90f |
+| interface    | admin                            |
+| region       | RegionOne                        |
+| region_id    | RegionOne                        |
+| service_id   | 5c024bf352314c13a03202573020e1a1 |
+| service_name | neutron                          |
+| service_type | network                          |
+| url          | http://192.168.0.200:9696        |
++--------------+----------------------------------+
+```
+
+### Install and configure for Ubuntu
+#### Networking Option 2: Self-service networks
+```
+$ sudo apt -y install neutron-server neutron-plugin-ml2 neutron-linuxbridge-agent neutron-l3-agent neutron-dhcp-agent neutron-metadata-agent
+
+$ sudo vim /etc/neutron/neutron.conf
+----
+[DEFAULT]
+core_plugin = ml2
+service_plugins = router
+allow_overlapping_ips = true
+transport_url = rabbit://openstack:password@192.168.0.200
+auth_strategy = keystone
+notify_nova_on_port_status_changes = true
+notify_nova_on_port_data_changes = true
+...
+
+[database]
+##connection = sqlite:////var/lib/neutron/neutron.sqlite
+connection = mysql+pymysql://neutron:password@192.168.0.200/neutron
+...
+[keystone_authtoken]
+auth_uri = http://192.168.0.200:5000
+auth_url = http://192.168.0.200:35357
+memcached_servers = 192.168.0.200:11211
+auth_type = password
+project_domain_name = default
+user_domain_name = default
+project_name = service
+username = neutron
+password = password
+...
+[nova]
+auth_url = http://192.168.0.200:35357
+auth_type = password
+project_domain_name = default
+user_domain_name = default
+region_name = RegionOne
+project_name = service
+username = nova
+password = password
+...
+----
+
+$ sudo vim /etc/neutron/plugins/ml2/ml2_conf.ini
+----
+[ml2]
+type_drivers = flat,vlan,vxlan
+tenant_network_types = vxlan
+mechanism_drivers = linuxbridge,l2population
+extension_drivers = port_security
+...
+[ml2_type_flat]
+flat_networks = provider
+...
+[ml2_type_vxlan]
+vni_ranges = 1:1000
+...
+[securitygroup]
+enable_ipset = true
+----
+```
+
+#### Configure the Linux bridge agent
+```
+$ sudo vim /etc/neutron/plugins/ml2/linuxbridge_agent.ini
+----
+[linux_bridge]                                                                                                              physical_interface_mappings = provider:enp3s0
+...
+[securitygroup]
+enable_security_group = true
+firewall_driver = neutron.agent.linux.iptables_firewall.IptablesFirewallDriver
+...
+[vxlan]
+enable_vxlan = true
+local_ip = 192.168.0.200
+l2_population = true
+----
+
+$ sudo vim /etc/sysctl.conf
+----
+...
+## For OpenStack
+net.bridge.bridge-nf-call-iptables = 1
+net.bridge.bridge-nf-call-ip6tables = 1
+----
+$ sudo sysctl -p
+
+$ sudo vim /etc/neutron/l3_agent.ini
+----
+[DEFAULT]
+interface_driver = linuxbridge
+...
+----
+
+$ sudo vim /etc/neutron/dhcp_agent.ini
+----
+[DEFAULT]
+interface_driver = linuxbridge
+dhcp_driver = neutron.agent.linux.dhcp.Dnsmasq
+enable_isolated_metadata = true
+----
+```
+
+#### Networking Option 2: Self-service networks(続き)
+```
+$ sudo vim /etc/neutron/metadata_agent.ini
+----
+[DEFAULT]
+nova_metadata_host = 192.168.0.200
+metadata_proxy_shared_secret = password
+...
+----
+
+$ sudo vim /etc/nova/nova.conf
+----
+...
+[neutron]
+url = http://192.168.0.200:9696
+auth_url = http://192.168.0.200:35357
+auth_type = password
+project_domain_name = default
+user_domain_name = default
+region_name = RegionOne
+project_name = service
+username = neutron
+password = password
+service_metadata_proxy = true
+metadata_proxy_shared_secret = password
+...
+----
+
+$ sudo bash -c "neutron-db-manage --config-file /etc/neutron/neutron.conf --config-file /etc/neutron/plugins/ml2/ml2_conf.ini upgrade head" neutron
+
+$ echo 'nova-api
+neutron-server
+neutron-linuxbridge-agent
+neutron-dhcp-agent
+neutron-metadata-agent
+neutron-l3-agent' | awk '{print "sudo service "$1" restart"}'|bash -x
+```
+
+### Install and configure compute node
+```
+$ sudo apt -y install neutron-linuxbridge-agent
+$ sudo service neutron-linuxbridge-agent restart
+$ sudo service neutron-linuxbridge-agent status |grep Active
+   Active: active (running) since Sun 2018-06-17 21:19:29 JST; 4s ago
+→ Config変更に関してはControllerNodeと同じ内容であったので割愛.
+```
+
+### Verify operation
+```
+$ source ~/admin-openrc
+$ openstack extension list --network
+Failed to retrieve extensions list from Network API
+$ openstack network agent list
+HttpException: Unknown error
 
 ```
