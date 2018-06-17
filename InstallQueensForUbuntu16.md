@@ -1130,5 +1130,58 @@ $ openstack network agent list
 | f5e66291-3fe6-461b-8274-b6e4cd932e26 | L3 agent           | ryunosuke | nova              | :-)   | UP    | neutron-l3-agent          |
 | fa4d5c98-7a95-4f3c-b493-6705a12e7343 | DHCP agent         | ryunosuke | nova              | :-)   | UP    | neutron-dhcp-agent        |
 +--------------------------------------+--------------------+-----------+-------------------+-------+-------+---------------------------+
-
 ```
+
+## horizon installation for Queens
+[horizon Document](https://docs.openstack.org/horizon/queens/install/)
+
+### Install and configure for Ubuntu
+```
+$ sudo apt -y install openstack-dashboard
+$ sudo vim /etc/openstack-dashboard/local_settings.py
+----
+##OPENSTACK_HOST = "127.0.0.1"
+OPENSTACK_HOST = "192.168.0.200"
+...
+ALLOWED_HOSTS = '*'
+...
+SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
+CACHES = {
+  'default': {
+    'BACKEND': 'django.core.cache.backends.memcached.MemcachedCache',
+    'LOCATION': '192.168.0.200:11211',
+  }
+}
+...
+OPENSTACK_KEYSTONE_URL = "http://%s:5000/v3" % OPENSTACK_HOST
+...
+OPENSTACK_KEYSTONE_MULTIDOMAIN_SUPPORT = True
+...
+OPENSTACK_API_VERSIONS = {
+    "identity": 3,
+    "image": 2,
+    "volume": 2,
+}
+...
+OPENSTACK_KEYSTONE_DEFAULT_DOMAIN = "default"
+...
+##OPENSTACK_KEYSTONE_DEFAULT_ROLE = "_member_"
+OPENSTACK_KEYSTONE_DEFAULT_ROLE = "user"
+...
+##TIME_ZONE = "UTC"
+TIME_ZONE = "Asia/Tokyo"
+...
+----
+
+$ sudo vim /etc/apache2/conf-available/openstack-dashboard.conf
+----
+...
+WSGIApplicationGroup %{GLOBAL}
+...
+----
+
+$ sudo service apache2 restart
+```
+
+### Verify operation for Ubuntu
+[http://192.168.0.200/horizon/](http://192.168.0.200/horizon/)
