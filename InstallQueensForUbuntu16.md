@@ -103,10 +103,45 @@ $ sudo mkdir -pv /etc/etcd /var/lib/etcd
 $ sudo chown -v etcd:etcd /etc/etcd /var/lib/etcd
 
 $ ETCD_VER=v3.2.7
-$ sudo rm -rfv /tmp/etcd
-$ sudo mkdir -pv /tmp/etcd
-# curl -L https://github.com/coreos/etcd/releases/download/${ETCD_VER}/etcd-${ETCD_VER}-linux-amd64.tar.gz -o /tmp/etcd-${ETCD_VER}-linux-amd64.tar.gz
-# tar xzvf /tmp/etcd-${ETCD_VER}-linux-amd64.tar.gz -C /tmp/etcd --strip-components=1
-# cp /tmp/etcd/etcd /usr/bin/etcd
-# cp /tmp/etcd/etcdctl /usr/bin/etcdctl
+$ sudo rm -rfv /tmp/etcd && mkdir -pv /tmp/etcd
+$ curl -L https://github.com/coreos/etcd/releases/download/${ETCD_VER}/etcd-${ETCD_VER}-linux-amd64.tar.gz -o /tmp/etcd-${ETCD_VER}-linux-amd64.tar.gz
+$ tar xzvf /tmp/etcd-${ETCD_VER}-linux-amd64.tar.gz -C /tmp/etcd --strip-components=1
+$ sudo cp -v /tmp/etcd/etcd /usr/bin/etcd
+$ sudo cp -v /tmp/etcd/etcdctl /usr/bin/etcdctl
+
+$ sudo vim /etc/etcd/etcd.conf.yml
+----
+name: 192.168.0.200
+data-dir: /var/lib/etcd
+initial-cluster-state: 'new'
+initial-cluster-token: 'etcd-cluster-01'
+initial-cluster: controller=http://192.168.0.200:2380
+initial-advertise-peer-urls: http://192.168.0.200:2380
+advertise-client-urls: http://192.168.0.200:2379
+listen-peer-urls: http://0.0.0.0:2380
+listen-client-urls: http://192.168.0.200:2379
+----
+
+$ sudo vim /lib/systemd/system/etcd.service
+----
+[Unit]
+After=network.target
+Description=etcd - highly-available key value store
+
+[Service]
+LimitNOFILE=65536
+Restart=on-failure
+Type=notify
+ExecStart=/usr/bin/etcd --config-file /etc/etcd/etcd.conf.yml
+User=etcd
+
+[Install]
+WantedBy=multi-user.target
+----
+```
+
+#### Finalize installation
+```
+$ sudo systemctl enable etcd
+$ sudo systemctl start etcd
 ```
