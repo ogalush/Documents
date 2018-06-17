@@ -1,4 +1,4 @@
-# Install OpenStack Queen on Ubuntu 16.04
+# Install OpenStack Queens on Ubuntu 16.04
 ドキュメント: [OpenStack Docs](https://docs.openstack.org/install-guide/openstack-services.html)  
 インストール先: 192.168.0.200(192.168.0.200)  
 ```
