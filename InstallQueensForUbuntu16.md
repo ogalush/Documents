@@ -980,7 +980,9 @@ connection = mysql+pymysql://neutron:password@192.168.0.200/neutron
 ...
 [keystone_authtoken]
 auth_uri = http://192.168.0.200:5000
-auth_url = http://192.168.0.200:35357
+auth_url = http://192.168.0.200:5000
+## auth_uri = http://192.168.0.200:5000
+## auth_url = http://192.168.0.200:35357
 memcached_servers = 192.168.0.200:11211
 auth_type = password
 project_domain_name = default
@@ -1112,8 +1114,21 @@ $ sudo service neutron-linuxbridge-agent status |grep Active
 ```
 $ source ~/admin-openrc
 $ openstack extension list --network
-Failed to retrieve extensions list from Network API
++----------------------------------------------------------------------------------------------+---------------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Name                                                                                         | Alias                     | Description                                                                                                                                              |
++----------------------------------------------------------------------------------------------+---------------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Default Subnetpools                                                                          | default-subnetpools       | Provides ability to mark and use a subnetpool as the default.  
+...
+----
+
 $ openstack network agent list
-HttpException: Unknown error
++--------------------------------------+--------------------+-----------+-------------------+-------+-------+---------------------------+
+| ID                                   | Agent Type         | Host      | Availability Zone | Alive | State | Binary                    |
++--------------------------------------+--------------------+-----------+-------------------+-------+-------+---------------------------+
+| 1946cd7a-5b20-4497-a5c4-a2c2beca20fd | Linux bridge agent | ryunosuke | None              | :-)   | UP    | neutron-linuxbridge-agent |
+| 54f80a59-a7c6-4c66-b6cd-9baf2de4c926 | Metadata agent     | ryunosuke | None              | :-)   | UP    | neutron-metadata-agent    |
+| f5e66291-3fe6-461b-8274-b6e4cd932e26 | L3 agent           | ryunosuke | nova              | :-)   | UP    | neutron-l3-agent          |
+| fa4d5c98-7a95-4f3c-b493-6705a12e7343 | DHCP agent         | ryunosuke | nova              | :-)   | UP    | neutron-dhcp-agent        |
++--------------------------------------+--------------------+-----------+-------------------+-------+-------+---------------------------+
 
 ```
