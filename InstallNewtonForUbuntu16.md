@@ -12,6 +12,17 @@ ogalush@ryunosuke:~$
 ```
 
 ## Environment
+### Disable ipv6
+ipv6が入っているとインスタンスの起動が遅かったりするので、無効化する.
+```
+$ sudo vim /etc/sysctl.conf
+----
+## For OpenStack
+net.ipv6.conf.all.disable_ipv6 = 1
+----
+$ sudo sysctl -p
+```
+
 ### Network Time Protocol (NTP)
 ntpdがdefaultでinstallされているので対応なし
 ```
