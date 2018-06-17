@@ -12,6 +12,15 @@ ogalush@ryunosuke:~$
 ```
 
 ## Environment
+### hosts変更
+ホスト名アクセスがあった際にlocalhost宛にならないように修正しておく.
+```
+$ sudo vim /etc/hosts
+127.0.0.1       localhost
+- ##127.0.1.1     ryunosuke
++ 192.168.0.200   ryunosuke
+```
+
 ### Disable ipv6
 ipv6が入っているとインスタンスの起動が遅かったりするので、無効化する.
 ```
