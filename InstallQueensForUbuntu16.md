@@ -708,6 +708,7 @@ connection = mysql+pymysql://nova:password@192.168.0.200/nova
 auth_strategy = keystone
 ...
 [keystone_authtoken]
+auth_uri = http://192.168.0.200:5000/v3
 auth_url = http://192.168.0.200:5000/v3
 memcached_servers = 192.168.0.200:11211
 auth_type = password
@@ -1185,3 +1186,370 @@ $ sudo service apache2 restart
 
 ### Verify operation for Ubuntu
 [http://192.168.0.200/horizon/](http://192.168.0.200/horizon/)
+
+## Launch an instance
+[Document](https://docs.openstack.org/install-guide/launch-instance.html)
+
+### Create virtual networks
+#### Provider network
+```
+$ source ~/admin-openrc
+$ openstack network create  --share --external --provider-physical-network provider --provider-network-type fla
+t provider
++---------------------------+--------------------------------------+
+| Field                     | Value                                |
++---------------------------+--------------------------------------+
+| admin_state_up            | UP                                   |
+| availability_zone_hints   |                                      |
+| availability_zones        |                                      |
+| created_at                | 2018-06-17T12:55:38Z                 |
+| description               |                                      |
+| dns_domain                | None                                 |
+| id                        | 57a0b995-9bc6-4460-801b-df2d4d7692ba |
+| ipv4_address_scope        | None                                 |
+| ipv6_address_scope        | None                                 |
+| is_default                | False                                |
+| is_vlan_transparent       | None                                 |
+| mtu                       | 1500                                 |
+| name                      | provider                             |
+| port_security_enabled     | True                                 |
+| project_id                | a77a45043cc943c398841d12d5ddfa05     |
+| provider:network_type     | flat                                 |
+| provider:physical_network | provider                             |
+| provider:segmentation_id  | None                                 |
+| qos_policy_id             | None                                 |
+| revision_number           | 5                                    |
+| router:external           | External                             |
+| segments                  | None                                 |
+| shared                    | True                                 |
+| status                    | ACTIVE                               |
+| subnets                   |                                      |
+| tags                      |                                      |
+| updated_at                | 2018-06-17T12:55:38Z                 |
++---------------------------+--------------------------------------+
+
+$ openstack subnet create --network provider --allocation-pool start=192.168.0.100,end=192.168.0.120 --dns-nameserver 192.168.0.254 --gateway 192.168.0.254 --subnet-range 192.168.0.254/24 provider
++-------------------+--------------------------------------+
+| Field             | Value                                |
++-------------------+--------------------------------------+
+| allocation_pools  | 192.168.0.100-192.168.0.120          |
+| cidr              | 192.168.0.0/24                       |
+| created_at        | 2018-06-17T12:57:24Z                 |
+| description       |                                      |
+| dns_nameservers   | 192.168.0.254                        |
+| enable_dhcp       | True                                 |
+| gateway_ip        | 192.168.0.254                        |
+| host_routes       |                                      |
+| id                | 5d134298-00a5-4b57-9c68-36a17cce0fac |
+| ip_version        | 4                                    |
+| ipv6_address_mode | None                                 |
+| ipv6_ra_mode      | None                                 |
+| name              | provider                             |
+| network_id        | 57a0b995-9bc6-4460-801b-df2d4d7692ba |
+| project_id        | a77a45043cc943c398841d12d5ddfa05     |
+| revision_number   | 0                                    |
+| segment_id        | None                                 |
+| service_types     |                                      |
+| subnetpool_id     | None                                 |
+| tags              |                                      |
+| updated_at        | 2018-06-17T12:57:24Z                 |
++-------------------+--------------------------------------+
+```
+
+#### Self-service network
+```
+$ source ~/demo-openrc 
+ogalush@ryunosuke:~$ openstack network create selfservice
++---------------------------+--------------------------------------+
+| Field                     | Value                                |
++---------------------------+--------------------------------------+
+| admin_state_up            | UP                                   |
+| availability_zone_hints   |                                      |
+| availability_zones        |                                      |
+| created_at                | 2018-06-17T12:51:05Z                 |
+| description               |                                      |
+| dns_domain                | None                                 |
+| id                        | ec4cb910-2cbb-4a49-9953-d1661e65e877 |
+| ipv4_address_scope        | None                                 |
+| ipv6_address_scope        | None                                 |
+| is_default                | False                                |
+| is_vlan_transparent       | None                                 |
+| mtu                       | 1450                                 |
+| name                      | selfservice                          |
+| port_security_enabled     | True                                 |
+| project_id                | dc86d2e95fef4f56a70021e055f0c2cf     |
+| provider:network_type     | None                                 |
+| provider:physical_network | None                                 |
+| provider:segmentation_id  | None                                 |
+| qos_policy_id             | None                                 |
+| revision_number           | 2                                    |
+| router:external           | Internal                             |
+| segments                  | None                                 |
+| shared                    | False                                |
+| status                    | ACTIVE                               |
+| subnets                   |                                      |
+| tags                      |                                      |
+| updated_at                | 2018-06-17T12:51:05Z                 |
++---------------------------+--------------------------------------+
+
+$ openstack subnet create --network selfservice --dns-nameserver 192.168.0.220 --gateway 10.0.0.1 --subnet-range 10.0.0.0/24 selfservice
++-------------------+--------------------------------------+
+| Field             | Value                                |
++-------------------+--------------------------------------+
+| allocation_pools  | 10.0.0.2-10.0.0.254                  |
+| cidr              | 10.0.0.0/24                          |
+| created_at        | 2018-06-17T12:53:03Z                 |
+| description       |                                      |
+| dns_nameservers   | 192.168.0.220                        |
+| enable_dhcp       | True                                 |
+| gateway_ip        | 10.0.0.1                             |
+| host_routes       |                                      |
+| id                | ab6a8b25-f43b-4562-ac81-549ec56401b4 |
+| ip_version        | 4                                    |
+| ipv6_address_mode | None                                 |
+| ipv6_ra_mode      | None                                 |
+| name              | selfservice                          |
+| network_id        | ec4cb910-2cbb-4a49-9953-d1661e65e877 |
+| project_id        | dc86d2e95fef4f56a70021e055f0c2cf     |
+| revision_number   | 0                                    |
+| segment_id        | None                                 |
+| service_types     |                                      |
+| subnetpool_id     | None                                 |
+| tags              |                                      |
+| updated_at        | 2018-06-17T12:53:03Z                 |
++-------------------+--------------------------------------+
+
+$ source ~/demo-openrc
+$ openstack router create router
++-------------------------+--------------------------------------+
+| Field                   | Value                                |
++-------------------------+--------------------------------------+
+| admin_state_up          | UP                                   |
+| availability_zone_hints |                                      |
+| availability_zones      |                                      |
+| created_at              | 2018-06-17T12:53:54Z                 |
+| description             |                                      |
+| distributed             | False                                |
+| external_gateway_info   | None                                 |
+| flavor_id               | None                                 |
+| ha                      | False                                |
+| id                      | 94d108dc-114e-4d15-92cf-eddb7658e282 |
+| name                    | router                               |
+| project_id              | dc86d2e95fef4f56a70021e055f0c2cf     |
+| revision_number         | 1                                    |
+| routes                  |                                      |
+| status                  | ACTIVE                               |
+| tags                    |                                      |
+| updated_at              | 2018-06-17T12:53:54Z                 |
++-------------------------+--------------------------------------+
+
+$ neutron router-interface-add router selfservice
+neutron CLI is deprecated and will be removed in the future. Use openstack CLI instead.
+Added interface 864fbbbe-f45a-4e0b-a9a4-3793a7a937c2 to router router.
+
+$ neutron router-gateway-set router provider
+neutron CLI is deprecated and will be removed in the future. Use openstack CLI instead.
+Set gateway for router router
+```
+
+### Verify operation
+```
+$ source ~/admin-openrc
+$ ip netns
+qdhcp-57a0b995-9bc6-4460-801b-df2d4d7692ba (id: 2)
+qrouter-94d108dc-114e-4d15-92cf-eddb7658e282 (id: 1)
+qdhcp-ec4cb910-2cbb-4a49-9953-d1661e65e877 (id: 0)
+
+$ neutron router-port-list router
+neutron CLI is deprecated and will be removed in the future. Use openstack CLI instead.
++--------------------------------------+------+----------------------------------+-------------------+--------------------------------------------------------------------------------------+
+| id                                   | name | tenant_id                        | mac_address       | fixed_ips                                                                            |
++--------------------------------------+------+----------------------------------+-------------------+--------------------------------------------------------------------------------------+
+| 864fbbbe-f45a-4e0b-a9a4-3793a7a937c2 |      | dc86d2e95fef4f56a70021e055f0c2cf | fa:16:3e:1e:06:9f | {"subnet_id": "ab6a8b25-f43b-4562-ac81-549ec56401b4", "ip_address": "10.0.0.1"}      |
+| f75d0fa6-fb4b-4139-830f-10472fbedc96 |      |                                  | fa:16:3e:bc:b3:56 | {"subnet_id": "5d134298-00a5-4b57-9c68-36a17cce0fac", "ip_address": "192.168.0.102"} |
++--------------------------------------+------+----------------------------------+-------------------+--------------------------------------------------------------------------------------+
+
+$ ping -c 4 192.168.0.102
+PING 192.168.0.102 (192.168.0.102) 56(84) bytes of data.
+64 bytes from 192.168.0.102: icmp_seq=1 ttl=64 time=0.101 ms
+64 bytes from 192.168.0.102: icmp_seq=2 ttl=64 time=0.076 ms
+64 bytes from 192.168.0.102: icmp_seq=3 ttl=64 time=0.075 ms
+64 bytes from 192.168.0.102: icmp_seq=4 ttl=64 time=0.069 ms
+
+--- 192.168.0.102 ping statistics ---
+4 packets transmitted, 4 received, 0% packet loss, time 2999ms
+rtt min/avg/max/mdev = 0.069/0.080/0.101/0.013 ms
+ogalush@ryunosuke:~$
+```
+
+### Create flavor
+```
+$ source ~/admin-openrc
+$ openstack flavor create --id 0 --vcpus 1 --ram 1024 --disk 1 m1.nano
+$ openstack flavor create --id 1 --vcpus 2 --ram 4096 --disk 40 m1.small --swap 4096
++----------------------------+----------+
+| Field                      | Value    |
++----------------------------+----------+
+| OS-FLV-DISABLED:disabled   | False    |
+| OS-FLV-EXT-DATA:ephemeral  | 0        |
+| disk                       | 40       |
+| id                         | 1        |
+| name                       | m1.small |
+| os-flavor-access:is_public | True     |
+| properties                 |          |
+| ram                        | 4096     |
+| rxtx_factor                | 1.0      |
+| swap                       | 4096     |
+| vcpus                      | 2        |
++----------------------------+----------+
+
+$ openstack flavor list
++----+----------+------+------+-----------+-------+-----------+
+| ID | Name     |  RAM | Disk | Ephemeral | VCPUs | Is Public |
++----+----------+------+------+-----------+-------+-----------+
+| 0  | m1.nano  | 1024 |    1 |         0 |     1 | True      |
+| 1  | m1.small | 4096 |   40 |         0 |     2 | True      |
++----+----------+------+------+-----------+-------+-----------+
+```
+
+### import keypair
+```
+$ source ~/demo-openrc
+$ openstack keypair create --public-key ~/.ssh/id_rsa_chef.pub chefkey
++-------------+-------------------------------------------------+
+| Field       | Value                                           |
++-------------+-------------------------------------------------+
+| fingerprint | f2:70:ad:9c:93:32:14:c0:36:e3:4f:ac:19:45:82:d2 |
+| name        | chefkey                                         |
+| user_id     | 2ca851b69cbe4ed5b328f6f17b373405                |
++-------------+-------------------------------------------------+
+
+$ openstack keypair list
++---------+-------------------------------------------------+
+| Name    | Fingerprint                                     |
++---------+-------------------------------------------------+
+| chefkey | f2:70:ad:9c:93:32:14:c0:36:e3:4f:ac:19:45:82:d2 |
++---------+-------------------------------------------------+
+```
+
+### Add security group rules
+```
+$ openstack security group rule create --proto icmp default
++-------------------+--------------------------------------+
+| Field             | Value                                |
++-------------------+--------------------------------------+
+| created_at        | 2018-06-17T13:04:37Z                 |
+| description       |                                      |
+| direction         | ingress                              |
+| ether_type        | IPv4                                 |
+| id                | cf2781fc-dc17-4551-aafd-8a30c9565c9c |
+| name              | None                                 |
+| port_range_max    | None                                 |
+| port_range_min    | None                                 |
+| project_id        | dc86d2e95fef4f56a70021e055f0c2cf     |
+| protocol          | icmp                                 |
+| remote_group_id   | None                                 |
+| remote_ip_prefix  | 0.0.0.0/0                            |
+| revision_number   | 0                                    |
+| security_group_id | 4c74d885-5ff6-4a08-882f-a545b37a610f |
+| updated_at        | 2018-06-17T13:04:37Z                 |
++-------------------+--------------------------------------+
+
+$ openstack security group rule create --proto tcp --dst-port 22 default
++-------------------+--------------------------------------+
+| Field             | Value                                |
++-------------------+--------------------------------------+
+| created_at        | 2018-06-17T13:04:53Z                 |
+| description       |                                      |
+| direction         | ingress                              |
+| ether_type        | IPv4                                 |
+| id                | a195504e-3d21-4757-ad3f-550d8686f5f5 |
+| name              | None                                 |
+| port_range_max    | 22                                   |
+| port_range_min    | 22                                   |
+| project_id        | dc86d2e95fef4f56a70021e055f0c2cf     |
+| protocol          | tcp                                  |
+| remote_group_id   | None                                 |
+| remote_ip_prefix  | 0.0.0.0/0                            |
+| revision_number   | 0                                    |
+| security_group_id | 4c74d885-5ff6-4a08-882f-a545b37a610f |
+| updated_at        | 2018-06-17T13:04:53Z                 |
++-------------------+--------------------------------------+
+```
+
+### Launch an instance
+```
+$ source ~/demo-openrc
+$ openstack flavor list
++----+----------+------+------+-----------+-------+-----------+
+| ID | Name     |  RAM | Disk | Ephemeral | VCPUs | Is Public |
++----+----------+------+------+-----------+-------+-----------+
+| 0  | m1.nano  | 1024 |    1 |         0 |     1 | True      |
+| 1  | m1.small | 4096 |   40 |         0 |     2 | True      |
++----+----------+------+------+-----------+-------+-----------+
+
+$ openstack image list
++--------------------------------------+--------+--------+
+| ID                                   | Name   | Status |
++--------------------------------------+--------+--------+
+| f3e81692-4e7e-4167-a5d0-c683264ed265 | cirros | active |
++--------------------------------------+--------+--------+
+
+$ openstack network list
++--------------------------------------+-------------+--------------------------------------+
+| ID                                   | Name        | Subnets                              |
++--------------------------------------+-------------+--------------------------------------+
+| 57a0b995-9bc6-4460-801b-df2d4d7692ba | provider    | 5d134298-00a5-4b57-9c68-36a17cce0fac |
+| ec4cb910-2cbb-4a49-9953-d1661e65e877 | selfservice | ab6a8b25-f43b-4562-ac81-549ec56401b4 |
++--------------------------------------+-------------+--------------------------------------+
+
+$ openstack security group list
++--------------------------------------+---------+------------------------+----------------------------------+
+| ID                                   | Name    | Description            | Project                          |
++--------------------------------------+---------+------------------------+----------------------------------+
+| 4c74d885-5ff6-4a08-882f-a545b37a610f | default | Default security group | dc86d2e95fef4f56a70021e055f0c2cf |
++--------------------------------------+---------+------------------------+----------------------------------+
+
+$ openstack server create --flavor m1.nano --image cirros --nic net-id=`openstack network list |grep selfservic
+e | cut -d' ' -f2` --security-group default  --key-name chefkey selfservice-instance
++-----------------------------+-----------------------------------------------+
+| Field                       | Value                                         |
++-----------------------------+-----------------------------------------------+
+| OS-DCF:diskConfig           | MANUAL                                        |
+| OS-EXT-AZ:availability_zone |                                               |
+| OS-EXT-STS:power_state      | NOSTATE                                       |
+| OS-EXT-STS:task_state       | scheduling                                    |
+| OS-EXT-STS:vm_state         | building                                      |
+| OS-SRV-USG:launched_at      | None                                          |
+| OS-SRV-USG:terminated_at    | None                                          |
+| accessIPv4                  |                                               |
+| accessIPv6                  |                                               |
+| addresses                   |                                               |
+| adminPass                   | Py6HmhjgPRWc                                  |
+| config_drive                |                                               |
+| created                     | 2018-06-17T13:07:26Z                          |
+| flavor                      | m1.nano (0)                                   |
+| hostId                      |                                               |
+| id                          | e7079e89-94ef-4309-ad0f-2aa9d894df11          |
+| image                       | cirros (f3e81692-4e7e-4167-a5d0-c683264ed265) |
+| key_name                    | chefkey                                       |
+| name                        | selfservice-instance                          |
+| progress                    | 0                                             |
+| project_id                  | dc86d2e95fef4f56a70021e055f0c2cf              |
+| properties                  |                                               |
+| security_groups             | name='4c74d885-5ff6-4a08-882f-a545b37a610f'   |
+| status                      | BUILD                                         |
+| updated                     | 2018-06-17T13:07:26Z                          |
+| user_id                     | 2ca851b69cbe4ed5b328f6f17b373405              |
+| volumes_attached            |                                               |
++-----------------------------+-----------------------------------------------+
+
+$ openstack server list
++--------------------------------------+----------------------+--------+----------+--------+---------+
+| ID                                   | Name                 | Status | Networks | Image  | Flavor  |
++--------------------------------------+----------------------+--------+----------+--------+---------+
+| e7079e89-94ef-4309-ad0f-2aa9d894df11 | selfservice-instance | ERROR  |          | cirros | m1.nano |
++--------------------------------------+----------------------+--------+----------+--------+---------+
+  
+$ openstack console url show selfservice-instance
+```
