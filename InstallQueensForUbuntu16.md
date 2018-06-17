@@ -111,16 +111,19 @@ $ sudo cp -v /tmp/etcd/etcdctl /usr/bin/etcdctl
 
 $ sudo vim /etc/etcd/etcd.conf.yml
 ----
-name: 192.168.0.200
+name: 'ryunosuke'
 data-dir: /var/lib/etcd
 initial-cluster-state: 'new'
 initial-cluster-token: 'etcd-cluster-01'
-initial-cluster: controller=http://192.168.0.200:2380
+initial-cluster: ryunosuke=http://192.168.0.200:2380
 initial-advertise-peer-urls: http://192.168.0.200:2380
 advertise-client-urls: http://192.168.0.200:2379
 listen-peer-urls: http://0.0.0.0:2380
 listen-client-urls: http://192.168.0.200:2379
 ----
+
+※Etcd for Ubuntu in openstackinstallguide 
+https://bugs.launchpad.net/openstack-manuals/+bug/1770984
 
 $ sudo vim /lib/systemd/system/etcd.service
 ----
@@ -144,4 +147,6 @@ WantedBy=multi-user.target
 ```
 $ sudo systemctl enable etcd
 $ sudo systemctl start etcd
+$ sudo systemctl status etcd |grep Active
+   Active: active (running) since Sun 2018-06-17 19:38:10 JST; 7s ago
 ```
