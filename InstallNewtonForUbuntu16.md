@@ -46,37 +46,16 @@ $ sudo add-apt-repository cloud-archive:newton
  Ubuntu Cloud Archive for OpenStack Newton
  More info: https://wiki.ubuntu.com/ServerTeam/CloudArchive
 Press [ENTER] to continue or ctrl-c to cancel adding it
+...
 
-Reading package lists...
-Building dependency tree...
-Reading state information...
-The following NEW packages will be installed:
-  ubuntu-cloud-keyring
-0 upgraded, 1 newly installed, 0 to remove and 0 not upgraded.
-Need to get 5,086 B of archives.
-After this operation, 34.8 kB of additional disk space will be used.
-Get:1 http://jp.archive.ubuntu.com/ubuntu xenial/universe amd64 ubuntu-cloud-keyring all 2012.08.14 [5,086 B]
-Fetched 5,086 B in 0s (111 kB/s)
-Selecting previously unselected package ubuntu-cloud-keyring.
-(Reading database ... 138021 files and directories currently installed.)
-Preparing to unpack .../ubuntu-cloud-keyring_2012.08.14_all.deb ...
-Unpacking ubuntu-cloud-keyring (2012.08.14) ...
-Setting up ubuntu-cloud-keyring (2012.08.14) ...
-Importing ubuntu-cloud.archive.canonical.com keyring
-OK
-Processing ubuntu-cloud.archive.canonical.com removal keyring
-gpg: /etc/apt/trustdb.gpg: trustdb created
-OK
-ogalush@ryunosuke:~$
+$ sudo apt -y install python-openstackclient
+→ PythonクライアントがインストールされればOK.
 ```
 
 #### Finalize the installation
 ```
 $ sudo apt -y update && sudo apt -y upgrade && sudo apt -y dist-upgrade && sudo apt -y autoremove
 → 通常のPackageUpdateが行われる。
-
-$ sudo apt -y install python-openstackclient
-→ PythonクライアントがインストールされればOK.
 ```
 
 ### SQL database
