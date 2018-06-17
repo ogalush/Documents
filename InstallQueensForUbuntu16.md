@@ -150,3 +150,199 @@ $ sudo systemctl start etcd
 $ sudo systemctl status etcd |grep Active
    Active: active (running) since Sun 2018-06-17 19:38:10 JST; 7s ago
 ```
+
+## Keystone Installation Tutorial for Ubuntu
+[Keystone Document](https://docs.openstack.org/keystone/queens/install/index-ubuntu.html)
+
+### Prerequisites
+```
+$ sudo mysql
+mysql> CREATE DATABASE keystone;
+mysql> GRANT ALL PRIVILEGES ON keystone.* TO 'keystone'@'%' IDENTIFIED BY 'password';
+mysql> FLUSH PRIVILEGES;
+mysql> quit;
+```
+
+### Install and configure components
+#### Install
+```
+$ sudo apt -y install keystone  apache2 libapache2-mod-wsgi
+```
+
+#### Configure
+```
+$ sudo vim /etc/keystone/keystone.conf
+----
+[database]
+##connection = sqlite:////var/lib/keystone/keystone.db
+connection = mysql+pymysql://keystone:password@192.168.0.200/keystone
+...
+[token]
+provider = fernet
+----
+
+$ sudo bash -c "keystone-manage db_sync" keystone
+$ sudo keystone-manage fernet_setup --keystone-user keystone --keystone-group keystone
+$ sudo keystone-manage credential_setup --keystone-user keystone --keystone-group keystone
+$ sudo keystone-manage bootstrap --bootstrap-password password --bootstrap-admin-url http://192.168.0.200:5000/v3/ --bootstrap-internal-url http://192.168.0.200:5000/v3/ --bootstrap-public-url http://192.168.0.200:5000/v3/ --bootstrap-region-id RegionOne
+
+$ sudo vim /etc/apache2/apache2.conf
+----
+ServerName 192.168.0.200
+----
+$ sudo service apache2 restart
+$ sudo service apache2 status |grep Active
+   Active: active (running) since Sun 2018-06-17 19:50:52 JST; 6s ago
+
+$ export OS_USERNAME=admin
+$ export OS_PASSWORD=password
+$ export OS_PROJECT_NAME=admin
+$ export OS_USER_DOMAIN_NAME=default
+$ export OS_PROJECT_DOMAIN_NAME=default
+$ export OS_AUTH_URL=http://192.168.0.200:5000/v3
+$ export OS_IDENTITY_API_VERSION=3
+```
+
+### Create a domain, projects, users, and roles
+[Document](https://docs.openstack.org/keystone/queens/install/keystone-users-ubuntu.html)
+#### Create
+```
+$ openstack domain create --description "An Example Domain" example
++-------------+----------------------------------+
+| Field       | Value                            |
++-------------+----------------------------------+
+| description | An Example Domain                |
+| enabled     | True                             |
+| id          | 4051db2e4993425a8d890c9fb7526383 |
+| name        | example                          |
+| tags        | []                               |
++-------------+----------------------------------+
+
+$ openstack project create --domain default --description "Service Project" service
++-------------+----------------------------------+
+| Field       | Value                            |
++-------------+----------------------------------+
+| description | Service Project                  |
+| domain_id   | default                          |
+| enabled     | True                             |
+| id          | 654660630bb6404d98f376f3da2b49e7 |
+| is_domain   | False                            |
+| name        | service                          |
+| parent_id   | default                          |
+| tags        | []                               |
++-------------+----------------------------------+
+
+$ openstack project create --domain default --description "Demo Project" demo
++-------------+----------------------------------+
+| Field       | Value                            |
++-------------+----------------------------------+
+| description | Demo Project                     |
+| domain_id   | default                          |
+| enabled     | True                             |
+| id          | dc86d2e95fef4f56a70021e055f0c2cf |
+| is_domain   | False                            |
+| name        | demo                             |
+| parent_id   | default                          |
+| tags        | []                               |
++-------------+----------------------------------+
+
+$ openstack user create --domain default --password-prompt demo
+User Password:
+Repeat User Password:
++---------------------+----------------------------------+
+| Field               | Value                            |
++---------------------+----------------------------------+
+| domain_id           | default                          |
+| enabled             | True                             |
+| id                  | 2ca851b69cbe4ed5b328f6f17b373405 |
+| name                | demo                             |
+| options             | {}                               |
+| password_expires_at | None                             |
++---------------------+----------------------------------+
+
+$ openstack role create user
++-----------+----------------------------------+
+| Field     | Value                            |
++-----------+----------------------------------+
+| domain_id | None                             |
+| id        | 39185f3995484cfdacdc70e04db6d3a7 |
+| name      | user                             |
++-----------+----------------------------------+
+
+$ openstack role add --project demo --user demo user
+```
+
+### Verify operation
+```
+$ unset OS_AUTH_URL OS_PASSWORD
+$ openstack --os-auth-url http://192.168.0.200:5000/v3 --os-project-domain-name default --os-user-domain-name default --os-project-name admin --os-username admin token issue
++------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Field      | Value                                                                                                                                                                                   |
++------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| expires    | 2018-06-17T11:56:27+0000                                                                                                                                                                |
+| id         | gAAAAABbJj5bphIWrGNEi1fE8hyWtoKrGQWQE6-6fm0hM5jbum5JR9lfylh_15A5cmrVX81yOoKaJCvNH7or6YY4vJgvDsm6YOhcBb6j0KaZBovlw9GCMkCpZ8LHBB50JzpY3C7YOtClVWhzZASx6BBFETKpox8sZmK6vP2MHEd5plKvltltFac |
+| project_id | a77a45043cc943c398841d12d5ddfa05                                                                                                                                                        |
+| user_id    | 2bf6f2a4ae7e4a7cb59be2ffb7eb5815                                                                                                                                                        |
++------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+
+$ openstack --os-auth-url http://192.168.0.200:5000/v3 --os-project-domain-name default --os-user-domain-name default --os-project-name demo --os-username demo token issue
++------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Field      | Value                                                                                                                                                                                   |
++------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| expires    | 2018-06-17T11:57:14+0000                                                                                                                                                                |
+| id         | gAAAAABbJj6KnkDL_9xOCHUvc82lmuwVxqGCd0dbBjLF_Goz_wIPLZHvZpnfob7fH4N6Y2-xiuivoVPpr64s4y5saC8EjQjv7nuSEWuebqP8wTZUN1JxLE08klplSdEemwl_MGRxy8GvrFw1244UID4ONUnP30CXUftqCAmr5gTeGvIIl05ps7M |
+| project_id | dc86d2e95fef4f56a70021e055f0c2cf                                                                                                                                                        |
+| user_id    | 2ca851b69cbe4ed5b328f6f17b373405                                                                                                                                                        |
++------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+```
+
+### Create OpenStack client environment scripts
+#### Creating the scripts
+```
+$ cat > ~/admin-openrc << __EOF__
+export OS_PROJECT_DOMAIN_NAME=default
+export OS_USER_DOMAIN_NAME=default
+export OS_PROJECT_NAME=admin
+export OS_USERNAME=admin
+export OS_PASSWORD=password
+export OS_AUTH_URL=http://192.168.0.200:5000/v3
+export OS_IDENTITY_API_VERSION=3
+export OS_IMAGE_API_VERSION=2
+__EOF__
+
+$ chmod -v 700 ~/admin-openrc
+
+$ cat > ~/demo-openrc << __EOF__
+export OS_PROJECT_DOMAIN_NAME=default
+export OS_USER_DOMAIN_NAME=default
+export OS_PROJECT_NAME=demo
+export OS_USERNAME=demo
+export OS_PASSWORD=password
+export OS_AUTH_URL=http://192.168.0.200:5000/v3
+export OS_IDENTITY_API_VERSION=3
+export OS_IMAGE_API_VERSION=2
+__EOF__
+$ chmod -v 700 ~/demo-openrc
+
+$ source ~/admin-openrc
+$ openstack token issue
++------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Field      | Value                                                                                                                                                                                   |
++------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| expires    | 2018-06-17T12:01:02+0000                                                                                                                                                                |
+| id         | gAAAAABbJj9uBa2mNBB4QqTxdUHo9ADIiRYCdwnb4x6DKZGjxpA3rDVatCS7VqW_ZBRhP-ugGh4GuUbSQUDwAqItwaYan4HSqB3gzjKrxhyXGo6KLLk4vvKLJAKqQIfM0VDJyhvUhvuf1TJODuBP4n-3KM8WiMivgw7f6nkf8e87ZfGIhjNCMJ4 |
+| project_id | a77a45043cc943c398841d12d5ddfa05                                                                                                                                                        |
+| user_id    | 2bf6f2a4ae7e4a7cb59be2ffb7eb5815                                                                                                                                                        |
++------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+
+$ source ~/demo-openrc
+$ openstack token issue
++------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Field      | Value                                                                                                                                                                                   |
++------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| expires    | 2018-06-17T12:01:27+0000                                                                                                                                                                |
+| id         | gAAAAABbJj-HJlaWB9NNsTMtpl9oIcZhqa-UVr3Pgvj-gatC9bcn9Hgsl8F3_LmcSdLlbIQkwkFYasdNeyWwCh1NswVTyqrSFq7aon1vO1Bvw48iuqrt-k0buqcHMo9x4zrb2gZEoNsdkMR-e6rGPm4xT-0J8GQL6WDN_0ufcA10V54WTPynE2E |
+| project_id | dc86d2e95fef4f56a70021e055f0c2cf                                                                                                                                                        |
+| user_id    | 2ca851b69cbe4ed5b328f6f17b373405                                                                                                                                                        |
++------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+```
