@@ -755,11 +755,7 @@ $ sudo nova-manage cell_v2 list_cells
 | cell1 | 464f0c50-1df5-4ca5-beef-684b1d6e401e | rabbit://openstack:****@192.168.0.200 |    mysql+pymysql://nova:****@192.168.0.200/nova    |
 +-------+--------------------------------------+---------------------------------------+----------------------------------------------------+
 
-$ echo 'nova-api
-nova-consoleauth
-nova-scheduler
-nova-conductor
-nova-novncproxy' | awk '{print "sudo service "$1" restart"}' |bash -x
+$ for i in 'nova-api' 'nova-consoleauth' 'nova-scheduler' 'nova-conductor' 'nova-novncproxy' ; do sudo systemctl restart $i ; done
 ```
 
 ### Install and configure a compute node
@@ -1094,12 +1090,7 @@ metadata_proxy_shared_secret = password
 
 $ sudo bash -c "neutron-db-manage --config-file /etc/neutron/neutron.conf --config-file /etc/neutron/plugins/ml2/ml2_conf.ini upgrade head" neutron
 
-$ echo 'nova-api
-neutron-server
-neutron-linuxbridge-agent
-neutron-dhcp-agent
-neutron-metadata-agent
-neutron-l3-agent' | awk '{print "sudo service "$1" restart"}'|bash -x
+$ for i in 'nova-api' 'neutron-server' 'neutron-linuxbridge-agent' 'neutron-dhcp-agent' 'neutron-metadata-agent' 'neutron-l3-agent' ; do sudo systemctl restart $i ; done
 ```
 
 ### Install and configure compute node
