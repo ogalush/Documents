@@ -708,7 +708,6 @@ connection = mysql+pymysql://nova:password@192.168.0.200/nova
 auth_strategy = keystone
 ...
 [keystone_authtoken]
-auth_uri = http://192.168.0.200:5000/v3
 auth_url = http://192.168.0.200:5000/v3
 memcached_servers = 192.168.0.200:11211
 auth_type = password
@@ -743,7 +742,7 @@ password = password
 
 $ sudo bash -c "nova-manage api_db sync" nova
 $ sudo bash -c "nova-manage cell_v2 map_cell0" nova
-$ $ sudo bash -c "nova-manage cell_v2 create_cell --name=cell1 --verbose" nova
+$ sudo bash -c "nova-manage cell_v2 create_cell --name=cell1 --verbose" nova
 464f0c50-1df5-4ca5-beef-684b1d6e401e
 
 $ sudo bash -c "nova-manage db sync" nova
@@ -766,6 +765,7 @@ $ sudo vim /etc/nova/nova.conf
 ----
 [vnc]
 ...
+server_listen = 0.0.0.0
 novncproxy_base_url = http://$my_ip:6080/vnc_auto.html
 ----
 
@@ -804,7 +804,7 @@ $ sudo vim /etc/nova/nova.conf
 ----
 ...
 [scheduler]
-discover_hosts_in_cells_interval = 300
+discover_hosts_in_cells_interval = 60
 ...
 [placement]
 os_region_name = RegionOne
@@ -833,7 +833,7 @@ $ openstack compute service list
 |  7 | nova-compute     | ryunosuke | nova     | enabled | up    | 2018-06-17T11:52:04.000000 |
 +----+------------------+-----------+----------+---------+-------+----------------------------+
 
-$ openstack catalog list                                                                     
+$ openstack catalog list
 +-----------+-----------+--------------------------------------------+                                                      
 | Name      | Type      | Endpoints                                  |                                                      
 +-----------+-----------+--------------------------------------------+                                                      
@@ -978,8 +978,6 @@ connection = mysql+pymysql://neutron:password@192.168.0.200/neutron
 [keystone_authtoken]
 auth_uri = http://192.168.0.200:5000
 auth_url = http://192.168.0.200:5000
-## auth_uri = http://192.168.0.200:5000
-## auth_url = http://192.168.0.200:35357
 memcached_servers = 192.168.0.200:11211
 auth_type = password
 project_domain_name = default
@@ -989,7 +987,7 @@ username = neutron
 password = password
 ...
 [nova]
-auth_url = http://192.168.0.200:35357
+auth_url = http://192.168.0.200:5000
 auth_type = password
 project_domain_name = default
 user_domain_name = default
@@ -1075,7 +1073,7 @@ $ sudo vim /etc/nova/nova.conf
 ...
 [neutron]
 url = http://192.168.0.200:9696
-auth_url = http://192.168.0.200:35357
+auth_url = http://192.168.0.200:5000
 auth_type = password
 project_domain_name = default
 user_domain_name = default
