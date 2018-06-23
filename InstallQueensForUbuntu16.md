@@ -517,12 +517,37 @@ $ openstack image create "cirros" --file cirros-0.4.0-x86_64-disk.img --disk-for
 | visibility       | public                                               |
 +------------------+------------------------------------------------------+
 
+$ openstack image create "Ubuntu16.04" --file /usr/local/src/ubuntu-16.04-server-cloudimg-amd64-disk1.img --disk-format qcow2 --container-format bare --public
++------------------+------------------------------------------------------+
+| Field            | Value                                                |
++------------------+------------------------------------------------------+
+| checksum         | 027b3e9d219f0f6c17b5448ed67dc41e                     |
+| container_format | bare                                                 |
+| created_at       | 2018-06-23T12:29:30Z                                 |
+| disk_format      | qcow2                                                |
+| file             | /v2/images/bf5b90d4-b2ee-4ddd-8847-391e9d7e3d95/file |
+| id               | bf5b90d4-b2ee-4ddd-8847-391e9d7e3d95                 |
+| min_disk         | 0                                                    |
+| min_ram          | 0                                                    |
+| name             | Ubuntu16.04                                          |
+| owner            | 6e4c9ccbb5a24aa097a73b2ca4fe1349                     |
+| protected        | False                                                |
+| schema           | /v2/schemas/image                                    |
+| size             | 289931264                                            |
+| status           | active                                               |
+| tags             |                                                      |
+| updated_at       | 2018-06-23T12:29:31Z                                 |
+| virtual_size     | None                                                 |
+| visibility       | public                                               |
++------------------+------------------------------------------------------+
+
 $ openstack image list
-+--------------------------------------+--------+--------+
-| ID                                   | Name   | Status |
-+--------------------------------------+--------+--------+
-| f3e81692-4e7e-4167-a5d0-c683264ed265 | cirros | active |
-+--------------------------------------+--------+--------+
++--------------------------------------+-------------+--------+
+| ID                                   | Name        | Status |
++--------------------------------------+-------------+--------+
+| bf5b90d4-b2ee-4ddd-8847-391e9d7e3d95 | Ubuntu16.04 | active |
+| f3e81692-4e7e-4167-a5d0-c683264ed265 | cirros      | active |
++--------------------------------------+-------------+--------+
 ```
 
 ### nova installation for Queens
