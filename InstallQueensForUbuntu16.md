@@ -1183,8 +1183,7 @@ $ sudo service apache2 restart
 #### Provider network
 ```
 $ source ~/admin-openrc
-$ openstack network create  --share --external --provider-physical-network provider --provider-network-type fla
-t provider
+$ openstack network create  --share --external --provider-physical-network provider --provider-network-type flat provider
 +---------------------------+--------------------------------------+
 | Field                     | Value                                |
 +---------------------------+--------------------------------------+
@@ -1248,7 +1247,7 @@ $ openstack subnet create --network provider --allocation-pool start=192.168.0.1
 #### Self-service network
 ```
 $ source ~/demo-openrc 
-ogalush@ryunosuke:~$ openstack network create selfservice
+$ openstack network create selfservice
 +---------------------------+--------------------------------------+
 | Field                     | Value                                |
 +---------------------------+--------------------------------------+
@@ -1499,8 +1498,7 @@ $ openstack security group list
 | 4c74d885-5ff6-4a08-882f-a545b37a610f | default | Default security group | dc86d2e95fef4f56a70021e055f0c2cf |
 +--------------------------------------+---------+------------------------+----------------------------------+
 
-$ openstack server create --flavor m1.nano --image cirros --nic net-id=`openstack network list |grep selfservic
-e | cut -d' ' -f2` --security-group default  --key-name chefkey selfservice-instance
+$ openstack server create --flavor m1.nano --image cirros --nic net-id=`openstack network list |grep selfservice | cut -d' ' -f2` --security-group default  --key-name chefkey selfservice-instance
 +-----------------------------+-----------------------------------------------+
 | Field                       | Value                                         |
 +-----------------------------+-----------------------------------------------+
