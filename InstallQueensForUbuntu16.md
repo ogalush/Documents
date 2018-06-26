@@ -1,6 +1,7 @@
 # Install OpenStack Queens on Ubuntu 16.04
 ドキュメント: [OpenStack Docs](https://docs.openstack.org/install-guide/openstack-services.html)  
 インストール先: 192.168.0.200(192.168.0.200)  
+設定ファイル: [Queens-InstallConfigs](https://github.com/ogalush/Queens-InstallConfigs)
 ```
 ogalush@ryunosuke:~$ uname -a
 Linux ryunosuke 4.4.0-128-generic #154-Ubuntu SMP Fri May 25 14:15:18 UTC 2018 x86_64 x86_64 x86_64 GNU/Linux
