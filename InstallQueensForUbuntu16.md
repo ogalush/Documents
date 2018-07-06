@@ -995,6 +995,7 @@ transport_url = rabbit://openstack:password@192.168.0.200
 auth_strategy = keystone
 notify_nova_on_port_status_changes = true
 notify_nova_on_port_data_changes = true
+dns_domain = localdomain
 ...
 
 [database]
