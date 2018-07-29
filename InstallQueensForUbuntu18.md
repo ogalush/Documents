@@ -578,3 +578,363 @@ $ openstack image list
 | e57a36b1-ea78-49ed-b477-71f0e827c330 | cirros      | active |
 +--------------------------------------+-------------+--------+
 ```
+
+### nova installation for Queens
+[Nova Document](https://docs.openstack.org/nova/queens/install/)
+#### Prerequisites
+```
+$ sudo mysql
+mysql> CREATE DATABASE nova_api;
+mysql> CREATE DATABASE nova;
+mysql> CREATE DATABASE nova_cell0;
+mysql> GRANT ALL PRIVILEGES ON nova_api.* TO 'nova'@'%' IDENTIFIED BY 'password';
+mysql> GRANT ALL PRIVILEGES ON nova.* TO 'nova'@'%' IDENTIFIED BY 'password';
+mysql> GRANT ALL PRIVILEGES ON nova_cell0.* TO 'nova'@'%' IDENTIFIED BY 'password';
+mysql> FLUSH PRIVILEGES;
+mysql> quit;
+
+$ source ~/admin-openrc
+$ openstack user create --domain default --password-prompt nova
+User Password:
+Repeat User Password:
++---------------------+----------------------------------+
+| Field               | Value                            |
++---------------------+----------------------------------+
+| domain_id           | default                          |
+| enabled             | True                             |
+| id                  | c04bce92f7fa4165a0a28953345c8cf3 |
+| name                | nova                             |
+| options             | {}                               |
+| password_expires_at | None                             |
++---------------------+----------------------------------+
+
+$ openstack role add --project service --user nova admin
+$ openstack service create --name nova --description "OpenStack Compute" compute
++-------------+----------------------------------+
+| Field       | Value                            |
++-------------+----------------------------------+
+| description | OpenStack Compute                |
+| enabled     | True                             |
+| id          | 4dae373f7c4d42f9a324fb0927416b2c |
+| name        | nova                             |
+| type        | compute                          |
++-------------+----------------------------------+
+
+$ openstack endpoint create --region RegionOne compute public http://192.168.0.200:8774/v2.1
++--------------+----------------------------------+
+| Field        | Value                            |
++--------------+----------------------------------+
+| enabled      | True                             |
+| id           | a0b9d160104c4764bb9c1cca77c35c24 |
+| interface    | public                           |
+| region       | RegionOne                        |
+| region_id    | RegionOne                        |
+| service_id   | 4dae373f7c4d42f9a324fb0927416b2c |
+| service_name | nova                             |
+| service_type | compute                          |
+| url          | http://192.168.0.200:8774/v2.1   |
++--------------+----------------------------------+
+
+$ openstack endpoint create --region RegionOne compute internal http://192.168.0.200:8774/v2.1
++--------------+----------------------------------+
+| Field        | Value                            |
++--------------+----------------------------------+
+| enabled      | True                             |
+| id           | 6db39fc196f54416b0e52e3ca46f4a08 |
+| interface    | internal                         |
+| region       | RegionOne                        |
+| region_id    | RegionOne                        |
+| service_id   | 4dae373f7c4d42f9a324fb0927416b2c |
+| service_name | nova                             |
+| service_type | compute                          |
+| url          | http://192.168.0.200:8774/v2.1   |
++--------------+----------------------------------+
+
+$ openstack endpoint create --region RegionOne compute admin http://192.168.0.200:8774/v2.1
++--------------+----------------------------------+
+| Field        | Value                            |
++--------------+----------------------------------+
+| enabled      | True                             |
+| id           | 7cf19a41788949b1b6391b4a22bfb901 |
+| interface    | admin                            |
+| region       | RegionOne                        |
+| region_id    | RegionOne                        |
+| service_id   | 4dae373f7c4d42f9a324fb0927416b2c |
+| service_name | nova                             |
+| service_type | compute                          |
+| url          | http://192.168.0.200:8774/v2.1   |
++--------------+----------------------------------+
+
+$ openstack user create --domain default --password-prompt placement
+User Password:
+Repeat User Password:
++---------------------+----------------------------------+
+| Field               | Value                            |
++---------------------+----------------------------------+
+| domain_id           | default                          |
+| enabled             | True                             |
+| id                  | dd8bb2f19a7d42cd9d0469ff64994dc7 |
+| name                | placement                        |
+| options             | {}                               |
+| password_expires_at | None                             |
++---------------------+----------------------------------+
+
+$ openstack role add --project service --user placement admin
+$ openstack service create --name placement --description "Placement API" placement
++-------------+----------------------------------+
+| Field       | Value                            |
++-------------+----------------------------------+
+| description | Placement API                    |
+| enabled     | True                             |
+| id          | 42f73234ccd24cd4bc515aa5fc537035 |
+| name        | placement                        |
+| type        | placement                        |
++-------------+----------------------------------+
+
+$ openstack endpoint create --region RegionOne placement public http://192.168.0.200:8778
++--------------+----------------------------------+
+| Field        | Value                            |
++--------------+----------------------------------+
+| enabled      | True                             |
+| id           | 901b52735ab14c9f98b063297fcf8266 |
+| interface    | public                           |
+| region       | RegionOne                        |
+| region_id    | RegionOne                        |
+| service_id   | 42f73234ccd24cd4bc515aa5fc537035 |
+| service_name | placement                        |
+| service_type | placement                        |
+| url          | http://192.168.0.200:8778        |
++--------------+----------------------------------+
+
+$ openstack endpoint create --region RegionOne placement internal http://192.168.0.200:8778
++--------------+----------------------------------+
+| Field        | Value                            |
++--------------+----------------------------------+
+| enabled      | True                             |
+| id           | 525bd69092d141a2af8f60795f81125c |
+| interface    | internal                         |
+| region       | RegionOne                        |
+| region_id    | RegionOne                        |
+| service_id   | 42f73234ccd24cd4bc515aa5fc537035 |
+| service_name | placement                        |
+| service_type | placement                        |
+| url          | http://192.168.0.200:8778        |
++--------------+----------------------------------+
+
+$ openstack endpoint create --region RegionOne placement admin http://192.168.0.200:8778
++--------------+----------------------------------+
+| Field        | Value                            |
++--------------+----------------------------------+
+| enabled      | True                             |
+| id           | e3806a6416fb4c06902d245d06dde704 |
+| interface    | admin                            |
+| region       | RegionOne                        |
+| region_id    | RegionOne                        |
+| service_id   | 42f73234ccd24cd4bc515aa5fc537035 |
+| service_name | placement                        |
+| service_type | placement                        |
+| url          | http://192.168.0.200:8778        |
++--------------+----------------------------------+
+```
+
+#### Install and configure controller node
+```
+$ sudo apt -y install nova-api nova-conductor nova-consoleauth nova-novncproxy nova-scheduler nova-placement-api
+
+$ sudo vim /etc/nova/nova.conf
+----
+[DEFAULT]
+...
+transport_url = rabbit://openstack:password@192.168.0.200
+my_ip = 192.168.0.200
+use_neutron = True
+firewall_driver = nova.virt.firewall.NoopFirewallDriver
+
+[api_database]
+#connection = sqlite:////var/lib/nova/nova_api.sqlite
+connection = mysql+pymysql://nova:password@192.168.0.200/nova_api
+...
+[database]
+##connection = sqlite:////var/lib/nova/nova.sqlite
+connection = mysql+pymysql://nova:password@192.168.0.200/nova
+...
+[api]
+auth_strategy = keystone
+...
+[keystone_authtoken]
+auth_url = http://192.168.0.200:5000/v3
+memcached_servers = 192.168.0.200:11211
+auth_type = password
+project_domain_name = default
+user_domain_name = default
+project_name = service
+username = nova
+password = password
+...
+[vnc]
+enabled = true
+server_listen = $my_ip
+server_proxyclient_address = $my_ip
+...
+[glance]
+api_servers = http://192.168.0.200:9292
+...
+[oslo_concurrency]
+lock_path = /var/lib/nova/tmp
+...
+[placement]
+##os_region_name = openstack
+os_region_name = RegionOne
+project_domain_name = default
+project_name = service
+auth_type = password
+user_domain_name = default
+auth_url = http://192.168.0.200:5000/v3
+username = placement
+password = password
+----
+
+$ sudo bash -c "nova-manage api_db sync" nova
+$ sudo bash -c "nova-manage cell_v2 map_cell0" nova
+$ sudo bash -c "nova-manage cell_v2 create_cell --name=cell1 --verbose" nova
+9224e550-418c-454b-93c8-7bf1fceaa069
+
+$ sudo bash -c "nova-manage db sync" nova
+→ 1度segmentation faultが出たが、OS再起動後に再実施したら通った.
+----
+[sudo] password for ogalush:
+/usr/lib/python2.7/dist-packages/pymysql/cursors.py:165: Warning: (1831, u'Duplicate index `uniq_instances0uuid`. This is deprecated and will be disallowed in a future release.')
+  result = self._query(query)
+/usr/lib/python2.7/dist-packages/pymysql/cursors.py:165: Warning: (1831, u'Duplicate index `block_device_mapping_instance_uuid_virtual_name_device_name_idx`. This is deprecated and will be disallowed in a future release.')
+  result = self._query(query)
+----
+
+$ sudo nova-manage cell_v2 list_cells
++-------+--------------------------------------+---------------------------------------+----------------------------------------------------+
+|  Name |                 UUID                 |             Transport URL             |                Database Connection                 |
++-------+--------------------------------------+---------------------------------------+----------------------------------------------------+
+| cell0 | 00000000-0000-0000-0000-000000000000 |                 none:/                | mysql+pymysql://nova:****@192.168.0.200/nova_cell0 |
+| cell1 | 9224e550-418c-454b-93c8-7bf1fceaa069 | rabbit://openstack:****@192.168.0.200 |    mysql+pymysql://nova:****@192.168.0.200/nova    |
++-------+--------------------------------------+---------------------------------------+----------------------------------------------------+
+
+$ for i in 'nova-api' 'nova-consoleauth' 'nova-scheduler' 'nova-conductor' 'nova-novncproxy' ; do sudo systemctl restart $i ; done
+```
+
+### Install and configure a compute node
+#### Install and configure components
+```
+$ sudo apt -y install nova-compute
+$ sudo vim /etc/nova/nova.conf
+----
+[vnc]
+...
+server_listen = 0.0.0.0
+novncproxy_base_url = http://$my_ip:6080/vnc_auto.html
+----
+
+$ egrep -c '(vmx|svm)' /proc/cpuinfo
+4
+$ sudo vim /etc/nova/nova-compute.conf
+----
+[DEFAULT]
+compute_driver=libvirt.LibvirtDriver
+[libvirt]
+virt_type=kvm
+→ kvmのままにしておく.
+----
+
+$ sudo service nova-compute restart
+```
+
+#### Add the compute node to the cell database
+```
+$ source ~/admin-openrc
+$ openstack compute service list --service nova-compute
+→ 何故か表示が出てこない.
+
+$ sudo bash -c "nova-manage cell_v2 discover_hosts --verbose" nova
+Found 2 cell mappings.
+Skipping cell0 since it does not contain hosts.
+Getting computes from cell 'cell1': 9224e550-418c-454b-93c8-7bf1fceaa069
+Found 0 unmapped computes in cell: 9224e550-418c-454b-93c8-7bf1fceaa069
+
+$ sudo vim /etc/nova/nova.conf
+----
+...
+[scheduler]
+discover_hosts_in_cells_interval = 60
+...
+[placement]
+os_region_name = RegionOne
+project_domain_name = default
+project_name = service
+auth_type = password
+user_domain_name = default
+auth_url = http://192.168.0.200:5000/v3
+username = placement
+password = password
+----
+
+$ sudo service nova-compute restart
+```
+
+### Verify operation
+```
+$ source ~/admin-openrc
+$ openstack compute service list
++----+------------------+-----------+----------+---------+-------+------------+
+| ID | Binary           | Host      | Zone     | Status  | State | Updated At |
++----+------------------+-----------+----------+---------+-------+------------+
+|  3 | nova-conductor   | ryunosuke | internal | enabled | down  | None       |
+|  4 | nova-scheduler   | ryunosuke | internal | enabled | down  | None       |
+|  5 | nova-consoleauth | ryunosuke | internal | enabled | down  | None       |
++----+------------------+-----------+----------+---------+-------+------------+
+→ state=up じゃないといけない.
+
+$ openstack catalog list
++-----------+-----------+--------------------------------------------+
+| Name      | Type      | Endpoints                                  |
++-----------+-----------+--------------------------------------------+
+| keystone  | identity  | RegionOne                                  |
+|           |           |   internal: http://192.168.0.200:5000/v3/  |
+|           |           | RegionOne                                  |
+|           |           |   admin: http://192.168.0.200:5000/v3/     |
+|           |           | RegionOne                                  |
+|           |           |   public: http://192.168.0.200:5000/v3/    |
+...
+| glance    | image     | RegionOne                                  |
+|           |           |   admin: http://192.168.0.200:9292         |
+|           |           | RegionOne                                  |
+|           |           |   public: http://192.168.0.200:9292        |
+|           |           | RegionOne                                  |
+|           |           |   internal: http://192.168.0.200:9292      |
+|           |           |                                            |
++-----------+-----------+--------------------------------------------+
+
+$ openstack image list
++--------------------------------------+-------------+--------+
+| ID                                   | Name        | Status |
++--------------------------------------+-------------+--------+
+| 2cb9b464-a21a-4f5c-993e-9758d9466d53 | Ubuntu16.04 | active |
+| e57a36b1-ea78-49ed-b477-71f0e827c330 | cirros      | active |
++--------------------------------------+-------------+--------+
+
+$ sudo nova-status upgrade check
+Option "os_region_name" from group "placement" is deprecated. Use option "region-name" from group "placement".
+Option "enable" from group "cells" is deprecated for removal (Cells v1 is being replaced with Cells v2.).  Its val
+ue may be silently ignored in the future.
++--------------------------------------------------------------------+
+| Upgrade Check Results                                              |
++--------------------------------------------------------------------+
+| Check: Cells v2                                                    |
+| Result: Success                                                    |
+| Details: No host mappings or compute nodes were found. Remember to |
+|   run command 'nova-manage cell_v2 discover_hosts' when new        |
+|   compute hosts are deployed.                                      |
+...
++--------------------------------------------------------------------+
+| Check: API Service Version                                         |
+| Result: Success                                                    |
+| Details: None                                                      |
++--------------------------------------------------------------------+
+```
