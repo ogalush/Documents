@@ -850,7 +850,11 @@ $ sudo service nova-compute restart
 ```
 $ source ~/admin-openrc
 $ openstack compute service list --service nova-compute
-→ 何故か表示が出てこない.
++----+--------------+-----------+------+---------+-------+----------------------------+
+| ID | Binary       | Host      | Zone | Status  | State | Updated At                 |
++----+--------------+-----------+------+---------+-------+----------------------------+
+|  6 | nova-compute | ryunosuke | nova | enabled | up    | 2018-08-02T15:05:48.000000 |
++----+--------------+-----------+------+---------+-------+----------------------------+
 
 $ sudo bash -c "nova-manage cell_v2 discover_hosts --verbose" nova
 Found 2 cell mappings.
@@ -881,14 +885,15 @@ $ sudo service nova-compute restart
 ### Verify operation
 ```
 $ source ~/admin-openrc
-$ openstack compute service list 
-+----+------------------+-----------+----------+---------+-------+------------+
-| ID | Binary           | Host      | Zone     | Status  | State | Updated At |
-+----+------------------+-----------+----------+---------+-------+------------+
-|  3 | nova-consoleauth | ryunosuke | internal | enabled | up    | None       |
-|  4 | nova-scheduler   | ryunosuke | internal | enabled | up    | None       |
-|  5 | nova-conductor   | ryunosuke | internal | enabled | up    | None       |
-+----+------------------+-----------+----------+---------+-------+------------+
+$ openstack compute service list
++----+------------------+-----------+----------+---------+-------+----------------------------+
+| ID | Binary           | Host      | Zone     | Status  | State | Updated At                 |
++----+------------------+-----------+----------+---------+-------+----------------------------+
+|  3 | nova-consoleauth | ryunosuke | internal | enabled | up    | 2018-08-02T15:05:17.000000 |
+|  4 | nova-scheduler   | ryunosuke | internal | enabled | up    | 2018-08-02T15:05:18.000000 |
+|  5 | nova-conductor   | ryunosuke | internal | enabled | up    | 2018-08-02T15:05:18.000000 |
++----+------------------+-----------+----------+---------+-------+----------------------------+
+ogalush@ryunosuke:~$ 
 
 $ openstack catalog list
 +-----------+-----------+--------------------------------------------+
@@ -1184,7 +1189,13 @@ $ openstack extension list --network
 +----------------------------------------------------------------------------------------------+---------------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------+
 
 $ openstack network agent list
++--------------------------------------+--------------------+-----------+-------------------+-------+-------+---------------------------+
+| ID                                   | Agent Type         | Host      | Availability Zone | Alive | State | Binary                    |
++--------------------------------------+--------------------+-----------+-------------------+-------+-------+---------------------------+
+| 0345f9ed-e2ab-45ea-acf5-59d6f99cb5ce | Linux bridge agent | ryunosuke | None              | :-)   | UP    | neutron-linuxbridge-agent |
+| 81ede41b-4459-4f4a-b709-f4942261fae2 | Metadata agent     | ryunosuke | None              | :-)   | UP    | neutron-metadata-agent    |
+| d151dd75-e42e-45d4-9da9-58a173b5b054 | DHCP agent         | ryunosuke | nova              | :-)   | UP    | neutron-dhcp-agent        |
+| f7a6fbd3-06b5-4545-a31d-f486b99c3c30 | L3 agent           | ryunosuke | nova              | :-)   | UP    | neutron-l3-agent          |
++--------------------------------------+--------------------+-----------+-------------------+-------+-------+---------------------------+
 
-ogalush@ryunosuke:~$ 
-→ 表示されるはずが表示されない.
 ```
