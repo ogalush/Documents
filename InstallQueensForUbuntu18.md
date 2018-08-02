@@ -1197,5 +1197,15 @@ $ openstack network agent list
 | d151dd75-e42e-45d4-9da9-58a173b5b054 | DHCP agent         | ryunosuke | nova              | :-)   | UP    | neutron-dhcp-agent        |
 | f7a6fbd3-06b5-4545-a31d-f486b99c3c30 | L3 agent           | ryunosuke | nova              | :-)   | UP    | neutron-l3-agent          |
 +--------------------------------------+--------------------+-----------+-------------------+-------+-------+---------------------------+
+```
 
+## horizon installation for Queens
+[horizon Document](https://docs.openstack.org/horizon/queens/install/)
+
+### Install and configure for Ubuntu
+```
+$ sudo apt -y install openstack-dashboard
+$ sudo vim /etc/openstack-dashboard/local_settings.py
+----
+----
 ```
