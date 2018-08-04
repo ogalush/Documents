@@ -24,7 +24,7 @@ $ sudo add-apt-repository cloud-archive:queens
 
 #### Finalize the installation
 ```
-$ sudo apt -y install python3-openstackclient
+$ sudo apt -y install python-openstackclient
 $ sudo apt -y update && sudo apt -y upgrade && sudo apt -y dist-upgrade && sudo apt -y autoremove
 $ sudo shutdown -r now
 ```
@@ -32,7 +32,7 @@ $ sudo shutdown -r now
 ### SQL database for Ubuntu
 #### Install and configure components
 ```
-$ sudo apt -y install mariadb-server python3-pymysql
+$ sudo apt -y install mariadb-server python-pymysql
 $ sudo cp -pv /etc/mysql/mariadb.conf.d/50-server.cnf ~
 $ sudo vim /etc/mysql/mariadb.conf.d/50-server.cnf
 ----
@@ -83,7 +83,7 @@ $ sudo rabbitmqctl set_permissions openstack ".*" ".*" ".*"
 ### Memcached for Ubuntu
 #### Install and configure components
 ```
-$ sudo apt -y install memcached python3-memcache
+$ sudo apt -y install memcached python-memcache
 $ sudo cp -pv /etc/memcached.conf ~
 $ sudo sed -i 's/-l 127.0.0.1/-l 192.168.0.200/' /etc/memcached.conf
 $ grep '\-l' /etc/memcached.conf
