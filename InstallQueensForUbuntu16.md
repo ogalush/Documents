@@ -9,6 +9,17 @@ ogalush@ryunosuke:~$
 ```
 
 ## Environment
+### hosts
+```
+$ sudo sed -i 's/127.0.1.1/192.168.0.200/' /etc/hosts
+[sudo] password for ogalush: 
+$ cat /etc/hosts
+127.0.0.1       localhost
+192.168.0.200   ryunosuke
+→ 127.0.x.xから変更できていること.
+...
+```
+
 ### Network Time Protocol (NTP)
 ```
 $ ntpq -p |grep '*'
