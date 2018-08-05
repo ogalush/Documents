@@ -1074,10 +1074,10 @@ l2_population = true
 $ sudo vim /etc/sysctl.conf
 ----
 ...
-## For OpenStack
-net.ipv6.conf.all.disable_ipv6 = 1
+## OpenStack(START)
 net.bridge.bridge-nf-call-iptables = 1
-#net.bridge.bridge-nf-call-ip6tables = 1
+net.bridge.bridge-nf-call-ip6tables = 1
+## OpenStack(END)
 ----
 $ sudo sysctl -p
 
