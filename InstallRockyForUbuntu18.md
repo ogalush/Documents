@@ -182,3 +182,9 @@ $ sudo systemctl status etcd
    Active: active (running) since Sun 2018-09-16 16:05:15 JST; 11s ago
      Docs: https://github.com/coreos/etcd
 ```
+
+# Install OpenStack services
+[URL](https://docs.openstack.org/install-guide/openstack-services.html#minimal-deployment-for-rocky)
+
+## Keystone Installation Tutorial
+
