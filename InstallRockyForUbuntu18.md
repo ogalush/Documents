@@ -153,3 +153,32 @@ $ netstat -ln |grep 11211
 tcp        0      0 192.168.0.200:11211     0.0.0.0:*               LISTEN   
 → 変更したIPアドレスでLISTENできているのでOK.
 ```
+
+## Etcd for Ubuntu
+### Install and configure components
+```
+$ sudo apt -y install etcd
+$ sudo vim /etc/default/etcd
+----
+name: 'ryunosuke'
+data-dir: /var/lib/etcd
+initial-cluster-state: 'new'
+initial-cluster-token: 'etcd-cluster-01'
+initial-cluster: ryunosuke=http://192.168.0.200:2380
+initial-advertise-peer-urls: http://192.168.0.200:2380
+advertise-client-urls: http://192.168.0.200:2379
+listen-peer-urls: http://0.0.0.0:2380
+listen-client-urls: http://192.168.0.200:2379
+----
+```
+
+### Finalize installation
+```
+$ sudo systemctl enable etcd
+$ sudo systemctl restart etcd
+$ sudo systemctl status etcd
+● etcd.service - etcd - highly-available key value store
+   Loaded: loaded (/lib/systemd/system/etcd.service; enabled; vendor preset: enabled)
+   Active: active (running) since Sun 2018-09-16 16:05:15 JST; 11s ago
+     Docs: https://github.com/coreos/etcd
+```
