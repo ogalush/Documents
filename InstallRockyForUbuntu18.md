@@ -61,9 +61,8 @@ MS Name/IP address         Stratum Poll Reach LastRx Last sample
 ^* ntp-a3.nict.go.jp             1   6   177     2  -2094ns[  -56us] +/- 2202us
 ```
 
-# OpenStack packages
-## OpenStack packages for Ubuntu
-### Enable the OpenStack repository
+# OpenStack packages for Ubuntu
+## Enable the OpenStack repository
 ```
 $ sudo apt -y install software-properties-common
 $ sudo add-apt-repository cloud-archive:rocky
@@ -81,15 +80,15 @@ Reading package lists... Done
 $
 ```
 
-### Finalize the installation
+## Finalize the installation
 ```
 $ sudo apt -y install python-openstackclient
 $ sudo apt-get -y update && sudo apt-get -y upgrade && sudo apt-get -y dist-upgrade && sudo apt-get -y autoremove
 $ sudo shutdown -r now
 ```
 
-## SQL database for Ubuntu
-### Install and configure components
+# SQL database for Ubuntu
+## Install and configure components
 ```
 $ sudo apt -y install mariadb-server python-pymysql
 $ sudo cp -ra /etc/mysql ~
@@ -122,8 +121,8 @@ Remove test database and access to it? [Y/n] y
 Reload privilege tables now? [Y/n] y
 ```
 
-## Message queue for Ubuntu
-### Install and configure components
+# Message queue for Ubuntu
+## Install and configure components
 ```
 $ sudo apt -y install rabbitmq-server
 $ sudo rabbitmqctl add_user openstack password
@@ -132,8 +131,8 @@ $ sudo rabbitmqctl set_permissions openstack ".*" ".*" ".*"
 Setting permissions for user "openstack" in vhost "/"
 ```
 
-## Memcached for Ubuntu
-### Install and configure components
+# Memcached for Ubuntu
+## Install and configure components
 ```
 $ sudo apt -y install memcached python-memcache
 $ sudo sed -i 's/-l 127.0.0.1/-l 192.168.0.200/' /etc/memcached.conf 
@@ -141,7 +140,7 @@ $ grep 192.168.0.200 /etc/memcached.conf
 -l 192.168.0.200
 ```
 
-### Finalize installation
+## Finalize installation
 ```
 $ sudo service memcached restart
 $ sudo service memcached status
@@ -154,8 +153,8 @@ tcp        0      0 192.168.0.200:11211     0.0.0.0:*               LISTEN
 → 変更したIPアドレスでLISTENできているのでOK.
 ```
 
-## Etcd for Ubuntu
-### Install and configure components
+# Etcd for Ubuntu
+## Install and configure components
 ```
 $ sudo apt -y install etcd
 $ sudo vim /etc/default/etcd
@@ -172,7 +171,7 @@ listen-client-urls: http://192.168.0.200:2379
 ----
 ```
 
-### Finalize installation
+## Finalize installation
 ```
 $ sudo systemctl enable etcd
 $ sudo systemctl restart etcd
@@ -186,8 +185,8 @@ $ sudo systemctl status etcd
 # Install OpenStack services
 [URL](https://docs.openstack.org/install-guide/openstack-services.html#minimal-deployment-for-rocky)
 
-## Keystone Installation Tutorial
-### Install and configure
+# Keystone Installation Tutorial
+## Install and configure
 [URL](https://docs.openstack.org/keystone/rocky/install/keystone-install-ubuntu.html)
 ```
 $ sudo mysql
@@ -212,7 +211,7 @@ $ sudo keystone-manage credential_setup --keystone-user keystone --keystone-grou
 $ sudo keystone-manage bootstrap --bootstrap-password password --bootstrap-admin-url http://192.168.0.200:5000/v3/ --bootstrap-internal-url http://192.168.0.200:5000/v3/ --bootstrap-public-url http://192.168.0.200:5000/v3/ --bootstrap-region-id RegionOne
 ```
 
-### Configure the Apache HTTP server
+## Configure the Apache HTTP server
 ```
 $ sudo vim /etc/apache2/apache2.conf
 ----
@@ -223,7 +222,7 @@ $ sudo service apache2 restart
 $ sudo service apache2 status
 ```
 
-### Finalize the installation
+## Finalize the installation
 ```
 $ export OS_USERNAME=admin
 $ export OS_PASSWORD=password
@@ -386,4 +385,179 @@ $ openstack token issue
 | project_id | 178b524c1c90427c89f5e675bff55a89                                                                                                                                                        |
 | user_id    | ae1b3cd81eaf4da289498f978d8d5e1b                                                                                                                                                        |
 +------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+```
+
+# glance installation for Rocky
+[URL](https://docs.openstack.org/glance/rocky/install/)
+
+## Install and configure (Ubuntu)
+### Prerequisites
+```
+$ sudo mysql
+MariaDB [(none)]> CREATE DATABASE glance;
+MariaDB [(none)]> GRANT ALL PRIVILEGES ON glance.* TO 'glance'@'%' IDENTIFIED BY 'password';
+MariaDB [(none)]> FLUSH PRIVILEGES;
+MariaDB [(none)]> quit;
+
+$ source ~/admin_openrc.sh
+$ openstack user create --domain default --password-prompt glance
+User Password:
+Repeat User Password:
++---------------------+----------------------------------+
+| Field               | Value                            |
++---------------------+----------------------------------+
+| domain_id           | default                          |
+| enabled             | True                             |
+| id                  | d712b665171f4534a5d187ee1423d90b |
+| name                | glance                           |
+| options             | {}                               |
+| password_expires_at | None                             |
++---------------------+----------------------------------+
+
+$ openstack role add --project service --user glance admin
+$ openstack service create --name glance --description "OpenStack Image" image
++-------------+----------------------------------+
+| Field       | Value                            |
++-------------+----------------------------------+
+| description | OpenStack Image                  |
+| enabled     | True                             |
+| id          | 061b7a2c4307445ea8e2f86839053518 |
+| name        | glance                           |
+| type        | image                            |
++-------------+----------------------------------+
+
+$ openstack endpoint create --region RegionOne image public http://192.168.0.200:9292
++--------------+----------------------------------+
+| Field        | Value                            |
++--------------+----------------------------------+
+| enabled      | True                             |
+| id           | 004a9cbda56e4adfb29ef74e09dc2fd8 |
+| interface    | public                           |
+| region       | RegionOne                        |
+| region_id    | RegionOne                        |
+| service_id   | 061b7a2c4307445ea8e2f86839053518 |
+| service_name | glance                           |
+| service_type | image                            |
+| url          | http://192.168.0.200:9292        |
++--------------+----------------------------------+
+
+$ openstack endpoint create --region RegionOne image internal http://192.168.0.200:9292
++--------------+----------------------------------+
+| Field        | Value                            |
++--------------+----------------------------------+
+| enabled      | True                             |
+| id           | ecef30ffaa4a4cf98385e4baa04d8671 |
+| interface    | internal                         |
+| region       | RegionOne                        |
+| region_id    | RegionOne                        |
+| service_id   | 061b7a2c4307445ea8e2f86839053518 |
+| service_name | glance                           |
+| service_type | image                            |
+| url          | http://192.168.0.200:9292        |
++--------------+----------------------------------+
+
+$ openstack endpoint create --region RegionOne image admin http://192.168.0.200:9292
++--------------+----------------------------------+
+| Field        | Value                            |
++--------------+----------------------------------+
+| enabled      | True                             |
+| id           | 2afcd9002c7442edafda3bf47d63d162 |
+| interface    | admin                            |
+| region       | RegionOne                        |
+| region_id    | RegionOne                        |
+| service_id   | 061b7a2c4307445ea8e2f86839053518 |
+| service_name | glance                           |
+| service_type | image                            |
+| url          | http://192.168.0.200:9292        |
++--------------+----------------------------------+
+```
+
+### Install and configure components
+```
+$ sudo apt -y install glance
+$ sudo vim /etc/glance/glance-api.conf
+----
+[database]
+##connection = sqlite:////var/lib/glance/glance.sqlite
+connection = mysql+pymysql://glance:password@192.168.0.200/glance
+
+[keystone_authtoken]
+www_authenticate_uri = http://192.168.0.200:5000
+auth_url = http://192.168.0.200:5000
+memcached_servers = 192.168.0.200:11211
+auth_type = password
+project_domain_name = default
+user_domain_name = default
+project_name = service
+username = glance
+password = password
+
+[paste_deploy]
+flavor = keystone
+
+[glance_store]
+stores = file,http
+default_store = file
+filesystem_store_datadir = /var/lib/glance/images/
+----
+
+$ sudo vim  /etc/glance/glance-registry.conf
+----
+[database]
+##connection = sqlite:////var/lib/glance/glance.sqlite
+connection = mysql+pymysql://glance:password@192.168.0.200/glance
+
+[keystone_authtoken]
+www_authenticate_uri = http://192.168.0.200:5000
+auth_url = http://192.168.0.200:5000
+memcached_servers = 192.168.0.200:11211
+auth_type = password
+project_domain_name = default
+user_domain_name = default
+project_name = service
+username = glance
+password = password
+
+[paste_deploy]
+flavor = keystone
+----
+
+$ sudo bash -c "glance-manage db_sync" glance
+```
+
+### Finalize installation
+```
+$ sudo service glance-registry restart
+$ sudo service glance-registry status
+$ sudo service glance-api restart
+$ sudo service glance-api status
+```
+
+## Verify operation
+### add OS Image
+```
+$ source ~/admin_openrc.sh
+$ wget http://download.cirros-cloud.net/0.4.0/cirros-0.4.0-x86_64-disk.img
+$ openstack image create "cirros" --file cirros-0.4.0-x86_64-disk.img --disk-format qcow2 --container-format 
+bare --public
++------------------+------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------+
+| Field            | Value                                                                                                      
+                                                                                |
++------------------+------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------+
+| checksum         | 443b7623e27ecf03dc9e01ee93f67afe
+...
+| updated_at       | 2018-09-16T16:28:38Z                                                                                                                                                                       |
+| virtual_size     | None                                                                                                                                                                                       |
+| visibility       | public                                                                                                                                                                                     |
++------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+
+$ openstack image list
++--------------------------------------+--------+--------+
+| ID                                   | Name   | Status |
++--------------------------------------+--------+--------+
+| c6aa4743-a5fd-4d34-95f4-93afc2578fac | cirros | active |
++--------------------------------------+--------+--------+
+→ OS ImageのステータスがActiveで出力されればOK.
 ```
