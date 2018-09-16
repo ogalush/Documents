@@ -87,3 +87,69 @@ $ sudo apt -y install python-openstackclient
 $ sudo apt-get -y update && sudo apt-get -y upgrade && sudo apt-get -y dist-upgrade && sudo apt-get -y autoremove
 $ sudo shutdown -r now
 ```
+
+## SQL database for Ubuntu
+### Install and configure components
+```
+$ sudo apt -y install mariadb-server python-pymysql
+$ sudo cp -ra /etc/mysql ~
+$ sudo vim /etc/mysql/mariadb.conf.d/50-server.cnf
+$ diff -urBb ~/mysql /etc/mysql 2> /dev/null |egrep '^(\+|\-)'
+--- /home/ogalush/mysql/mariadb.conf.d/50-server.cnf    2018-07-08 17:14:42.000000000 +0900
++++ /etc/mysql/mariadb.conf.d/50-server.cnf     2018-09-16 15:46:26.879647819 +0900
+-bind-address           = 127.0.0.1
++bind-address           = 192.168.0.200
+-character-set-server  = utf8mb4
+-collation-server      = utf8mb4_general_ci
++character-set-server = utf8
++collation-server = utf8_general_ci
++
++default-storage-engine = innodb
++innodb_file_per_table = on
++max_connections = 4096
+----
+
+$ sudo service mysql restart
+$ sudo service mysql status
+● mariadb.service - MariaDB 10.1.34 database server
+   Loaded: loaded (/lib/systemd/system/mariadb.service; enabled; vendor preset: enabled)
+   Active: active (running) since Sun 2018-09-16 15:47:42 JST; 14s ago
+$ sudo mysql_secure_installation
+Set root password? [Y/n] n
+Remove anonymous users? [Y/n] y
+Disallow root login remotely? [Y/n] y
+Remove test database and access to it? [Y/n] y
+Reload privilege tables now? [Y/n] y
+```
+
+## Message queue for Ubuntu
+### Install and configure components
+```
+$ sudo apt -y install rabbitmq-server
+$ sudo rabbitmqctl add_user openstack password
+Creating user "openstack"
+$ sudo rabbitmqctl set_permissions openstack ".*" ".*" ".*"
+Setting permissions for user "openstack" in vhost "/"
+```
+
+## Memcached for Ubuntu
+### Install and configure components
+```
+$ sudo apt -y install memcached python-memcache
+$ sudo sed -i 's/-l 127.0.0.1/-l 192.168.0.200/' /etc/memcached.conf 
+$ grep 192.168.0.200 /etc/memcached.conf 
+-l 192.168.0.200
+```
+
+### Finalize installation
+```
+$ sudo service memcached restart
+$ sudo service memcached status
+● memcached.service - memcached daemon
+   Loaded: loaded (/lib/systemd/system/memcached.service; enabled; vendor preset: enabled)
+   Active: active (running) since Sun 2018-09-16 15:52:39 JST; 4s ago
+
+$ netstat -ln |grep 11211
+tcp        0      0 192.168.0.200:11211     0.0.0.0:*               LISTEN   
+→ 変更したIPアドレスでLISTENできているのでOK.
+```
