@@ -22,7 +22,7 @@ $ diff -u /tmp/hosts /etc/hosts |egrep '^(\+|\-)'
 +192.168.0.200  ryunosuke
 ```
 
-# Network Time Protocol (NTP)
+## Network Time Protocol (NTP)
 ```
 $ sudo dpkg -r ntp
 $ sudo apt -y install chrony
@@ -59,4 +59,31 @@ MS Name/IP address         Stratum Poll Reach LastRx Last sample
 ^- 2001:bc8:30a3:100::1          2   6    77    63  +6799us[+6742us] +/-  154ms
 ^- ntp1.ams1.nl.leaseweb.net     2   6    77    64  +1787us[+1730us] +/-  243ms
 ^* ntp-a3.nict.go.jp             1   6   177     2  -2094ns[  -56us] +/- 2202us
+```
+
+# OpenStack packages
+## OpenStack packages for Ubuntu
+### Enable the OpenStack repository
+```
+$ sudo apt -y install software-properties-common
+$ sudo add-apt-repository cloud-archive:rocky
+...
+Get:2 http://jp.archive.ubuntu.com/ubuntu bionic-updates InRelease [88.7 kB]
+Get:3 http://jp.archive.ubuntu.com/ubuntu bionic-backports InRelease [74.6 kB]
+Hit:4 http://security.ubuntu.com/ubuntu bionic-security InRelease
+Ign:5 http://ubuntu-cloud.archive.canonical.com/ubuntu bionic-updates/rocky InRelease
+Get:6 http://ubuntu-cloud.archive.canonical.com/ubuntu bionic-updates/rocky Release [7,879 B]
+Get:7 http://ubuntu-cloud.archive.canonical.com/ubuntu bionic-updates/rocky Release.gpg [543 B]
+Get:8 http://ubuntu-cloud.archive.canonical.com/ubuntu bionic-updates/rocky/main amd64 Packages [112 kB]
+Get:9 http://ubuntu-cloud.archive.canonical.com/ubuntu bionic-updates/rocky/main i386 Packages [112 kB]
+Fetched 395 kB in 4s (105 kB/s)
+Reading package lists... Done
+$
+```
+
+### Finalize the installation
+```
+$ sudo apt -y install python-openstackclient
+$ sudo apt-get -y update && sudo apt-get -y upgrade && sudo apt-get -y dist-upgrade && sudo apt-get -y autoremove
+$ sudo shutdown -r now
 ```
