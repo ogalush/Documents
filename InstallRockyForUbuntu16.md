@@ -29,6 +29,7 @@ $ ntpq -p |grep '*'
 *ntp-b2.nict.go. .NICT.           1 u   36   64  377    4.494   -0.679   1.021
 ```
 ## OpenStack packages for Ubuntu
+Ubuntu16.04+Rockyのリポジトリが無いことが判明。パッケージが無いため続行不可。
 ```
 $ sudo apt -y install software-properties-common
 $ sudo add-apt-repository cloud-archive:rocky
