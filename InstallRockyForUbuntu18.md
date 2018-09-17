@@ -129,6 +129,10 @@ $ sudo rabbitmqctl add_user openstack password
 Creating user "openstack"
 $ sudo rabbitmqctl set_permissions openstack ".*" ".*" ".*"
 Setting permissions for user "openstack" in vhost "/"
+
+$ sudo rabbitmq-plugins enable rabbitmq_management
+→ 管理画面を有効化するオプション
+https://qiita.com/AKB428/items/a2662fbb624ce7659025
 ```
 
 # Memcached for Ubuntu
@@ -874,14 +878,16 @@ Found 0 unmapped computes in cell: bdec6b4e-2216-479e-b76a-800e80b524e9
 ```
 $ source ~/admin_openrc.sh
 $ openstack compute service list
-+----+------------------+-----------+----------+---------+-------+------------+
-| ID | Binary           | Host      | Zone     | Status  | State | Updated At |
-+----+------------------+-----------+----------+---------+-------+------------+
-|  1 | nova-scheduler   | ryunosuke | internal | enabled | down  | None       |
-|  3 | nova-conductor   | ryunosuke | internal | enabled | down  | None       |
-|  5 | nova-consoleauth | ryunosuke | internal | enabled | down  | None       |
-+----+------------------+-----------+----------+---------+-------+------------+
-→ イマイチ.
++----+------------------+-----------+----------+---------+-------+----------------------------+
+| ID | Binary           | Host      | Zone     | Status  | State | Updated At                 |
++----+------------------+-----------+----------+---------+-------+----------------------------+
+|  1 | nova-scheduler   | ryunosuke | internal | enabled | up    | 2018-09-17T05:27:33.000000 |
+|  3 | nova-conductor   | ryunosuke | internal | enabled | up    | 2018-09-17T05:27:24.000000 |
+|  5 | nova-consoleauth | ryunosuke | internal | enabled | up    | 2018-09-17T05:27:33.000000 |
+|  6 | nova-compute     | ryunosuke | nova     | enabled | up    | 2018-09-17T05:27:28.000000 |
++----+------------------+-----------+----------+---------+-------+----------------------------+
+→ downの場合は、設定とrabbitmq-serverが起動しているかを確認する
+
 
 $ openstack catalog list
 +-----------+-----------+--------------------------------------------+
