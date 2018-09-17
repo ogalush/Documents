@@ -711,7 +711,8 @@ $ openstack endpoint create --region RegionOne placement internal http://192.168
 | url          | http://192.168.0.200:8778        |
 +--------------+----------------------------------+
 
-$ openstack endpoint create --region RegionOne placement admin http://192.168.0.200:8778+--------------+----------------------------------+
+$ openstack endpoint create --region RegionOne placement admin http://192.168.0.200:8778
++--------------+----------------------------------+
 | Field        | Value                            |
 +--------------+----------------------------------+
 | enabled      | True                             |
@@ -729,5 +730,93 @@ $ openstack endpoint create --region RegionOne placement admin http://192.168.0.
 #### Install and configure components
 Contorollerでインスタンス起動もさせたいので、nova-computeも入れておく.
 ```
-$ sudo apt install -y nova-api nova-conductor nova-novncproxy nova-scheduler nova-placement-api nova-compute
+$ sudo apt install -y nova-api nova-conductor nova-consoleauth nova-novncproxy nova-scheduler nova-placement-api nova-compute
+$ sudo cp -raf /etc/nova ~
+$ sudo vim /etc/nova/nova.conf
+----
+[api_database]
+##connection = sqlite:////var/lib/nova/nova_api.sqlite
+connection = mysql+pymysql://nova:password@192.168.0.200/nova_api
+
+[database]
+##connection = sqlite:////var/lib/nova/nova.sqlite
+connection = mysql+pymysql://nova:password@192.168.0.200/nova
+
+[placement_database]
+connection = mysql+pymysql://placement:password@192.168.0.200/placement
+
+[DEFAULT]
+transport_url = rabbit://openstack:password@192.168.0.200
+my_ip = 192.168.0.200
+use_neutron = true
+firewall_driver = nova.virt.firewall.NoopFirewallDriver
+
+[api]
+auth_strategy = keystone
+
+[keystone_authtoken]
+auth_url = http://192.168.0.200:5000/v3
+memcached_servers = 192.168.0.200:11211
+auth_type = password
+project_domain_name = default
+user_domain_name = default
+project_name = service
+username = nova
+password = password
+
+
+[neutron]
+url = http://192.168.0.200:9696
+auth_url = http://192.168.0.200:5000
+auth_type = password
+project_domain_name = default
+user_domain_name = default
+region_name = RegionOne
+project_name = service
+username = neutron
+password = password
+service_metadata_proxy = true
+metadata_proxy_shared_secret = password
+
+[vnc]
+enabled = true
+server_listen = $my_ip
+server_proxyclient_address = $my_ip
+
+[glance]
+api_servers = http://192.168.0.200:9292
+
+[oslo_concurrency]
+lock_path = /var/lib/nova/tmp
+
+[placement]
+os_region_name = openstack
+region_name = RegionOne
+project_domain_name = default
+project_name = service
+auth_type = password
+user_domain_name = default
+auth_url = http://192.168.0.200:5000/v3
+username = placement
+password = password
+----
+
+$ sudo bash -c "nova-manage api_db sync" nova
+$ sudo bash -c "nova-manage cell_v2 map_cell0" nova
+$ sudo bash -c "nova-manage cell_v2 create_cell --name=cell1 --verbose" nova
+bdec6b4e-2216-479e-b76a-800e80b524e9
+
+$ sudo bash -c "nova-manage db sync" nova
+$ sudo bash -c "nova-manage cell_v2 list_cells" nova
++-------+--------------------------------------+---------------------------------------+----------------------------------------------------+----------+
+|  Name |                 UUID                 |             Transport URL             |                Database Connection                 | Disabled |
++-------+--------------------------------------+---------------------------------------+----------------------------------------------------+----------+
+| cell0 | 00000000-0000-0000-0000-000000000000 |                 none:/                | mysql+pymysql://nova:****@192.168.0.200/nova_cell0 |  False   |
+| cell1 | bdec6b4e-2216-479e-b76a-800e80b524e9 | rabbit://openstack:****@192.168.0.200 |    mysql+pymysql://nova:****@192.168.0.200/nova    |  False   |
++-------+--------------------------------------+---------------------------------------+----------------------------------------------------+----------+
+```
+
+#### Finalize installation
+```
+$ for i in 'nova-api' 'nova-consoleauth' 'nova-scheduler' 'nova-conductor' 'nova-novncproxy' ; do sudo systemctl restart $i ; done
 ```
