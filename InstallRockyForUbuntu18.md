@@ -561,3 +561,173 @@ $ openstack image list
 +--------------------------------------+--------+--------+
 → OS ImageのステータスがActiveで出力されればOK.
 ```
+
+## nova installation for Rocky
+[URL](https://docs.openstack.org/nova/rocky/install/)
+
+### Install and configure controller node for Ubuntu
+#### Prerequisites
+```
+$ sudo mysql
+MariaDB [(none)]> CREATE DATABASE nova_api;
+MariaDB [(none)]> CREATE DATABASE nova;
+MariaDB [(none)]> CREATE DATABASE nova_cell0;
+MariaDB [(none)]> CREATE DATABASE placement;
+
+MariaDB [(none)]> GRANT ALL PRIVILEGES ON nova_api.* TO 'nova'@'%' IDENTIFIED BY 'password';
+MariaDB [(none)]> GRANT ALL PRIVILEGES ON nova.* TO 'nova'@'%' IDENTIFIED BY 'password';
+MariaDB [(none)]> GRANT ALL PRIVILEGES ON nova_cell0.* TO 'nova'@'%' IDENTIFIED BY 'password';
+MariaDB [(none)]> GRANT ALL PRIVILEGES ON placement.* TO 'placement'@'%' IDENTIFIED BY 'password';
+MariaDB [(none)]> FLUSH PRIVILEGES;
+MariaDB [(none)]> quit;
+
+$ source ~/admin_openrc.sh
+$ openstack user create --domain default --password-prompt nova
+User Password:
+Repeat User Password:
++---------------------+----------------------------------+
+| Field               | Value                            |
++---------------------+----------------------------------+
+| domain_id           | default                          |
+| enabled             | True                             |
+| id                  | e49730a3f18c48c483a8f19e472f8a80 |
+| name                | nova                             |
+| options             | {}                               |
+| password_expires_at | None                             |
++---------------------+----------------------------------+
+
+$ openstack role add --project service --user nova admin
+
+$ openstack service create --name nova --description "OpenStack Compute" compute
++-------------+----------------------------------+
+| Field       | Value                            |
++-------------+----------------------------------+
+| description | OpenStack Compute                |
+| enabled     | True                             |
+| id          | e013634c96ff4dd682fe9d5afa8e6b7e |
+| name        | nova                             |
+| type        | compute                          |
++-------------+----------------------------------+
+
+$ openstack endpoint create --region RegionOne compute public http://192.168.0.200:8774/v2.1
++--------------+----------------------------------+
+| Field        | Value                            |
++--------------+----------------------------------+
+| enabled      | True                             |
+| id           | 8f0e4f6d1fbd420d9ccdb064b35d027d |
+| interface    | public                           |
+| region       | RegionOne                        |
+| region_id    | RegionOne                        |
+| service_id   | e013634c96ff4dd682fe9d5afa8e6b7e |
+| service_name | nova                             |
+| service_type | compute                          |
+| url          | http://192.168.0.200:8774/v2.1   |
++--------------+----------------------------------+
+
+$ openstack endpoint create --region RegionOne compute internal http://192.168.0.200:8774/v2.1
++--------------+----------------------------------+
+| Field        | Value                            |
++--------------+----------------------------------+
+| enabled      | True                             |
+| id           | ba886f602e714770a7357f892ea75745 |
+| interface    | internal                         |
+| region       | RegionOne                        |
+| region_id    | RegionOne                        |
+| service_id   | e013634c96ff4dd682fe9d5afa8e6b7e |
+| service_name | nova                             |
+| service_type | compute                          |
+| url          | http://192.168.0.200:8774/v2.1   |
++--------------+----------------------------------+
+
+$ openstack endpoint create --region RegionOne compute admin http://192.168.0.200:8774/v2.1
++--------------+----------------------------------+
+| Field        | Value                            |
++--------------+----------------------------------+
+| enabled      | True                             |
+| id           | d96adee92f0346279873a43e8b319279 |
+| interface    | admin                            |
+| region       | RegionOne                        |
+| region_id    | RegionOne                        |
+| service_id   | e013634c96ff4dd682fe9d5afa8e6b7e |
+| service_name | nova                             |
+| service_type | compute                          |
+| url          | http://192.168.0.200:8774/v2.1   |
++--------------+----------------------------------+
+
+$ openstack user create --domain default --password-prompt placement
+User Password:
+Repeat User Password:
++---------------------+----------------------------------+
+| Field               | Value                            |
++---------------------+----------------------------------+
+| domain_id           | default                          |
+| enabled             | True                             |
+| id                  | 3f9b8c5c3c644114910a682c8a97422c |
+| name                | placement                        |
+| options             | {}                               |
+| password_expires_at | None                             |
++---------------------+----------------------------------
+
+$ openstack role add --project service --user placement admin
+
+$ openstack service create --name placement --description "Placement API" placement
++-------------+----------------------------------+
+| Field       | Value                            |
++-------------+----------------------------------+
+| description | Placement API                    |
+| enabled     | True                             |
+| id          | d3083338ca2d446eaa5d0df6f206323e |
+| name        | placement                        |
+| type        | placement                        |
++-------------+----------------------------------+
+
+$ openstack endpoint create --region RegionOne placement public http://192.168.0.200:8778
++--------------+----------------------------------+
+| Field        | Value                            |
++--------------+----------------------------------+
+| enabled      | True                             |
+| id           | 5188c5d76e63499b8558476c76bac23b |
+| interface    | public                           |
+| region       | RegionOne                        |
+| region_id    | RegionOne                        |
+| service_id   | d3083338ca2d446eaa5d0df6f206323e |
+| service_name | placement                        |
+| service_type | placement                        |
+| url          | http://192.168.0.200:8778        |
++--------------+----------------------------------+
+
+$ openstack endpoint create --region RegionOne placement internal http://192.168.0.200:8778
++--------------+----------------------------------+
+| Field        | Value                            |
++--------------+----------------------------------+
+| enabled      | True                             |
+| id           | 0a8a17ade6b4418489a407a315f1f3a7 |
+| interface    | internal                         |
+| region       | RegionOne                        |
+| region_id    | RegionOne                        |
+| service_id   | d3083338ca2d446eaa5d0df6f206323e |
+| service_name | placement                        |
+| service_type | placement                        |
+| url          | http://192.168.0.200:8778        |
++--------------+----------------------------------+
+
+$ openstack endpoint create --region RegionOne placement admin http://192.168.0.200:8778+--------------+----------------------------------+
+| Field        | Value                            |
++--------------+----------------------------------+
+| enabled      | True                             |
+| id           | 86c7c44679eb4983be7f83ade60cf0de |
+| interface    | admin                            |
+| region       | RegionOne                        |
+| region_id    | RegionOne                        |
+| service_id   | d3083338ca2d446eaa5d0df6f206323e |
+| service_name | placement                        |
+| service_type | placement                        |
+| url          | http://192.168.0.200:8778        |
++--------------+----------------------------------+
+```
+
+#### Install and configure components
+Contorollerでインスタンス起動もさせたいので、nova-computeも入れておく.
+```
+$ sudo apt install -y nova-api nova-conductor nova-novncproxy nova-scheduler nova-placement-api nova-compute
+```
