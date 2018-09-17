@@ -562,6 +562,7 @@ $ openstack image list
 → OS ImageのステータスがActiveで出力されればOK.
 ```
 
+
 ## nova installation for Rocky
 [URL](https://docs.openstack.org/nova/rocky/install/)
 
@@ -819,4 +820,145 @@ $ sudo bash -c "nova-manage cell_v2 list_cells" nova
 #### Finalize installation
 ```
 $ for i in 'nova-api' 'nova-consoleauth' 'nova-scheduler' 'nova-conductor' 'nova-novncproxy' ; do sudo systemctl restart $i ; done
+```
+
+### Install and configure a compute node for Ubuntu
+#### Install and configure components
+```
+$ sudo apt -y install nova-compute
+$ sudo vim /etc/nova/nova.conf
+----
+→[DEFAULT]セクションなどはControllerNodeの変更と同じ.
+
+[vnc]
+enabled = true
+server_listen = 0.0.0.0
+server_proxyclient_address = $my_ip
+novncproxy_base_url = http://192.168.0.200:6080/vnc_auto.html
+
+[scheduler]
+discover_hosts_in_cells_interval = 60
+----
+```
+
+#### Finalize installation
+```
+$ egrep -c '(vmx|svm)' /proc/cpuinfo
+4
+
+$ sudo cat /etc/nova/nova-compute.conf
+----
+[DEFAULT]
+compute_driver=libvirt.LibvirtDriver
+[libvirt]
+virt_type=kvm
+→ kvmのまま.
+----
+
+$ sudo service nova-compute restart
+$ sudo service nova-compute status
+
+$ source ~/admin_openrc.sh 
+$ openstack compute service list
+$ openstack compute service list --service nova-compute
+→ なぜか出てこない.
+
+$ sudo bash -c "nova-manage cell_v2 discover_hosts --verbose" nova
+Found 2 cell mappings.
+Skipping cell0 since it does not contain hosts.
+Getting computes from cell 'cell1': bdec6b4e-2216-479e-b76a-800e80b524e9
+Found 0 unmapped computes in cell: bdec6b4e-2216-479e-b76a-800e80b524e9
+```
+
+#### Verify operation
+```
+$ source ~/admin_openrc.sh
+$ openstack compute service list
++----+------------------+-----------+----------+---------+-------+------------+
+| ID | Binary           | Host      | Zone     | Status  | State | Updated At |
++----+------------------+-----------+----------+---------+-------+------------+
+|  1 | nova-scheduler   | ryunosuke | internal | enabled | down  | None       |
+|  3 | nova-conductor   | ryunosuke | internal | enabled | down  | None       |
+|  5 | nova-consoleauth | ryunosuke | internal | enabled | down  | None       |
++----+------------------+-----------+----------+---------+-------+------------+
+→ イマイチ.
+
+$ openstack catalog list
++-----------+-----------+--------------------------------------------+
+| Name      | Type      | Endpoints                                  |
++-----------+-----------+--------------------------------------------+
+| glance    | image     | RegionOne                                  |
+|           |           |   public: http://192.168.0.200:9292        |
+|           |           | RegionOne                                  |
+|           |           |   admin: http://192.168.0.200:9292         |
+|           |           | RegionOne                                  |
+|           |           |   internal: http://192.168.0.200:9292      |
+|           |           |                                            |
+| keystone  | identity  | RegionOne                                  |
+|           |           |   admin: http://192.168.0.200:5000/v3/     |
+|           |           | RegionOne                                  |
+|           |           |   internal: http://192.168.0.200:5000/v3/  |
+|           |           | RegionOne                                  |
+|           |           |   public: http://192.168.0.200:5000/v3/    |
+|           |           |                                            |
+| placement | placement | RegionOne                                  |
+|           |           |   internal: http://192.168.0.200:8778      |
+|           |           | RegionOne                                  |
+|           |           |   public: http://192.168.0.200:8778        |
+|           |           | RegionOne                                  |
+|           |           |   admin: http://192.168.0.200:8778         |
+|           |           |                                            |
+| nova      | compute   | RegionOne                                  |
+|           |           |   public: http://192.168.0.200:8774/v2.1   |
+|           |           | RegionOne                                  |
+|           |           |   internal: http://192.168.0.200:8774/v2.1 |
+|           |           | RegionOne                                  |
+|           |           |   admin: http://192.168.0.200:8774/v2.1    |
+|           |           |                                            |
++-----------+-----------+--------------------------------------------+
+
+$ openstack image list
++--------------------------------------+--------+--------+
+| ID                                   | Name   | Status |
++--------------------------------------+--------+--------+
+| c6aa4743-a5fd-4d34-95f4-93afc2578fac | cirros | active |
++--------------------------------------+--------+--------+
+
+$ sudo nova-status upgrade check
+[sudo] password for ogalush:
+Deprecated: Option "enable" from group "cells" is deprecated for removal (Cells v1 is being replaced with Cells v2.).  Its value may be silently ignored in the future.
++--------------------------------------------------------------------+
+| Upgrade Check Results                                              |
++--------------------------------------------------------------------+
+| Check: Cells v2                                                    |
+| Result: Success                                                    |
+| Details: No host mappings or compute nodes were found. Remember to |
+|   run command 'nova-manage cell_v2 discover_hosts' when new        |
+|   compute hosts are deployed.                                      |
++--------------------------------------------------------------------+
+| Check: Placement API                                               |
+| Result: Success                                                    |
+| Details: None                                                      |
++--------------------------------------------------------------------+
+| Check: Resource Providers                                          |
+| Result: Success                                                    |
+| Details: There are no compute resource providers in the Placement  |
+|   service nor are there compute nodes in the database.             |
+|   Remember to configure new compute nodes to report into the       |
+|   Placement service. See                                           |
+|   https://docs.openstack.org/nova/latest/user/placement.html       |
+|   for more details.                                                |
++--------------------------------------------------------------------+
+| Check: Ironic Flavor Migration                                     |
+| Result: Success                                                    |
+| Details: None                                                      |
++--------------------------------------------------------------------+
+| Check: API Service Version                                         |
+| Result: Success                                                    |
+| Details: None                                                      |
++--------------------------------------------------------------------+
+| Check: Request Spec Migration                                      |
+| Result: Success                                                    |
+| Details: None                                                      |
++--------------------------------------------------------------------+
 ```
