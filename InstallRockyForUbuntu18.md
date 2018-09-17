@@ -1192,3 +1192,31 @@ metadata_proxy_shared_secret = password
 $ sudo bash -c "neutron-db-manage --config-file /etc/neutron/neutron.conf --config-file /etc/neutron/plugins/ml2/ml2_conf.ini upgrade head" neutron
 $ for i in 'nova-api' 'nova-consoleauth' 'nova-scheduler' 'nova-conductor' 'nova-novncproxy' 'nova-compute' 'neutron-server' 'neutron-linuxbridge-agent' 'neutron-dhcp-agent' 'neutron-metadata-agent' 'neutron-l3-agent' ; do sudo systemctl restart $i ; done
 ```
+
+## Install and configure compute node
+### Install the components
+```
+$ sudo apt -y install neutron-linuxbridge-agent
+$ sudo grep -e '^transport_url' /etc/neutron/neutron.conf
+transport_url = rabbit://openstack:password@192.168.0.200
+→ [DEFAULT], [keystone_authtoken]セクションはControllerと同じ.
+```
+### Configure networking options
+→ 設定内容はControllerと同じ.
+
+### Finalize installation
+```
+$ sudo service nova-compute restart
+$ sudo service neutron-linuxbridge-agent restart
+```
+
+## Verify operation
+### Networking Option 2: Self-service networks
+```
+$ source ~/admin_openrc.sh 
+ogalush@ryunosuke:~$ openstack network agent list
+Unable to establish connection to http://192.168.0.200:9696/v2.0/agents: ('Connection aborted.', BadStatusLine("''",))
+Segmentation fault (core dumped)
+ogalush@ryunosuke:~$ 
+→ 表示されない.
+```
