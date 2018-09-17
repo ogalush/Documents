@@ -209,6 +209,10 @@ connection = mysql+pymysql://keystone:password@192.168.0.200/keystone
 provider = fernet
 ----
 
+$ sudo mkdir -pv /etc/keystone/fernet-keys
+$ sudo chown -v keystone:keystone /etc/keystone/fernet-keys
+→ fernet用の鍵を作成する.
+
 $ sudo bash -c "keystone-manage db_sync" keystone
 $ sudo keystone-manage fernet_setup --keystone-user keystone --keystone-group keystone
 $ sudo keystone-manage credential_setup --keystone-user keystone --keystone-group keystone
