@@ -1,7 +1,7 @@
 # Install OpenStack Rocky on Ubuntu 18.04
 ドキュメント: [OpenStack Docs](https://docs.openstack.org/install-guide/)  
 インストール先: 192.168.0.200(192.168.0.200)  
-設定ファイル: [URL](URL)
+設定ファイル: [Rocky-InstallConfigs](https://github.com/ogalush/Rocky-InstallConfigs)
 ```
 $ uname -a
 Linux ryunosuke 4.15.0-34-generic #37-Ubuntu SMP Mon Aug 27 15:21:48 UTC 2018 x86_64 x86_64 x86_64 GNU/Linux
