@@ -6,6 +6,19 @@
 $ uname -a
 Linux ryunosuke 4.15.0-34-generic #37-Ubuntu SMP Mon Aug 27 15:21:48 UTC 2018 x86_64 x86_64 x86_64 GNU/Linux
 ```
+# Prepare
+## resolv.conf
+nameserver 127.0.0.53になった事象があったので、参照先が怪しい場合は対応する.
+```
+$ grep nameserver /etc/resolv.conf 
+nameserver 127.0.0.53
+$ sudo rm -f /etc/resolv.conf
+$ sudo ln -s /run/systemd/resolve/resolv.conf /etc/resolv.conf
+$ ls -l /etc/resolv.conf 
+lrwxrwxrwx 1 root root 32 Oct  6 17:14 /etc/resolv.conf -> /run/systemd/resolve/resolv.conf
+$ grep nameserver /etc/resolv.conf 
+nameserver 192.168.0.254
+```
 
 # Host networking
 ## Configure network interfaces
