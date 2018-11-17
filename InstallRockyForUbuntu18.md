@@ -138,6 +138,15 @@ Reload privilege tables now? [Y/n] y
 ## Install and configure components
 ```
 $ sudo apt -y install rabbitmq-server
+$ sudo cp -pv /etc/rabbitmq/rabbitmq-env.conf{,def}
+$ sudo vim /etc/rabbitmq/rabbitmq-env.conf
+----
+NODENAME=ryunosuke
+NODE_IP_ADDRESS=192.168.0.200
+NODE_PORT=5672
+----
+→ OS起動時にrabbitmq-serverが起動しないので設定ファイルを更新する.
+$ sudo service rabbitmq-server restart
 $ sudo rabbitmqctl add_user openstack password
 Creating user "openstack"
 $ sudo rabbitmqctl set_permissions openstack ".*" ".*" ".*"
