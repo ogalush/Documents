@@ -159,7 +159,6 @@ https://qiita.com/AKB428/items/a2662fbb624ce7659025
 
 # Memcached for Ubuntu
 ## Install and configure components
-2018.11.17追記: memcached起動後にopenstackコマンドでSegmentation Faultする事象がありそうなので、OS起動後に停止なりしてる。原因不明。
 ```
 $ sudo apt -y install memcached python-memcache
 $ sudo sed -i 's/-l 127.0.0.1/-l 192.168.0.200/' /etc/memcached.conf 
@@ -1298,4 +1297,5 @@ $ sudo service apache2 reload
 
 ## Verify operation for Ubuntu
 [URL](https://docs.openstack.org/horizon/rocky/install/verify-ubuntu.html)  
-[Horizon](http://192.168.0.200/horizon/) へアクセス＋ログインできればOK.
+[Horizon](http://192.168.0.200/horizon/)  
+へアクセス＋ログインできればOK.
