@@ -1266,4 +1266,36 @@ $ openstack network agent list
 ### Install and configure components
 ```
 $ sudo apt -y install openstack-dashboard
+$ sudo cp -pv /etc/openstack-dashboard/local_settings.py{,.def}
+$ sudo vim /etc/openstack-dashboard/local_settings.py
+----
++OPENSTACK_API_VERSIONS = {
++    "identity": 3,
++    "image": 2,
++    "volume": 2,
++}
++OPENSTACK_KEYSTONE_MULTIDOMAIN_SUPPORT = True
++OPENSTACK_KEYSTONE_DEFAULT_DOMAIN = 'default'
++SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
+-        'LOCATION': '127.0.0.1:11211',
++        'LOCATION': '192.168.0.200:11211',
+-OPENSTACK_HOST = "127.0.0.1"
++OPENSTACK_HOST = "192.168.0.200"
+-OPENSTACK_KEYSTONE_DEFAULT_ROLE = "_member_"
++OPENSTACK_KEYSTONE_DEFAULT_ROLE = "user"
+-TIME_ZONE = "UTC"
++TIME_ZONE = "Asia/Tokyo"
+----
+
+$ sudo vim /etc/apache2/conf-available/openstack-dashboard.conf
+----
+WSGIApplicationGroup %{GLOBAL}
+→ ファイル内に入っていればOK.
+----
+
+$ sudo service apache2 reload
 ```
+
+## Verify operation for Ubuntu
+[URL](https://docs.openstack.org/horizon/rocky/install/verify-ubuntu.html)  
+[Horizon](http://192.168.0.200/horizon/) へアクセス＋ログインできればOK.
