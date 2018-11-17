@@ -159,6 +159,7 @@ https://qiita.com/AKB428/items/a2662fbb624ce7659025
 
 # Memcached for Ubuntu
 ## Install and configure components
+2018.11.17追記: memcached起動後にopenstackコマンドでSegmentation Faultする事象がありそうなので、OS起動後に停止なりしてる。原因不明。
 ```
 $ sudo apt -y install memcached python-memcache
 $ sudo sed -i 's/-l 127.0.0.1/-l 192.168.0.200/' /etc/memcached.conf 
@@ -1245,9 +1246,24 @@ $ sudo service neutron-linuxbridge-agent restart
 ### Networking Option 2: Self-service networks
 ```
 $ source ~/admin_openrc.sh 
-ogalush@ryunosuke:~$ openstack network agent list
-Unable to establish connection to http://192.168.0.200:9696/v2.0/agents: ('Connection aborted.', BadStatusLine("''",))
-Segmentation fault (core dumped)
-ogalush@ryunosuke:~$ 
-→ 表示されない.
+$ openstack network agent list
++--------------------------------------+--------------------+-----------+-------------------+-------+-------+---------------------------+
+| ID                                   | Agent Type         | Host      | Availability Zone | Alive | State | Binary                    |
++--------------------------------------+--------------------+-----------+-------------------+-------+-------+---------------------------+
+| 1397ef69-aefd-465b-ae18-6a6d2b0d9f9e | Linux bridge agent | ryunosuke | None              | :-)   | UP    | neutron-linuxbridge-agent |
+| 1527b193-0054-41b7-9285-147d5e2271ca | L3 agent           | ryunosuke | nova              | :-)   | UP    | neutron-l3-agent          |
+| 9d2d64b8-bff0-409f-a6e4-50dc7e4d90e8 | DHCP agent         | ryunosuke | nova              | :-)   | UP    | neutron-dhcp-agent        |
+| db4c5108-9d56-4a8b-a7f5-0edb74467288 | Metadata agent     | ryunosuke | None              | :-)   | UP    | neutron-metadata-agent    |
++--------------------------------------+--------------------+-----------+-------------------+-------+-------+---------------------------+
+```
+
+# horizon installation for Rocky
+[URL](https://docs.openstack.org/horizon/rocky/install/)
+
+## Install and configure for Ubuntu
+[URL](https://docs.openstack.org/horizon/rocky/install/install-ubuntu.html)
+
+### Install and configure components
+```
+$ sudo apt -y install openstack-dashboard
 ```
