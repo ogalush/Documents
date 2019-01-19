@@ -233,6 +233,7 @@ provider = fernet
 
 $ sudo mkdir -pv /etc/keystone/fernet-keys
 $ sudo chown -v keystone:keystone /etc/keystone/fernet-keys
+$ sudo chmod -v 700 /etc/keystone/fernet-keys
 → fernet用の鍵を作成する.
 
 $ sudo bash -c "keystone-manage db_sync" keystone
