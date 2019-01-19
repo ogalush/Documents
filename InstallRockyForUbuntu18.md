@@ -185,15 +185,15 @@ tcp        0      0 192.168.0.200:11211     0.0.0.0:*               LISTEN
 $ sudo apt -y install etcd
 $ sudo vim /etc/default/etcd
 ----
-name: 'ryunosuke'
-data-dir: /var/lib/etcd
-initial-cluster-state: 'new'
-initial-cluster-token: 'etcd-cluster-01'
-initial-cluster: ryunosuke=http://192.168.0.200:2380
-initial-advertise-peer-urls: http://192.168.0.200:2380
-advertise-client-urls: http://192.168.0.200:2379
-listen-peer-urls: http://0.0.0.0:2380
-listen-client-urls: http://192.168.0.200:2379
+ETCD_NAME="ryunosuke"
+ETCD_DATA_DIR="/var/lib/etcd"
+ETCD_INITIAL_CLUSTER_STATE="new"
+ETCD_INITIAL_CLUSTER_TOKEN="etcd-cluster-01"
+ETCD_INITIAL_CLUSTER="controller=http://192.168.0.200:2380"
+ETCD_INITIAL_ADVERTISE_PEER_URLS="http://192.168.0.200:2380"
+ETCD_ADVERTISE_CLIENT_URLS="http://192.168.0.200:2379"
+ETCD_LISTEN_PEER_URLS="http://0.0.0.0:2380"
+ETCD_LISTEN_CLIENT_URLS="http://192.168.0.200:2379"
 ----
 ```
 
