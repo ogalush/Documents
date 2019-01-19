@@ -1119,6 +1119,9 @@ region_name = RegionOne
 project_name = service
 username = nova
 password = password
+
+[oslo_concurrency]
+lock_path = /var/lib/neutron/tmp
 ----
 ```
 
@@ -1509,4 +1512,11 @@ $ openstack keypair create --public-key ~/.ssh/id_rsa_chef.pub chefkey
 | name        | chefkey                                         |
 | user_id     | dd172ffbc09b426583fc3c7d62a0e33a                |
 +-------------+-------------------------------------------------+
+```
+
+# その他
+## ログディレクトリの権限変更
+デバッグ用
+```
+$ sudo chmod -v 755 /var/log/{nova,neutron,apache2,keystone,glance}
 ```
