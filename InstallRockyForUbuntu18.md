@@ -1300,3 +1300,180 @@ $ sudo service apache2 reload
 [URL](https://docs.openstack.org/horizon/rocky/install/verify-ubuntu.html)  
 [Horizon](http://192.168.0.200/horizon/)  
 へアクセス＋ログインできればOK.
+
+#Create virtual networks
+## Self-service network
+[Self-service network](https://docs.openstack.org/install-guide/launch-instance-networks-selfservice.html)  
+
+## Provider network
+```
+$ source ~/admin_openrc.sh 
+$ openstack network create  --share --external --provider-physical-network provider --provider-network-type flat provider
++---------------------------+--------------------------------------+
+| Field                     | Value                                |
++---------------------------+--------------------------------------+
+| admin_state_up            | UP                                   |
+| availability_zone_hints   |                                      |
+| availability_zones        |                                      |
+| created_at                | 2019-01-19T11:54:38Z                 |
+| description               |                                      |
+| dns_domain                | None                                 |
+| id                        | 9d1f5e98-9158-448b-b4e4-d85a955c7808 |
+| ipv4_address_scope        | None                                 |
+| ipv6_address_scope        | None                                 |
+| is_default                | False                                |
+| is_vlan_transparent       | None                                 |
+| mtu                       | 1500                                 |
+| name                      | provider                             |
+| port_security_enabled     | True                                 |
+| project_id                | a5641de049a54548bd9f74ad6abd3aec     |
+| provider:network_type     | flat                                 |
+| provider:physical_network | provider                             |
+| provider:segmentation_id  | None                                 |
+| qos_policy_id             | None                                 |
+| revision_number           | 0                                    |
+| router:external           | External                             |
+| segments                  | None                                 |
+| shared                    | True                                 |
+| status                    | ACTIVE                               |
+| subnets                   |                                      |
+| tags                      |                                      |
+| updated_at                | 2019-01-19T11:54:38Z                 |
++---------------------------+--------------------------------------+
+
+$ openstack subnet create --network provider --allocation-pool start=192.168.0.100,end=192.168.0.120 --dns-nameserver 192.168.0.220 --gateway 192.168.0.254 --subnet-range 192.168.0.0/24 provider
++-------------------+--------------------------------------+
+| Field             | Value                                |
++-------------------+--------------------------------------+
+| allocation_pools  | 192.168.0.100-192.168.0.120          |
+| cidr              | 192.168.0.0/24                       |
+| created_at        | 2019-01-19T11:56:24Z                 |
+| description       |                                      |
+| dns_nameservers   | 192.168.0.220                        |
+| enable_dhcp       | True                                 |
+| gateway_ip        | 192.168.0.254                        |
+| host_routes       |                                      |
+| id                | fa64c92f-2897-47a1-b994-d9df729c3593 |
+| ip_version        | 4                                    |
+| ipv6_address_mode | None                                 |
+| ipv6_ra_mode      | None                                 |
+| name              | provider                             |
+| network_id        | 9d1f5e98-9158-448b-b4e4-d85a955c7808 |
+| project_id        | a5641de049a54548bd9f74ad6abd3aec     |
+| revision_number   | 0                                    |
+| segment_id        | None                                 |
+| service_types     |                                      |
+| subnetpool_id     | None                                 |
+| tags              |                                      |
+| updated_at        | 2019-01-19T11:56:24Z                 |
++-------------------+--------------------------------------+
+
+```
+## Create the self-service network
+```
+$ source ~/demo_openrc.sh 
+$ openstack network create selfservice
++---------------------------+--------------------------------------+
+| Field                     | Value                                |
++---------------------------+--------------------------------------+
+| admin_state_up            | UP                                   |
+| availability_zone_hints   |                                      |
+| availability_zones        |                                      |
+| created_at                | 2019-01-19T11:47:50Z                 |
+| description               |                                      |
+| dns_domain                | None                                 |
+| id                        | caa52a70-a4c8-4c5d-bfdd-485df8dc081e |
+| ipv4_address_scope        | None                                 |
+| ipv6_address_scope        | None                                 |
+| is_default                | False                                |
+| is_vlan_transparent       | None                                 |
+| mtu                       | 1450                                 |
+| name                      | selfservice                          |
+| port_security_enabled     | True                                 |
+| project_id                | 0ee98f16a2594d5682519f7bb20544da     |
+| provider:network_type     | None                                 |
+| provider:physical_network | None                                 |
+| provider:segmentation_id  | None                                 |
+| qos_policy_id             | None                                 |
+| revision_number           | 1                                    |
+| router:external           | Internal                             |
+| segments                  | None                                 |
+| shared                    | False                                |
+| status                    | ACTIVE                               |
+| subnets                   |                                      |
+| tags                      |                                      |
+| updated_at                | 2019-01-19T11:47:50Z                 |
++---------------------------+--------------------------------------+
+
+$ openstack subnet create --network selfservice --dns-nameserver 192.168.0.220 --gateway 10.0.0.1 --subnet-range 10.0.0.0/24 selfservice
++-------------------+--------------------------------------+
+| Field             | Value                                |
++-------------------+--------------------------------------+
+| allocation_pools  | 10.0.0.2-10.0.0.254                  |
+| cidr              | 10.0.0.0/24                          |
+| created_at        | 2019-01-19T11:51:46Z                 |
+| description       |                                      |
+| dns_nameservers   | 192.168.0.220                        |
+| enable_dhcp       | True                                 |
+| gateway_ip        | 10.0.0.1                             |
+| host_routes       |                                      |
+| id                | ab08da59-0dc8-4ffb-95a6-60ea65f42c49 |
+| ip_version        | 4                                    |
+| ipv6_address_mode | None                                 |
+| ipv6_ra_mode      | None                                 |
+| name              | selfservice                          |
+| network_id        | caa52a70-a4c8-4c5d-bfdd-485df8dc081e |
+| project_id        | 0ee98f16a2594d5682519f7bb20544da     |
+| revision_number   | 0                                    |
+| segment_id        | None                                 |
+| service_types     |                                      |
+| subnetpool_id     | None                                 |
+| tags              |                                      |
+| updated_at        | 2019-01-19T11:51:46Z                 |
++-------------------+--------------------------------------+
+```
+
+### Create a router
+```
+~$ openstack router create router
++-------------------------+--------------------------------------+
+| Field                   | Value                                |
++-------------------------+--------------------------------------+
+| admin_state_up          | UP                                   |
+| availability_zone_hints |                                      |
+| availability_zones      |                                      |
+| created_at              | 2019-01-19T11:52:30Z                 |
+| description             |                                      |
+| distributed             | None                                 |
+| external_gateway_info   | None                                 |
+| flavor_id               | None                                 |
+| ha                      | None                                 |
+| id                      | 20cd2903-1314-453d-9e0b-adaa93a77602 |
+| name                    | router                               |
+| project_id              | 0ee98f16a2594d5682519f7bb20544da     |
+| revision_number         | 0                                    |
+| routes                  |                                      |
+| status                  | ACTIVE                               |
+| tags                    |                                      |
+| updated_at              | 2019-01-19T11:52:30Z                 |
++-------------------------+--------------------------------------+
+
+$ openstack router add subnet router selfservice
+$ openstack router set router --external-gateway provider
+```
+
+### Verify operation
+```
+$ source ~/admin_openrc.sh 
+$ ip netns
+qdhcp-9d1f5e98-9158-448b-b4e4-d85a955c7808 (id: 1)
+qdhcp-caa52a70-a4c8-4c5d-bfdd-485df8dc081e (id: 0)
+$ openstack port list --router router
++--------------------------------------+------+-------------------+------------------------------------------------------------------------------+--------+
+| ID                                   | Name | MAC Address       | Fixed IP Addresses                                                           | Status |
++--------------------------------------+------+-------------------+------------------------------------------------------------------------------+--------+
+| 23d21214-dbe0-40ee-b727-be98b3fa525b |      | fa:16:3e:1e:ee:9d | ip_address='10.0.0.1', subnet_id='ab08da59-0dc8-4ffb-95a6-60ea65f42c49'      | DOWN   |
+| 88be29b1-9048-4234-930a-f2f5fdfbf9b7 |      | fa:16:3e:8a:73:db | ip_address='192.168.0.118', subnet_id='fa64c92f-2897-47a1-b994-d9df729c3593' | DOWN   |
++--------------------------------------+------+-------------------+------------------------------------------------------------------------------+--------+
+ogalush@ryunosuke:~$
+```
