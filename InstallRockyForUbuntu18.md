@@ -1477,3 +1477,36 @@ $ openstack port list --router router
 +--------------------------------------+------+-------------------+------------------------------------------------------------------------------+--------+
 ogalush@ryunosuke:~$
 ```
+
+### Create flavor
+```
+$ openstack flavor create --id 0 --vcpus 2 --ram 2048 --disk 20 m1.small
++----------------------------+----------+
+| Field                      | Value    |
++----------------------------+----------+
+| OS-FLV-DISABLED:disabled   | False    |
+| OS-FLV-EXT-DATA:ephemeral  | 0        |
+| disk                       | 20       |
+| id                         | 0        |
+| name                       | m1.small |
+| os-flavor-access:is_public | True     |
+| properties                 |          |
+| ram                        | 2048     |
+| rxtx_factor                | 1.0      |
+| swap                       |          |
+| vcpus                      | 2        |
++----------------------------+----------+
+```
+
+### keypair
+```
+$  source demo_openrc.sh
+$ openstack keypair create --public-key ~/.ssh/id_rsa_chef.pub chefkey
++-------------+-------------------------------------------------+
+| Field       | Value                                           |
++-------------+-------------------------------------------------+
+| fingerprint | f2:70:ad:9c:93:32:14:c0:36:e3:4f:ac:19:45:82:d2 |
+| name        | chefkey                                         |
+| user_id     | dd172ffbc09b426583fc3c7d62a0e33a                |
++-------------+-------------------------------------------------+
+```
