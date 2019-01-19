@@ -43,11 +43,11 @@ network:
     ethernets:
         enp3s0:
             dhcp4: no
-            dhcp6: true
+            dhcp6: yes
             addresses: [192.168.0.200/24]
             gateway4: 192.168.0.254
             nameservers:
-              addresses: [192.168.0.254, 8.8.8.8, 8.8.4.4]
+              addresses: [192.168.0.254, 1.1.1.1, 8.8.8.8]
     version: 2
 ogalush@ryunosuke:~$
 ----
