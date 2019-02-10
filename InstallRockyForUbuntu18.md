@@ -74,6 +74,23 @@ MS Name/IP address         Stratum Poll Reach LastRx Last sample
 ^* ntp-a3.nict.go.jp             1   6   177     2  -2094ns[  -56us] +/- 2202us
 ```
 
+## CPU Performance (任意)
+CPUガバナーをPerformanceへ変更してレスポンスを上げておく
+```
+https://askubuntu.com/questions/1021748/set-cpu-governor-to-performance-in-18-04
+$ sudo apt-get -y install cpufrequtils
+$ echo 'GOVERNOR="performance"' | sudo tee /etc/default/cpufrequtils
+$ sudo systemctl disable ondemand
+$ sudo reboot
+$ cat /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor
+performance
+performance
+performance
+performance
+$
+→ Performance表示となっていればOK.
+```
+
 # OpenStack packages for Ubuntu
 ## Enable the OpenStack repository
 ```
