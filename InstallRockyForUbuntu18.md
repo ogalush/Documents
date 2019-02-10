@@ -1533,6 +1533,15 @@ $ openstack keypair create --public-key ~/.ssh/id_rsa_chef.pub chefkey
 +-------------+-------------------------------------------------+
 ```
 
+
+# その他
+## ログディレクトリの権限変更
+デバッグ用
+```
+$ sudo chmod -v 755 /var/log/{nova,neutron,apache2,keystone,glance}
+```
+
+
 ## ubuntu18.04イメージ追加
 ```
 ogalush@ryunosuke:~$ openstack image create "Ubuntu18.04" --file /usr/local/src/ubuntu-18.04-server-cloudimg-amd64.img --disk-format qcow2 --container-format bare --public
@@ -1546,9 +1555,62 @@ ogalush@ryunosuke:~$ openstack image list
 ogalush@ryunosuke:~$
 ```
 
-# その他
-## ログディレクトリの権限変更
-デバッグ用
+## virbr0 削除
+kvmインストール時に自動生成されるインターフェイス. 不要なので削除する.  
+参考: [libvirt ネットワークを無効にする方法](https://docs.openstack.org/mitaka/ja/networking-guide/misc-libvirt.html)
 ```
-$ sudo chmod -v 755 /var/log/{nova,neutron,apache2,keystone,glance}
+$ ifconfig
+----
+...
+virbr0: flags=4099<UP,BROADCAST,MULTICAST>  mtu 1500
+        inet 192.168.122.1  netmask 255.255.255.0  broadcast 192.168.122.255
+        ether 52:54:00:12:79:bf  txqueuelen 1000  (Ethernet)
+        RX packets 0  bytes 0 (0.0 B)
+        RX errors 0  dropped 0  overruns 0  frame 0
+        TX packets 0  bytes 0 (0.0 B)
+        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
+----
+
+$ virsh net-list
+ Name                 State      Autostart     Persistent
+----------------------------------------------------------
+ default              active     yes           yes
+
+$ virsh net-destroy default
+Network default destroyed
+
+$ virsh net-autostart --network default --disable
+Network default unmarked as autostarted
+
+$ virsh net-list
+ Name                 State      Autostart     Persistent
+----------------------------------------------------------
+
+$
+$ ifconfig
+brqcaa52a70-a4: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500
+        ether 1a:23:cb:44:d6:1a  txqueuelen 1000  (Ethernet)
+        RX packets 0  bytes 0 (0.0 B)
+        RX errors 0  dropped 0  overruns 0  frame 0
+        TX packets 0  bytes 0 (0.0 B)
+        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
+
+enp3s0: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500
+        inet 192.168.0.200  netmask 255.255.255.0  broadcast 192.168.0.255
+        inet6 fe80::82ee:73ff:fe63:f007  prefixlen 64  scopeid 0x20<link>
+        ether 80:ee:73:63:f0:07  txqueuelen 1000  (Ethernet)
+        RX packets 112  bytes 16021 (16.0 KB)
+        RX errors 0  dropped 0  overruns 0  frame 0
+        TX packets 107  bytes 12505 (12.5 KB)
+        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
+
+lo: flags=73<UP,LOOPBACK,RUNNING>  mtu 65536
+        inet 127.0.0.1  netmask 255.0.0.0
+        inet6 ::1  prefixlen 128  scopeid 0x10<host>
+        loop  txqueuelen 1000  (Local Loopback)
+        RX packets 7804  bytes 2211841 (2.2 MB)
+        RX errors 0  dropped 0  overruns 0  frame 0
+        TX packets 7804  bytes 2211841 (2.2 MB)
+        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
+→ インターフェイスが消えていればOK.
 ```
