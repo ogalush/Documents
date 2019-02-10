@@ -161,9 +161,10 @@ https://qiita.com/AKB428/items/a2662fbb624ce7659025
 ## Install and configure components
 ```
 $ sudo apt -y install memcached python-memcache
-$ sudo sed -i 's/-l 127.0.0.1/-l 192.168.0.200/' /etc/memcached.conf 
-$ grep 192.168.0.200 /etc/memcached.conf 
--l 192.168.0.200
+$ sudo sed -i 's/-l 127.0.0.1/-l 0.0.0.0/' /etc/memcached.conf 
+$ grep 0.0.0.0 /etc/memcached.conf 
+-l 0.0.0.0
+→ OS起動時に192.168.0.200だとアサインできずに起動しなく、手動起動を要するため0.0.0.0へ変更する(2019.2.10)
 ```
 
 ## Finalize installation
@@ -175,7 +176,7 @@ $ sudo service memcached status
    Active: active (running) since Sun 2018-09-16 15:52:39 JST; 4s ago
 
 $ netstat -ln |grep 11211
-tcp        0      0 192.168.0.200:11211     0.0.0.0:*               LISTEN   
+tcp        0      0 0.0.0.0:11211     0.0.0.0:*               LISTEN   
 → 変更したIPアドレスでLISTENできているのでOK.
 ```
 
@@ -193,7 +194,8 @@ ETCD_INITIAL_CLUSTER="ryunosuke=http://192.168.0.200:2380"
 ETCD_INITIAL_ADVERTISE_PEER_URLS="http://192.168.0.200:2380"
 ETCD_ADVERTISE_CLIENT_URLS="http://192.168.0.200:2379"
 ETCD_LISTEN_PEER_URLS="http://0.0.0.0:2380"
-ETCD_LISTEN_CLIENT_URLS="http://192.168.0.200:2379"
+ETCD_LISTEN_CLIENT_URLS="http://0.0.0.0:2379"
+→ OS起動時にPort 2379 がListenできずに落ちるので0.0.0.0へ変更.
 ----
 ```
 
