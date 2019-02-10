@@ -1514,6 +1514,19 @@ $ openstack keypair create --public-key ~/.ssh/id_rsa_chef.pub chefkey
 +-------------+-------------------------------------------------+
 ```
 
+## ubuntu18.04イメージ追加
+```
+ogalush@ryunosuke:~$ openstack image create "Ubuntu18.04" --file /usr/local/src/ubuntu-18.04-server-cloudimg-amd64.img --disk-format qcow2 --container-format bare --public
+ogalush@ryunosuke:~$ openstack image list
++--------------------------------------+-------------+--------+
+| ID                                   | Name        | Status |
++--------------------------------------+-------------+--------+
+| bdfe2d2b-7368-4935-9538-e06351589d55 | Ubuntu18.04 | active |
+| f23c5921-b8e2-4c1e-826d-0061d5d318f3 | cirros      | active |
++--------------------------------------+-------------+--------+
+ogalush@ryunosuke:~$
+```
+
 # その他
 ## ログディレクトリの権限変更
 デバッグ用
