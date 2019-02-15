@@ -832,6 +832,7 @@ metadata_proxy_shared_secret = password
 enabled = true
 server_listen = $my_ip
 server_proxyclient_address = $my_ip
+keymap=ja
 
 [glance]
 api_servers = http://192.168.0.200:9292
