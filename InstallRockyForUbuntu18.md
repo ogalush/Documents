@@ -18,6 +18,12 @@ $ ls -l /etc/resolv.conf
 lrwxrwxrwx 1 root root 32 Oct  6 17:14 /etc/resolv.conf -> /run/systemd/resolve/resolv.conf
 $ grep nameserver /etc/resolv.conf 
 nameserver 192.168.0.254
+
+$ sudo systemctl disable systemd-resolved.service
+$ sudo systemctl stop systemd-resolved
+→ デフォルトがsystemd-resolvedなので、それを停止させる.
+$ netstat -ln |grep 53
+→ 127.0.0.53:53のLISTENが消えること.
 ```
 
 # Host networking
