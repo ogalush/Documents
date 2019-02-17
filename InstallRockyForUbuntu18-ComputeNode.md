@@ -108,3 +108,105 @@ $ sudo apt -y install python-openstackclient
 $ sudo apt-get -y update && sudo apt-get -y upgrade && sudo apt-get -y dist-upgrade && sudo apt-get -y autoremove
 $ sudo shutdown -r now
 ```
+
+## nova installation for Rocky
+[URL](https://docs.openstack.org/nova/rocky/install/)
+
+### Install and configure ComputeNode for Ubuntu
+#### Prerequisites
+```
+$ sudo apt -y install nova-compute
+```
+
+#### Config
+```
+$ sudo cp -rav /etc/nova ~
+$ sudo vim /etc/nova/nova.conf
+----
+[DEFAULT]
+transport_url = rabbit://openstack:password@192.168.0.200
+my_ip = 192.168.0.210
+use_neutron = true
+firewall_driver = nova.virt.firewall.NoopFirewallDriver
+...
+[api]
+auth_strategy = keystone
+...
+[keystone_authtoken]
+auth_url = http://192.168.0.200:5000/v3
+memcached_servers = 192.168.0.200:11211
+auth_type = password
+project_domain_name = default
+user_domain_name = default
+project_name = service
+username = nova
+password = password
+...
+[vnc]
+enabled = true
+server_listen = $my_ip
+server_proxyclient_address = $my_ip
+novncproxy_base_url = http://192.168.0.200:6080/vnc_auto.html
+keymap=ja
+...
+[glance]
+api_servers = http://192.168.0.200:9292
+[oslo_concurrency]
+lock_path = /var/lib/nova/tmp
+...
+[placement]
+os_region_name = openstack
+region_name = RegionOne
+project_domain_name = default
+project_name = service
+auth_type = password
+user_domain_name = default
+auth_url = http://192.168.0.200:5000/v3
+username = placement
+password = password
+----
+```
+
+### Finalize installation
+```
+$ egrep -c '(vmx|svm)' /proc/cpuinfo
+4
+$ sudo cat /etc/nova/nova-compute.conf 
+[DEFAULT]
+compute_driver=libvirt.LibvirtDriver
+[libvirt]
+virt_type=kvm
+$
+→ virt_typeはkvmのまま.
+(Intel Virtualization Technologyが入っているので)
+
+$ sudo service nova-compute restart
+$ sudo service nova-compute status
+● nova-compute.service - OpenStack Compute
+   Loaded: loaded (/lib/systemd/system/nova-compute.service; enabled; vendor preset: enabled)
+   Active: active (running) since Sun 2019-02-17 16:23:34 JST; 1s ago
+ Main PID: 7258 (nova-compute)
+...
+```
+
+## Add the compute node to the cell database
+```
+$ source ~/admin_openrc.sh 
+$ openstack compute service list --service nova-compute
++----+--------------+-----------+------+---------+-------+----------------------------+
+| ID | Binary       | Host      | Zone | Status  | State | Updated At                 |
++----+--------------+-----------+------+---------+-------+----------------------------+
+|  7 | nova-compute | ryunosuke | nova | enabled | up    | 2019-02-17T07:25:01.000000 |
+|  8 | nova-compute | hayao     | nova | enabled | up    | 2019-02-17T07:24:52.000000 |
++----+--------------+-----------+------+---------+-------+----------------------------+
+→ 追加対象の[hayao]が入っているのでOK.
+
+ogalush@ryunosuke:~$ source ~/admin_openrc.sh
+ogalush@ryunosuke:~$ sudo bash -c "nova-manage cell_v2 discover_hosts --verbose" nova
+An error has occurred:
+Traceback (most recent call last):
+  File "/usr/lib/python2.7/dist-packages/nova/cmd/manage.py", line 2310, in main
+    ret = fn(*fn_args, **fn_kwargs)
+  File "/usr/lib/python2.7/dist-packages/nova/cmd/manage.py", line 1426, in discover_hosts
+→ なんか見つからない...
+```
