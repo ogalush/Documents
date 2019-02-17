@@ -33,6 +33,7 @@ $ diff -u /tmp/hosts /etc/hosts |egrep '^(\+|\-)'
 --- /tmp/hosts  2019-02-16 01:44:10.191132478 +0900
 +++ /etc/hosts  2019-02-17 15:57:30.640683535 +0900
 -127.0.1.1      hayao
++192.168.0.200  ryunosuke
 +192.168.0.210  hayao
 $
 ```
@@ -247,6 +248,33 @@ username = neutron
 password = password
 ----
 ```
+#### ml2
+````
+[DEFAULT]
+[l2pop]
+[ml2]
+type_drivers = flat,vlan,vxlan
+tenant_network_types = vxlan
+mechanism_drivers = linuxbridge,l2population
+extension_drivers = port_security
+[ml2_type_flat]
+flat_networks = provider
+[ml2_type_geneve]
+[ml2_type_gre]
+[ml2_type_vlan]
+[ml2_type_vxlan]
+vni_ranges = 1:1000
+[securitygroup]
+enable_ipset = true
+````
+
+#### linuxbridge
+```
+$ sudo vim /etc/neutron/plugins/ml2/linuxbridge_agent.ini
+[vxlan]
+local_ip = 192.168.0.210
+----
+```
 
 #### nova.conf
 ```
@@ -272,3 +300,36 @@ metadata_proxy_shared_secret = password
 $ sudo service nova-compute restart
 $ sudo service neutron-linuxbridge-agent restart
 ```
+
+## virbr0 削除
+kvmインストール時に自動生成されるインターフェイス. 不要なので削除する.  
+参考: [libvirt ネットワークを無効にする方法](https://docs.openstack.org/mitaka/ja/networking-guide/misc-libvirt.html)
+```
+$ ifconfig
+----
+...
+virbr0: flags=4099<UP,BROADCAST,MULTICAST>  mtu 1500
+        inet 192.168.122.1  netmask 255.255.255.0  broadcast 192.168.122.255
+        ether 52:54:00:12:79:bf  txqueuelen 1000  (Ethernet)
+        RX packets 0  bytes 0 (0.0 B)
+        RX errors 0  dropped 0  overruns 0  frame 0
+        TX packets 0  bytes 0 (0.0 B)
+        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
+----
+
+$ virsh net-list
+ Name                 State      Autostart     Persistent
+----------------------------------------------------------
+ default              active     yes           yes
+
+$ virsh net-destroy default
+Network default destroyed
+
+$ virsh net-autostart --network default --disable
+Network default unmarked as autostarted
+
+$ virsh net-list
+ Name                 State      Autostart     Persistent
+----------------------------------------------------------
+
+$
