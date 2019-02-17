@@ -209,4 +209,66 @@ Traceback (most recent call last):
     ret = fn(*fn_args, **fn_kwargs)
   File "/usr/lib/python2.7/dist-packages/nova/cmd/manage.py", line 1426, in discover_hosts
 → なんか見つからない...
+
+DB設定は入っているので他の原因.
+https://ask.openstack.org/en/question/99862/mitaka-nova-manage-api_db-sync-error-no-sql_connection-parameter-is-established/
+$ sudo egrep '^\[api_database\]' /etc/nova/nova.conf -A1
+[api_database]
+connection = mysql+pymysql://nova:password@192.168.0.200/nova_api
+$
+```
+
+# Configure the Compute service to use the Networking service
+[URL](https://docs.openstack.org/neutron/rocky/install/compute-install-ubuntu.html)
+
+### Install and configure compute node
+```
+$ sudo apt -y install neutron-linuxbridge-agent
+```
+### Configure the common component
+#### neutron.conf
+```
+$ sudo vim /etc/neutron/neutron.conf
+----
+[DEFAULT]
+core_plugin = ml2
+transport_url = rabbit://openstack:password@192.168.0.200
+auth_strategy = keystone
+...
+[keystone_authtoken]
+www_authenticate_uri = http://192.168.0.200:5000
+auth_url = http://192.168.0.200:5000
+memcached_servers = 192.168.0.200:11211
+auth_type = password
+project_domain_name = default
+user_domain_name = default
+project_name = service
+username = neutron
+password = password
+----
+```
+
+#### nova.conf
+```
+$ sudo vim /etc/nova/nova.conf
+----
+[neutron]
+url = http://192.168.0.200:9696
+auth_url = http://192.168.0.200:5000
+auth_type = password
+project_domain_name = default
+user_domain_name = default
+region_name = RegionOne
+project_name = service
+username = neutron
+password = password
+service_metadata_proxy = true
+metadata_proxy_shared_secret = password
+----
+```
+
+#### finish
+```
+$ sudo service nova-compute restart
+$ sudo service neutron-linuxbridge-agent restart
 ```
