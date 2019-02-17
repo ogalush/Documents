@@ -1364,7 +1364,7 @@ $ openstack network create  --share --external --provider-physical-network provi
 | updated_at                | 2019-01-19T11:54:38Z                 |
 +---------------------------+--------------------------------------+
 
-$ openstack subnet create --network provider --allocation-pool start=192.168.0.100,end=192.168.0.120 --dns-nameserver 192.168.0.220 --gateway 192.168.0.254 --subnet-range 192.168.0.0/24 provider
+$ openstack subnet create --network provider --allocation-pool start=192.168.0.100,end=192.168.0.120 --dns-nameserver 192.168.0.220 --gateway 192.168.0.254 --subnet-range 192.168.0.0/24 --disable-dhcp provider
 +-------------------+--------------------------------------+
 | Field             | Value                                |
 +-------------------+--------------------------------------+
