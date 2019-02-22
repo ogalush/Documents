@@ -68,3 +68,32 @@ $ sudo yum -y install python-openstackclient
 $ sudo yum -y install openstack-selinux
 → SELinuxがデフォルトで有効になってるので、よしなにやってくれるらしい.
 ```
+
+# SQL database
+[Doc](https://docs.openstack.org/install-guide/environment-sql-database-rdo.html)
+## SQL database for RHEL and CentOS
+```
+$ sudo yum -y install mariadb mariadb-server python2-PyMySQL
+$ sudo cp -rafv /etc/my.cnf* ~
+$ cat << _EOS_ > ~/openstack.cnf
+[mysqld]
+bind-address = 192.168.0.200
+default-storage-engine = innodb
+innodb_file_per_table = on
+max_connections = 4096
+collation-server = utf8_general_ci
+character-set-server = utf8
+_EOS_
+$ sudo cp -v ~/openstack.cnf /etc/my.cnf.d
+$ sudo systemctl enable mariadb.service
+$ sudo systemctl start mariadb.service
+
+$ sudo mysql_secure_installation
+Enter current password for root (enter for none): 
+OK, successfully used password, moving on...
+Set root password? [Y/n] n
+Remove anonymous users? [Y/n] y
+Disallow root login remotely? [Y/n] y
+Remove test database and access to it? [Y/n] y
+Reload privilege tables now? [Y/n] y
+```
