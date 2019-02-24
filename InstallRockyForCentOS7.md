@@ -923,4 +923,35 @@ $ openstack image list
 +--------------------------------------+--------+--------+
 
 $ sudo nova-status upgrade check
++--------------------------------+
+| Upgrade Check Results          |
++--------------------------------+
+| Check: Cells v2                |
+| Result: Success                |
+| Details: None                  |
++--------------------------------+
+| Check: Placement API           |
+| Result: Success                |
+| Details: None                  |
++--------------------------------+
+| Check: Resource Providers      |
+| Result: Success                |
+| Details: None                  |
++--------------------------------+
+| Check: Ironic Flavor Migration |
+| Result: Success                |
+| Details: None                  |
++--------------------------------+
+| Check: API Service Version     |
+| Result: Success                |
+| Details: None                  |
++--------------------------------+
+| Check: Request Spec Migration  |
+| Result: Success                |
+| Details: None                  |
++--------------------------------+
+| Check: Console Auths           |
+| Result: Success                |
+| Details: None                  |
++--------------------------------+
 ```
