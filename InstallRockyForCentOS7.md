@@ -836,3 +836,91 @@ $ sudo bash -c "nova-manage cell_v2 list_cells" nova
 $ sudo systemctl enable openstack-nova-api.service openstack-nova-consoleauth openstack-nova-scheduler.service openstack-nova-conductor.service openstack-nova-novncproxy.service
 $ sudo systemctl start openstack-nova-api.service openstack-nova-consoleauth openstack-nova-scheduler.service openstack-nova-conductor.service openstack-nova-novncproxy.service
 ```
+
+## Install and configure a compute node for Red Hat Enterprise Linux and CentOS
+Controller上でインスタンスを起動させたいのでまとめてインストールする.
+[Doc](https://docs.openstack.org/nova/rocky/install/compute-install-rdo.html)
+```
+$ sudo yum -y install openstack-nova-compute
+$ sudo vim /etc/nova/nova.conf
+----
+[vnc]
+...
+novncproxy_base_url = http://192.168.0.200:6080/vnc_auto.html
+...
+[libvirt]
+virt_type = kvm
+...
+[scheduler]
+discover_hosts_in_cells_interval = 300
+----
+
+$ egrep -c '(vmx|svm)' /proc/cpuinfo
+4
+→ IntelVTサポートなので「virt_type = kvm」でOK.
+$ sudo systemctl enable libvirtd.service openstack-nova-compute.service
+$ sudo systemctl start libvirtd.service openstack-nova-compute.service
+
+$ source ~/admin-openrc.sh
+$ openstack compute service list --service nova-compute
++----+--------------+-----------------------+------+---------+-------+----------------------------+
+| ID | Binary       | Host                  | Zone | Status  | State | Updated At                 |
++----+--------------+-----------------------+------+---------+-------+----------------------------+
+|  9 | nova-compute | ryunosuke.localdomain | nova | enabled | up    | 2019-02-24T09:55:29.000000 |
++----+--------------+-----------------------+------+---------+-------+----------------------------+
+
+$ sudo bash -c "nova-manage cell_v2 discover_hosts --verbose" nova
+----
+Found 2 cell mappings.
+Skipping cell0 since it does not contain hosts.
+Getting computes from cell 'cell1': e687ffdf-f4f3-49f9-85a4-5e915dfd32ad
+Checking host mapping for compute host 'ryunosuke.localdomain': de8b8617-5209-4de0-8b3b-c115480e2bbe
+Creating host mapping for compute host 'ryunosuke.localdomain': de8b8617-5209-4de0-8b3b-c115480e2bbe
+Found 1 unmapped computes in cell: e687ffdf-f4f3-49f9-85a4-5e915dfd32ad
+----
+```
+
+### Verify operation
+[Doc](https://docs.openstack.org/nova/rocky/install/verify.html)
+```
+$ source ~/admin-openrc.sh
+$ openstack compute service list
++----+------------------+-----------------------+----------+---------+-------+----------------------------+
+| ID | Binary           | Host                  | Zone     | Status  | State | Updated At                 |
++----+------------------+-----------------------+----------+---------+-------+----------------------------+
+|  1 | nova-conductor   | ryunosuke.localdomain | internal | enabled | up    | 2019-02-24T09:58:06.000000 |
+|  2 | nova-scheduler   | ryunosuke.localdomain | internal | enabled | up    | 2019-02-24T09:58:07.000000 |
+|  5 | nova-consoleauth | ryunosuke.localdomain | internal | enabled | up    | 2019-02-24T09:58:07.000000 |
+|  9 | nova-compute     | ryunosuke.localdomain | nova     | enabled | up    | 2019-02-24T09:58:09.000000 |
++----+------------------+-----------------------+----------+---------+-------+----------------------------+
+
+[ogalush@ryunosuke ~]$ openstack catalog list
++-----------+-----------+--------------------------------------------+
+| Name      | Type      | Endpoints                                  |
++-----------+-----------+--------------------------------------------+
+| nova      | compute   | RegionOne                                  |
+|           |           |   internal: http://192.168.0.200:8774/v2.1 |
+|           |           | RegionOne                                  |
+|           |           |   public: http://192.168.0.200:8774/v2.1   |
+|           |           | RegionOne                                  |
+|           |           |   admin: http://192.168.0.200:8774/v2.1    |
+|           |           |                                            |
+...
+| placement | placement | RegionOne                                  |
+|           |           |   internal: http://192.168.0.200:8778      |
+|           |           | RegionOne                                  |
+|           |           |   admin: http://192.168.0.200:8778         |
+|           |           | RegionOne                                  |
+|           |           |   public: http://192.168.0.200:8778        |
+|           |           |                                            |
++-----------+-----------+--------------------------------------------+
+
+$ openstack image list
++--------------------------------------+--------+--------+
+| ID                                   | Name   | Status |
++--------------------------------------+--------+--------+
+| c089d67b-d07f-4bf4-b70d-2d0c30d0ab20 | cirros | active |
++--------------------------------------+--------+--------+
+
+$ sudo nova-status upgrade check
+```
