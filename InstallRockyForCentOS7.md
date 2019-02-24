@@ -394,3 +394,145 @@ $ openstack token issue
 | user_id    | 05fcd425e107475c89eaccbf9ba2a376                                                                                                                                                        |
 +------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
 ```
+
+
+# Glance Installation
+[Doc](https://docs.openstack.org/glance/rocky/install/)
+
+## Install and configure (Red Hat)
+[Doc](https://docs.openstack.org/glance/rocky/install/install-rdo.html)
+
+### Prerequisites
+```
+$ sudo mysql
+MariaDB [(none)]> CREATE DATABASE glance;
+MariaDB [(none)]> GRANT ALL PRIVILEGES ON glance.* TO 'glance'@'%' IDENTIFIED BY 'password';
+MariaDB [(none)]> FLUSH PRIVILEGES;
+MariaDB [(none)]> quit;
+
+$ source ~/admin-openrc.sh
+$ openstack user create --domain default --password-prompt glance
+User Password:
+Repeat User Password:
++---------------------+----------------------------------+
+| Field               | Value                            |
++---------------------+----------------------------------+
+| domain_id           | default                          |
+| enabled             | True                             |
+| id                  | 670edf7e9da64e6bad0e1798b60fbeb5 |
+| name                | glance                           |
+| options             | {}                               |
+| password_expires_at | None                             |
++---------------------+----------------------------------+
+
+$ openstack role add --project service --user glance admin
+$ openstack service create --name glance --description "OpenStack Image" image
++-------------+----------------------------------+
+| Field       | Value                            |
++-------------+----------------------------------+
+| description | OpenStack Image                  |
+| enabled     | True                             |
+| id          | 6b74ec3a32c540cfb6c372f51cbdd423 |
+| name        | glance                           |
+| type        | image                            |
++-------------+----------------------------------+
+
+$ openstack endpoint create --region RegionOne image public http://192.168.0.200:9292
++--------------+----------------------------------+
+| Field        | Value                            |
++--------------+----------------------------------+
+| enabled      | True                             |
+| id           | 0b2b96fb79ad4146a6e818962ba9dffc |
+| interface    | public                           |
+| region       | RegionOne                        |
+| region_id    | RegionOne                        |
+| service_id   | 6b74ec3a32c540cfb6c372f51cbdd423 |
+| service_name | glance                           |
+| service_type | image                            |
+| url          | http://192.168.0.200:9292        |
++--------------+----------------------------------+
+
+$ openstack endpoint create --region RegionOne image internal http://192.168.0.200:9292
++--------------+----------------------------------+
+| Field        | Value                            |
++--------------+----------------------------------+
+| enabled      | True                             |
+| id           | 173ce00ccfcb4fcf985bdf9751b056a3 |
+| interface    | internal                         |
+| region       | RegionOne                        |
+| region_id    | RegionOne                        |
+| service_id   | 6b74ec3a32c540cfb6c372f51cbdd423 |
+| service_name | glance                           |
+| service_type | image                            |
+| url          | http://192.168.0.200:9292        |
++--------------+----------------------------------+
+
+$ openstack endpoint create --region RegionOne image admin http://192.168.0.200:9292
++--------------+----------------------------------+
+| Field        | Value                            |
++--------------+----------------------------------+
+| enabled      | True                             |
+| id           | b173b71be5a24f18b851f0611ab5f8c5 |
+| interface    | admin                            |
+| region       | RegionOne                        |
+| region_id    | RegionOne                        |
+| service_id   | 6b74ec3a32c540cfb6c372f51cbdd423 |
+| service_name | glance                           |
+| service_type | image                            |
+| url          | http://192.168.0.200:9292        |
++--------------+----------------------------------+  
+```
+
+### Install and configure components
+```
+$ sudo yum -y install openstack-glance
+$ sudo cp -rafv /etc/glance ~
+$ sudo vim /etc/glance/glance-api.conf
+----
+[database]
+connection = mysql+pymysql://glance:password@192.168.0.200/glance
+...
+[keystone_authtoken]
+www_authenticate_uri = http://192.168.0.200:5000
+auth_url = http://192.168.0.200:5000
+memcached_servers = 192.168.0.200:11211
+auth_type = password
+project_domain_name = default
+user_domain_name = default
+project_name = service
+username = glance
+password = password
+...
+[paste_deploy]
+flavor = keystone
+...
+[glance_store]
+stores = file,http
+default_store = file
+filesystem_store_datadir = /var/lib/glance/images/
+----
+
+$ sudo vim /etc/glance/glance-registry.conf 
+----
+[database]
+connection = mysql+pymysql://glance:password@192.168.0.200/glance
+...
+[keystone_authtoken]
+www_authenticate_uri = http://192.168.0.200:5000
+auth_url = http://192.168.0.200:5000
+memcached_servers = 192.168.0.200:11211
+auth_type = password
+project_domain_name = default
+user_domain_name = default
+project_name = service
+username = glance
+password = password
+...
+[paste_deploy]
+flavor = keystone
+----
+
+$ sudo bash -c "glance-manage db_sync" glance
+$ sudo systemctl enable openstack-glance-api.service openstack-glance-registry.service
+$ sudo systemctl start openstack-glance-api.service openstack-glance-registry.service
+```
