@@ -1266,5 +1266,17 @@ WSGIApplicationGroup %{GLOBAL}
 $ sudo systemctl restart httpd.service memcached.service
 ```
 
+CentOS7の場合、Firewall接続とSELinuxへの接続許可を与える必要がある.
+[参考](https://www.server-world.info/query?os=CentOS_7&p=openstack_pike&f=14)
+```
+$ sudo setsebool -P httpd_can_network_connect on 
+setsebool:  SELinux is disabled.
+$ sudo firewall-cmd --add-service={http,https} --permanent 
+success
+$ sudo firewall-cmd --reload 
+success
+$
+```
+
 ## Verify operation for Red Hat Enterprise Linux and CentOS
 [Horizon](http://192.168.0.200/dashboard) へアクセスできればOK.
