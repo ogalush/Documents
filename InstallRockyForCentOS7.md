@@ -1271,8 +1271,10 @@ CentOS7の場合、Firewall接続とSELinuxへの接続許可を与える必要�
 ```
 $ sudo setsebool -P httpd_can_network_connect on 
 setsebool:  SELinux is disabled.
-$ sudo firewall-cmd --add-service={http,https} --permanent 
-success
+$ sudo firewall-cmd --add-service={http,https} --permanent
+→ Horizon用
+$ sudo firewall-cmd --add-port=6080/tcp --permanent
+→ VNC用
 $ sudo firewall-cmd --reload 
 success
 $
