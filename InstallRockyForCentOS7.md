@@ -1220,3 +1220,51 @@ $ openstack network agent list
 | db50608b-954f-4e7a-aaf1-2024ea3bb6a3 | L3 agent           | ryunosuke.localdomain | nova              | :-)   | UP    | neutron-l3-agent          |
 +--------------------------------------+--------------------+-----------------------+-------------------+-------+-------+---------------------------+
 ```
+
+# horizon installation for Rocky
+## Install and configure for Red Hat Enterprise Linux and CentOS
+[Doc](https://docs.openstack.org/horizon/rocky/install/install-rdo.html)
+```
+$ sudo yum -y install openstack-dashboard
+$ sudo cp -rafv /etc/openstack-dashboard ~
+$ sudo vim /etc/openstack-dashboard/local_settings
+----
+OPENSTACK_HOST = "192.168.0.200"
+ALLOWED_HOSTS = ['*']
+...
+##CACHES = {
+##    'default': {
+##        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+##    },
+##}
+SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
+CACHES = {
+    'default': {
+         'BACKEND': 'django.core.cache.backends.memcached.MemcachedCache',
+         'LOCATION': '192.168.0.200:11211',
+    }
+}
+OPENSTACK_KEYSTONE_MULTIDOMAIN_SUPPORT = True
+OPENSTACK_API_VERSIONS = {
+    "identity": 3,
+    "image": 2,
+    "volume": 2,
+}
+OPENSTACK_KEYSTONE_DEFAULT_DOMAIN = 'default'
+##OPENSTACK_KEYSTONE_DEFAULT_ROLE = "_member_"
+OPENSTACK_KEYSTONE_DEFAULT_ROLE = "user"
+TIME_ZONE = "Asia/Tokyo"
+----
+
+$ sudo vim /etc/httpd/conf.d/openstack-dashboard.conf
+----
+...
+WSGIApplicationGroup %{GLOBAL}
+→ 追記する.
+----
+
+$ sudo systemctl restart httpd.service memcached.service
+```
+
+## Verify operation for Red Hat Enterprise Linux and CentOS
+[Horizon](http://192.168.0.200/dashboard) へアクセスできればOK.
