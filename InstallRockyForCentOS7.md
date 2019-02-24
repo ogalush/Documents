@@ -955,3 +955,268 @@ $ sudo nova-status upgrade check
 | Details: None                  |
 +--------------------------------+
 ```
+
+# Neutron Install and configure for Red Hat Enterprise Linux and CentOS
+[Doc](https://docs.openstack.org/neutron/rocky/install/install-rdo.html)
+## Install and configure controller node
+[Doc](https://docs.openstack.org/neutron/rocky/install/controller-install-rdo.html)
+### Prerequisites
+```
+$ sudo mysql
+MariaDB [(none)]> CREATE DATABASE neutron;
+MariaDB [(none)]> GRANT ALL PRIVILEGES ON neutron.* TO 'neutron'@'%' IDENTIFIED BY 'password';
+MariaDB [(none)]> FLUSH PRIVILEGES;
+MariaDB [(none)]> quit;
+
+$ source ~/admin-openrc.sh
+$ openstack user create --domain default --password-prompt neutron
+User Password:
+Repeat User Password:
++---------------------+----------------------------------+
+| Field               | Value                            |
++---------------------+----------------------------------+
+| domain_id           | default                          |
+| enabled             | True                             |
+| id                  | fed1a3f4b2ae419ba7328d04ff95c88b |
+| name                | neutron                          |
+| options             | {}                               |
+| password_expires_at | None                             |
++---------------------+----------------------------------+
+
+$ openstack role add --project service --user neutron admin
+$ openstack service create --name neutron --description "OpenStack Networking" network
++-------------+----------------------------------+
+| Field       | Value                            |
++-------------+----------------------------------+
+| description | OpenStack Networking             |
+| enabled     | True                             |
+| id          | 81a1c607ed6e45749dc8c6f92885068d |
+| name        | neutron                          |
+| type        | network                          |
++-------------+----------------------------------+
+
+$ openstack endpoint create --region RegionOne network public http://192.168.0.200:9696
++--------------+----------------------------------+
+| Field        | Value                            |
++--------------+----------------------------------+
+| enabled      | True                             |
+| id           | 89777c33b20d42178562a2646e18b252 |
+| interface    | public                           |
+| region       | RegionOne                        |
+| region_id    | RegionOne                        |
+| service_id   | 81a1c607ed6e45749dc8c6f92885068d |
+| service_name | neutron                          |
+| service_type | network                          |
+| url          | http://192.168.0.200:9696        |
++--------------+----------------------------------+
+
+$ openstack endpoint create --region RegionOne network internal http://192.168.0.200:9696
++--------------+----------------------------------+
+| Field        | Value                            |
++--------------+----------------------------------+
+| enabled      | True                             |
+| id           | 2f7cb9a75cbe45dea999a8b3ee48f9f8 |
+| interface    | internal                         |
+| region       | RegionOne                        |
+| region_id    | RegionOne                        |
+| service_id   | 81a1c607ed6e45749dc8c6f92885068d |
+| service_name | neutron                          |
+| service_type | network                          |
+| url          | http://192.168.0.200:9696        |
++--------------+----------------------------------+
+
+$ openstack endpoint create --region RegionOne network admin http://192.168.0.200:9696
++--------------+----------------------------------+
+| Field        | Value                            |
++--------------+----------------------------------+
+| enabled      | True                             |
+| id           | fe257c0a8623480890fa4f883e17461a |
+| interface    | admin                            |
+| region       | RegionOne                        |
+| region_id    | RegionOne                        |
+| service_id   | 81a1c607ed6e45749dc8c6f92885068d |
+| service_name | neutron                          |
+| service_type | network                          |
+| url          | http://192.168.0.200:9696        |
++--------------+----------------------------------+
+```
+
+### Networking Option 2: Self-service networks
+[Doc](https://docs.openstack.org/neutron/rocky/install/controller-install-option2-rdo.html)
+```
+$ sudo yum -y install openstack-neutron openstack-neutron-ml2 openstack-neutron-linuxbridge ebtables
+
+$ sudo cp -rafv /etc/neutron ~
+$ sudo vim /etc/neutron/neutron.conf
+----
+[DEFAULT]
+core_plugin = ml2
+service_plugins = router
+allow_overlapping_ips = true
+transport_url = rabbit://openstack:password@192.168.0.200
+auth_strategy = keystone
+notify_nova_on_port_status_changes = true
+notify_nova_on_port_data_changes = true
+...
+[database]
+connection = mysql+pymysql://neutron:password@192.168.0.200/neutron
+...
+[keystone_authtoken]
+www_authenticate_uri = http://192.168.0.200:5000
+auth_url = http://192.168.0.200:5000
+memcached_servers = 192.168.0.200:11211
+auth_type = password
+project_domain_name = default
+user_domain_name = default
+project_name = service
+username = neutron
+password = password
+...
+[nova]
+auth_url = http://192.168.0.200:5000
+auth_type = password
+project_domain_name = default
+user_domain_name = default
+region_name = RegionOne
+project_name = service
+username = nova
+password = password
+...
+[oslo_concurrency]
+lock_path = /var/lib/neutron/tmp
+----
+
+$ sudo vim /etc/neutron/plugins/ml2/ml2_conf.ini
+----
+[ml2]
+type_drivers = flat,vlan,vxlan
+tenant_network_types = vxlan
+mechanism_drivers = linuxbridge,l2population
+extension_drivers = port_security
+...
+[ml2_type_flat]
+flat_networks = provider
+...
+[ml2_type_vxlan]
+vni_ranges = 1:1000
+...
+[securitygroup]
+enable_ipset = true
+----
+
+$ sudo vim /etc/neutron/plugins/ml2/linuxbridge_agent.ini
+----
+[linux_bridge]
+physical_interface_mappings = provider:enp3s0
+...
+[vxlan]
+enable_vxlan = true
+local_ip = 192.168.0.200
+l2_population = true
+...
+[securitygroup]
+enable_security_group = true
+firewall_driver = neutron.agent.linux.iptables_firewall.IptablesFirewallDriver
+----
+
+$ sudo vim /etc/sysctl.d/99-neutron.conf
+----
+net.bridge.bridge-nf-call-iptables = 1
+net.bridge.bridge-nf-call-ip6tables = 1
+----
+
+$ sudo sysctl --system
+→ /etc/sysctl.d以下の更新は --systemオプションで反映する.
+https://tsunokawa.hatenablog.com/entry/2015/09/02/175619
+
+$ sudo vim /etc/neutron/l3_agent.ini
+----
+[DEFAULT]
+interface_driver = linuxbridge
+----
+
+$ sudo vim /etc/neutron/dhcp_agent.ini
+----
+[DEFAULT]
+interface_driver = linuxbridge
+dhcp_driver = neutron.agent.linux.dhcp.Dnsmasq
+enable_isolated_metadata = true
+----
+```
+
+### Install and configure controller node (戻る)
+Configure the metadata agent
+```
+$ sudo vim /etc/neutron/metadata_agent.ini
+----
+[DEFAULT]
+nova_metadata_host = 192.168.0.200
+metadata_proxy_shared_secret = password
+----
+
+$ sudo vim /etc/nova/nova.conf
+----
+[neutron]
+url = http://192.168.0.200:9696
+auth_url = http://192.168.0.200:5000
+auth_type = password
+project_domain_name = default
+user_domain_name = default
+region_name = RegionOne
+project_name = service
+username = neutron
+password = password
+service_metadata_proxy = true
+metadata_proxy_shared_secret = password
+----
+
+$ sudo ln -s /etc/neutron/plugins/ml2/ml2_conf.ini /etc/neutron/plugin.ini
+$ ls -l /etc/neutron/plugin.ini
+lrwxrwxrwx 1 root root 37 Feb 24 19:49 /etc/neutron/plugin.ini -> /etc/neutron/plugins/ml2/ml2_conf.ini
+
+$ sudo bash -c "neutron-db-manage --config-file /etc/neutron/neutron.conf --config-file /etc/neutron/plugins/ml2/ml2_conf.ini upgrade head" neutron
+
+$ sudo systemctl restart openstack-nova-api.service
+
+$ sudo systemctl enable neutron-server.service neutron-linuxbridge-agent.service neutron-dhcp-agent.service neutron-metadata-agent.service neutron-l3-agent.service
+$ sudo systemctl start neutron-server.service neutron-linuxbridge-agent.service neutron-dhcp-agent.service neutron-metadata-agent.service neutron-l3-agent.service
+```
+
+## Install and configure compute node
+[Doc](https://docs.openstack.org/neutron/rocky/install/compute-install-rdo.html)
+```
+$ sudo yum -y install openstack-neutron-linuxbridge ebtables ipset
+→ Config類の設定はContorollerと同じ.
+$ sudo systemctl restart openstack-nova-compute.service
+$ sudo systemctl enable neutron-linuxbridge-agent.service
+$ sudo systemctl start neutron-linuxbridge-agent.service
+```
+
+## Verify operation
+```
+$ source ~/admin-openrc.sh
+$ openstack extension list --network
++--------------------------------------------------------------------------------------------------------------------------------------
+---+--------------------------------+--------------------------------------------------------------------------------------------------
+--------------------------------------------------------+
+| Name                                                                                                                                 
+   | Alias                          | Description                                                                                      
+                                                        |
++--------------------------------------------------------------------------------------------------------------------------------------
+---+--------------------------------+--------------------------------------------------------------------------------------------------
+--------------------------------------------------------+
+| Default Subnetpools                                                                                                                     | default-subnetpools            | Provides ability to mark and use a subnetpool as the default.                                                                                            |
+| Availability Zone                                                                                                                       | availability_zone              | The availability zone extension.      
+...
+----
+
+$ openstack network agent list
++--------------------------------------+--------------------+-----------------------+-------------------+-------+-------+---------------------------+
+| ID                                   | Agent Type         | Host                  | Availability Zone | Alive | State | Binary                    |
++--------------------------------------+--------------------+-----------------------+-------------------+-------+-------+---------------------------+
+| 11156a4f-e96b-4bf7-ac65-8615e55d0359 | Metadata agent     | ryunosuke.localdomain | None              | :-)   | UP    | neutron-metadata-agent    |
+| 57657461-0ed0-4a7e-abf0-2566f062b789 | Linux bridge agent | ryunosuke.localdomain | None              | :-)   | UP    | neutron-linuxbridge-agent |
+| 84e2f8f8-2ab7-48e3-a13c-fdb60ea3eca7 | DHCP agent         | ryunosuke.localdomain | nova              | :-)   | UP    | neutron-dhcp-agent        |
+| db50608b-954f-4e7a-aaf1-2024ea3bb6a3 | L3 agent           | ryunosuke.localdomain | nova              | :-)   | UP    | neutron-l3-agent          |
++--------------------------------------+--------------------+-----------------------+-------------------+-------+-------+---------------------------+
+```
