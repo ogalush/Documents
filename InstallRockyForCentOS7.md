@@ -176,3 +176,221 @@ $
 $ sudo systemctl enable etcd
 $ sudo systemctl start etcd
 ```
+
+# Minimal deployment for Rocky
+[Doc](https://docs.openstack.org/install-guide/openstack-services.html#minimal-deployment-for-rocky)
+
+# Keystone Installation Tutorial for Red Hat Enterprise Linux and CentOS
+[Doc](https://docs.openstack.org/keystone/rocky/install/index-rdo.html)
+
+## Install and configure
+[Doc](https://docs.openstack.org/keystone/rocky/install/keystone-install-rdo.html)
+### Install Keystone
+```
+$ sudo mysql
+MariaDB [(none)]> CREATE DATABASE keystone;
+MariaDB [(none)]> GRANT ALL PRIVILEGES ON keystone.* TO 'keystone'@'%' IDENTIFIED BY 'password';
+MariaDB [(none)]> FLUSH PRIVILEGES;
+MariaDB [(none)]> quit;
+
+$ sudo yum -y install openstack-keystone httpd mod_wsgi
+$ sudo cp -rafv /etc/keystone ~
+$ sudo vim /etc/keystone/keystone.conf 
+----
+[database]
+connection = mysql+pymysql://keystone:password@192.168.0.200/keystone
+...
+[token]
+provider = fernet
+...
+----
+
+$ sudo bash -c "keystone-manage db_sync" keystone
+$ sudo keystone-manage fernet_setup --keystone-user keystone --keystone-group keystone
+$ sudo keystone-manage credential_setup --keystone-user keystone --keystone-group keystone
+$ sudo keystone-manage bootstrap --bootstrap-password password --bootstrap-admin-url http://192.168.0.200:5000/v3/ --bootstrap-internal-url http://192.168.0.200:5000/v3/ --bootstrap-public-url http://192.168.0.200:5000/v3/ --bootstrap-region-id RegionOne
+```
+
+### Configure the Apache HTTP server
+```
+$ sudo cp -rafv /etc/httpd/conf ~
+$ sudo vim /etc/httpd/conf/httpd.conf
+----
+ServerName 192.168.0.200
+----
+
+$ sudo ln -s /usr/share/keystone/wsgi-keystone.conf /etc/httpd/conf.d/
+$ ls -al /etc/httpd/conf.d/wsgi-keystone.conf 
+lrwxrwxrwx 1 root root 38 Feb 24 17:15 /etc/httpd/conf.d/wsgi-keystone.conf -> /usr/share/keystone/wsgi-keystone.conf
+$
+
+$ sudo systemctl enable httpd.service
+$ sudo systemctl start httpd.service
+
+$ export OS_USERNAME=admin
+$ export OS_PASSWORD=password
+$ export OS_PROJECT_NAME=admin
+$ export OS_USER_DOMAIN_NAME=default
+$ export OS_PROJECT_DOMAIN_NAME=default
+$ export OS_AUTH_URL=http://192.168.0.200:5000/v3
+$ export OS_IDENTITY_API_VERSION=3
+```
+
+## Create a domain, projects, users, and roles
+[Doc](https://docs.openstack.org/keystone/rocky/install/keystone-users-rdo.html)
+```
+$ openstack domain create --description "An Example Domain" example
++-------------+----------------------------------+
+| Field       | Value                            |
++-------------+----------------------------------+
+| description | An Example Domain                |
+| enabled     | True                             |
+| id          | 419a3c8a5e0744f4b672b1887bf849eb |
+| name        | example                          |
+| tags        | []                               |
++-------------+----------------------------------+
+
+$ openstack project create --domain default --description "Service Project" service
++-------------+----------------------------------+
+| Field       | Value                            |
++-------------+----------------------------------+
+| description | Service Project                  |
+| domain_id   | default                          |
+| enabled     | True                             |
+| id          | 6539ad025170426a930b8b9284e971f2 |
+| is_domain   | False                            |
+| name        | service                          |
+| parent_id   | default                          |
+| tags        | []                               |
++-------------+----------------------------------+
+
+$ openstack project create --domain default --description "Demo Project" myproject
++-------------+----------------------------------+
+| Field       | Value                            |
++-------------+----------------------------------+
+| description | Demo Project                     |
+| domain_id   | default                          |
+| enabled     | True                             |
+| id          | 4e50a5edae324c558727054db01e157d |
+| is_domain   | False                            |
+| name        | myproject                        |
+| parent_id   | default                          |
+| tags        | []                               |
++-------------+----------------------------------+
+
+$ openstack user create --domain default --password-prompt myuser
+User Password:
+Repeat User Password:
++---------------------+----------------------------------+
+| Field               | Value                            |
++---------------------+----------------------------------+
+| domain_id           | default                          |
+| enabled             | True                             |
+| id                  | 05fcd425e107475c89eaccbf9ba2a376 |
+| name                | myuser                           |
+| options             | {}                               |
+| password_expires_at | None                             |
++---------------------+----------------------------------+
+
+$ openstack role create myrole
++-----------+----------------------------------+
+| Field     | Value                            |
++-----------+----------------------------------+
+| domain_id | None                             |
+| id        | 74deff2b2ccd429ba380620ad5cf757f |
+| name      | myrole                           |
++-----------+----------------------------------+
+
+$ openstack role add --project myproject --user myuser myrole
+```
+
+## Verify operation
+[Doc](https://docs.openstack.org/keystone/rocky/install/keystone-verify-rdo.html)
+```
+$ unset OS_AUTH_URL OS_PASSWORD
+$ openstack --os-auth-url http://192.168.0.200:5000/v3 --os-project-domain-name default --os-user-domain-name default --os-project-name admin --os-username admin token issue
+Password: 
++------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Field      | Value                                                                                                                                                                                   |
++------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| expires    | 2019-02-24T09:22:08+0000                                                                                                                                                                |
+| id         | gAAAAABcclQwdKkQhCfpUT6LJXr7Trxk3VryAG1sYFegy52i5H-utF471I0g-6lALR93mmcdCJe1W6-yl2l4WmWFzyB0zW4qnu-IRVUgT6L5oxmQKV5Jhp6iRE33CcPWA9_tIVVPryqr8ctMMAAUXp0npNtmpdaSdeGS3lw6Lo1XNWJOKd14lxk |
+| project_id | c702086339374c4cb53e396b98ccd2e0                                                                                                                                                        |
+| user_id    | d4cc0e07f1334266bf0df13941742614                                                                                                                                                        |
++------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+
+$ openstack --os-auth-url http://192.168.0.200:5000/v3 --os-project-domain-name default --os-user-domain-name default --os-project-name myproject --os-username myuser token issue
+Password: 
++------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Field      | Value                                                                                                                                                                                   |
++------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| expires    | 2019-02-24T09:23:07+0000                                                                                                                                                                |
+| id         | gAAAAABcclRrzav0MSmw2OaHGvVP5aOYcLNZTuCQnFa5vpWN3iMYD2_szoqc74vwhW7HtfCSCc2IUoprZSjzN11U5k6bEU2UFVc_V9a1faNc2s1EFu3A_5K0KiUSjTMABx372UFIXKNJicxYfJ9OvY79ICMa2alyGgQWbTxwFroQ4zalE-BZBZk |
+| project_id | 4e50a5edae324c558727054db01e157d                                                                                                                                                        |
+| user_id    | 05fcd425e107475c89eaccbf9ba2a376                                                                                                                                                        |
++------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+```
+
+## Create OpenStack client environment scripts
+[Doc](https://docs.openstack.org/keystone/rocky/install/keystone-openrc-rdo.html)
+
+### Create Script
+```
+$ cat << _EOS_ > ~/admin-openrc.sh
+#!/bin/bash
+
+export OS_PROJECT_DOMAIN_NAME=default
+export OS_USER_DOMAIN_NAME=default
+export OS_PROJECT_NAME=admin
+export OS_USERNAME=admin
+export OS_PASSWORD=password
+export OS_AUTH_URL=http://192.168.0.200:5000/v3
+export OS_IDENTITY_API_VERSION=3
+export OS_IMAGE_API_VERSION=2
+_EOS_
+
+$ chmod -v 700 ~/admin-openrc.sh
+mode of ‘/home/ogalush/admin-openrc.sh’ changed from 0664 (rw-rw-r--) to 0700 (rwx------)
+
+$ cat << _EOS_ > ~/demo-openrc.sh
+#!/bin/bash
+
+export OS_PROJECT_DOMAIN_NAME=default
+export OS_USER_DOMAIN_NAME=default
+export OS_PROJECT_NAME=myproject
+export OS_USERNAME=myuser
+export OS_PASSWORD=password
+export OS_AUTH_URL=http://192.168.0.200:5000/v3
+export OS_IDENTITY_API_VERSION=3
+export OS_IMAGE_API_VERSION=2
+_EOS_
+
+$ chmod -v 700 ~/demo-openrc.sh
+mode of ‘/home/ogalush/demo-openrc.sh’ changed from 0664 (rw-rw-r--) to 0700 (rwx------)
+```
+
+### Using the scripts
+```
+$ source ~/admin-openrc.sh
+$ openstack token issue
++------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Field      | Value                                                                                                                                                                                   |
++------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| expires    | 2019-02-24T09:27:39+0000                                                                                                                                                                |
+| id         | gAAAAABcclV7Hbnphfz-8eAAtbZflShSSMYenxUYxTKMRHKO6bAN9HjQjs4mddVggFtykbo7UGDHr0LawYYsi-fto9kIgVhCjRCsJmQvsKxbswV6hUj8b6URaK9WYHxfspCgUgj8HSLSfSE98bKIJWPiMY5ctGKc-d3j6F9mIcRnAeVZkT7HZdA |
+| project_id | c702086339374c4cb53e396b98ccd2e0                                                                                                                                                        |
+| user_id    | d4cc0e07f1334266bf0df13941742614                                                                                                                                                        |
++------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+
+
+$ source ~/demo-openrc.sh 
+$ openstack token issue
++------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Field      | Value                                                                                                                                                                                   |
++------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| expires    | 2019-02-24T09:28:04+0000                                                                                                                                                                |
+| id         | gAAAAABcclWUyvLM7ZJI20tJM336d68jQMIjDbKU4P8qBlwbjpWCKaZdw2l0bZXGaPPJu-HGCH7CKECTygXiMa5tDlpkB6KHo1AQkJnkospTIswQUz-SgVw8eQWjyKoepmx-WLej5jrdffDFTWMjiIAyf_sNj-kN7Ne9R9ESPVB3qyaCrsRgEYo |
+| project_id | 4e50a5edae324c558727054db01e157d                                                                                                                                                        |
+| user_id    | 05fcd425e107475c89eaccbf9ba2a376                                                                                                                                                        |
++------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+```
