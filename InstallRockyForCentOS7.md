@@ -804,7 +804,9 @@ username = placement
 password = password
 ----
 
-$ cat << _EOS_ > ~/00-nova-placement-api.conf
+$ sudo vim /etc/httpd/conf.d/00-nova-placement-api.conf
+以下を追記
+----
 <Directory /usr/bin>
    <IfVersion >= 2.4>
       Require all granted
@@ -814,10 +816,8 @@ $ cat << _EOS_ > ~/00-nova-placement-api.conf
       Allow from all
    </IfVersion>
 </Directory>
-_EOS_
-$ sudo cp -v 00-nova-placement-api.conf /etc/httpd/conf.d/00-nova-placement-api.conf
-$ sudo chmod -v 644 /etc/httpd/conf.d/00-nova-placement-api.conf
-$ apachectl configtest
+----
+$ sudo apachectl configtest
 $ sudo systemctl restart httpd
 
 $ sudo bash -c "nova-manage api_db sync" nova
