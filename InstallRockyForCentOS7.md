@@ -1567,3 +1567,22 @@ $ openstack security group rule create --proto tcp --dst-port 22 default
 | updated_at        | 2019-02-24T12:01:42Z                 |
 +-------------------+--------------------------------------+
 ```
+
+### 仮想インスタンス起動
+OpenStack Dashboardからインスタンスを起動できればOK.
+
+### OSイメージ追加
+手順ではCirrosのみなので、CentOS7, Ubuntu18イメージを追加しておく.
+```
+$ source ~/admin-openrc.sh
+$ openstack image create "ubuntu18.04" --file /usr/local/src/ubuntu-18.04-server-cloudimg-amd64.img --disk-format qcow2 --container-format bare --public
+$ openstack image create "CentOS7" --file /usr/local/src/CentOS-7-x86_64-GenericCloud.qcow2 --disk-format qcow2 --container-format bare --public
+$ openstack image list
++--------------------------------------+-------------+--------+
+| ID                                   | Name        | Status |
++--------------------------------------+-------------+--------+
+| 8014433c-e4ad-4247-b184-0b260e4f324f | CentOS7     | active |
+| c089d67b-d07f-4bf4-b70d-2d0c30d0ab20 | cirros      | active |
+| d0fd8505-56cf-48eb-b588-af0e5f44491e | ubuntu18.04 | active |
++--------------------------------------+-------------+--------+
+```
