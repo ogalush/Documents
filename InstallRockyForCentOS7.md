@@ -533,6 +533,19 @@ flavor = keystone
 ----
 
 $ sudo bash -c "glance-manage db_sync" glance
+$ sudo chown -v glance:glance /var/log/glance/api.log
+→権限不足でデーモンが落ちるので、変更する.
+---
+$ journalctl -xe |less
+Feb 24 18:04:04 ryunosuke.localdomain glance-api[29085]: ERROR: [Errno 13] Permission denied: '/var/log/glance/api.log'
+$ sudo ls -al /var/log/glance
+total 12
+drwxr-x---   2 glance glance   41 Feb 24 17:55 .
+drwxr-xr-x. 14 root   root   4096 Feb 24 17:48 ..
+-rw-r--r--   1 root   root    378 Feb 24 17:54 api.log
+-rw-r--r--   1 glance glance 2660 Feb 24 17:55 registry.log
+---
+
 $ sudo systemctl enable openstack-glance-api.service openstack-glance-registry.service
 $ sudo systemctl start openstack-glance-api.service openstack-glance-registry.service
 ```
@@ -543,5 +556,26 @@ $ source ~/admin-openrc.sh
 $ sudo yum -y install wget
 $ wget http://download.cirros-cloud.net/0.4.0/cirros-0.4.0-x86_64-disk.img
 $ sudo mv -v cirros-0.4.0-x86_64-disk.img /usr/local/src
-$ openstack image create "cirros" --file /usr/local/src/cirros-0.4.0-x86_64-disk.img --disk-format qcow2 --container-format bare --public
+$ openstack image create "cirros" --file /usr/local/src/cirros-0.4.0-x86_64-disk.img --disk-format qcow2 --contain
+er-format bare --public
++------------------+-------------------------------------------------------------------------------------------------------------------
+-------------------------------------------------------------------------+
+| Field            | Value                                                                                                             
+                                                                         |
++------------------+-------------------------------------------------------------------------------------------------------------------
+-------------------------------------------------------------------------+
+| checksum         | 443b7623e27ecf03dc9e01ee93f67afe                                                                                  
+                                                                         |
+| container_format | bare                                                                                                              
+                                                                         |
+| created_at       | 2019-02-24T09:12:47Z                                     
+...
+----
+
+$ openstack image list
++--------------------------------------+--------+--------+
+| ID                                   | Name   | Status |
++--------------------------------------+--------+--------+
+| c089d67b-d07f-4bf4-b70d-2d0c30d0ab20 | cirros | active |
++--------------------------------------+--------+--------+
 ```
