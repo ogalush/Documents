@@ -1279,4 +1279,289 @@ $
 ```
 
 ## Verify operation for Red Hat Enterprise Linux and CentOS
-[Horizon](http://192.168.0.200/dashboard) へアクセスできればOK.
+[Horizon](http://192.168.0.200/dashboard) へアクセスできればOK.  
+追加プラグインページはあとで見る.  
+[Plugin Registry](https://docs.openstack.org/horizon/rocky/install/plugin-registry.html)
+
+# Launch an instance
+[Doc](https://docs.openstack.org/install-guide/launch-instance.html)
+
+## Create virtual networks
+### Provider Network
+[Doc](https://docs.openstack.org/install-guide/launch-instance-networks-provider.html)
+```
+$ source ~/admin-openrc.sh
+$ openstack network create  --share --external --provider-physical-network provider --provider-network-type flat provider
++---------------------------+--------------------------------------+
+| Field                     | Value                                |
++---------------------------+--------------------------------------+
+| admin_state_up            | UP                                   |
+| availability_zone_hints   |                                      |
+| availability_zones        |                                      |
+| created_at                | 2019-02-24T11:45:21Z                 |
+| description               |                                      |
+| dns_domain                | None                                 |
+| id                        | 7b24db18-92cc-41e0-81a0-c1956f86c332 |
+| ipv4_address_scope        | None                                 |
+| ipv6_address_scope        | None                                 |
+| is_default                | False                                |
+| is_vlan_transparent       | None                                 |
+| mtu                       | 1500                                 |
+| name                      | provider                             |
+| port_security_enabled     | True                                 |
+| project_id                | c702086339374c4cb53e396b98ccd2e0     |
+| provider:network_type     | flat                                 |
+| provider:physical_network | provider                             |
+| provider:segmentation_id  | None                                 |
+| qos_policy_id             | None                                 |
+| revision_number           | 0                                    |
+| router:external           | External                             |
+| segments                  | None                                 |
+| shared                    | True                                 |
+| status                    | ACTIVE                               |
+| subnets                   |                                      |
+| tags                      |                                      |
+| updated_at                | 2019-02-24T11:45:21Z                 |
++---------------------------+--------------------------------------+
+
+
+$ openstack subnet create --network provider --allocation-pool start=192.168.0.100,end=192.168.0.130 --dns-nameserver 192.168.0.220 --gateway 192.168.0.254 --subnet-range 192.168.0.0/24 --no-dhcp provider
++-------------------+--------------------------------------+
+| Field             | Value                                |
++-------------------+--------------------------------------+
+| allocation_pools  | 192.168.0.100-192.168.0.130          |
+| cidr              | 192.168.0.0/24                       |
+| created_at        | 2019-02-24T11:48:50Z                 |
+| description       |                                      |
+| dns_nameservers   | 192.168.0.220                        |
+| enable_dhcp       | False                                |
+| gateway_ip        | 192.168.0.254                        |
+| host_routes       |                                      |
+| id                | a49f67b6-992e-4c2a-8ae3-bef3ba7b32e8 |
+| ip_version        | 4                                    |
+| ipv6_address_mode | None                                 |
+| ipv6_ra_mode      | None                                 |
+| name              | provider                             |
+| network_id        | 7b24db18-92cc-41e0-81a0-c1956f86c332 |
+| project_id        | c702086339374c4cb53e396b98ccd2e0     |
+| revision_number   | 0                                    |
+| segment_id        | None                                 |
+| service_types     |                                      |
+| subnetpool_id     | None                                 |
+| tags              |                                      |
+| updated_at        | 2019-02-24T11:48:50Z                 |
++-------------------+--------------------------------------+
+```
+
+### Self-service network
+[Doc](https://docs.openstack.org/install-guide/launch-instance-networks-selfservice.html)
+```
+$ source ~/demo-openrc.sh 
+$ openstack network create selfservice
++---------------------------+--------------------------------------+
+| Field                     | Value                                |
++---------------------------+--------------------------------------+
+| admin_state_up            | UP                                   |
+| availability_zone_hints   |                                      |
+| availability_zones        |                                      |
+| created_at                | 2019-02-24T11:50:39Z                 |
+| description               |                                      |
+| dns_domain                | None                                 |
+| id                        | cc76783d-5828-4cde-97df-04cde5c3c649 |
+| ipv4_address_scope        | None                                 |
+| ipv6_address_scope        | None                                 |
+| is_default                | False                                |
+| is_vlan_transparent       | None                                 |
+| mtu                       | 1450                                 |
+| name                      | selfservice                          |
+| port_security_enabled     | True                                 |
+| project_id                | 4e50a5edae324c558727054db01e157d     |
+| provider:network_type     | None                                 |
+| provider:physical_network | None                                 |
+| provider:segmentation_id  | None                                 |
+| qos_policy_id             | None                                 |
+| revision_number           | 1                                    |
+| router:external           | Internal                             |
+| segments                  | None                                 |
+| shared                    | False                                |
+| status                    | ACTIVE                               |
+| subnets                   |                                      |
+| tags                      |                                      |
+| updated_at                | 2019-02-24T11:50:39Z                 |
++---------------------------+--------------------------------------+
+
+$ openstack subnet create --network selfservice --dns-nameserver 192.168.0.220 --gateway 10.0.0.1 --subnet-range 10.0.0.0/24 selfservice
++-------------------+--------------------------------------+
+| Field             | Value                                |
++-------------------+--------------------------------------+
+| allocation_pools  | 10.0.0.2-10.0.0.254                  |
+| cidr              | 10.0.0.0/24                          |
+| created_at        | 2019-02-24T11:52:47Z                 |
+| description       |                                      |
+| dns_nameservers   | 192.168.0.220                        |
+| enable_dhcp       | True                                 |
+| gateway_ip        | 10.0.0.1                             |
+| host_routes       |                                      |
+| id                | ce5991b8-2910-4687-8f84-af363272b823 |
+| ip_version        | 4                                    |
+| ipv6_address_mode | None                                 |
+| ipv6_ra_mode      | None                                 |
+| name              | selfservice                          |
+| network_id        | cc76783d-5828-4cde-97df-04cde5c3c649 |
+| project_id        | 4e50a5edae324c558727054db01e157d     |
+| revision_number   | 0                                    |
+| segment_id        | None                                 |
+| service_types     |                                      |
+| subnetpool_id     | None                                 |
+| tags              |                                      |
+| updated_at        | 2019-02-24T11:52:47Z                 |
++-------------------+--------------------------------------+
+
+$ source ~/demo-openrc.sh
+$ openstack router create router
++-------------------------+--------------------------------------+
+| Field                   | Value                                |
++-------------------------+--------------------------------------+
+| admin_state_up          | UP                                   |
+| availability_zone_hints |                                      |
+| availability_zones      |                                      |
+| created_at              | 2019-02-24T11:53:28Z                 |
+| description             |                                      |
+| distributed             | None                                 |
+| external_gateway_info   | None                                 |
+| flavor_id               | None                                 |
+| ha                      | None                                 |
+| id                      | 2573bc99-4097-42f0-8885-2bd763e7edf6 |
+| name                    | router                               |
+| project_id              | 4e50a5edae324c558727054db01e157d     |
+| revision_number         | 0                                    |
+| routes                  |                                      |
+| status                  | ACTIVE                               |
+| tags                    |                                      |
+| updated_at              | 2019-02-24T11:53:28Z                 |
++-------------------------+--------------------------------------+
+
+$ openstack router add subnet router selfservice
+$ openstack router set router --external-gateway provider
+```
+
+### Verify operation
+```
+$ source ~/admin-openrc.sh
+$ ip netns
+qrouter-2573bc99-4097-42f0-8885-2bd763e7edf6 (id: 1)
+qdhcp-cc76783d-5828-4cde-97df-04cde5c3c649 (id: 0)
+$ openstack port list --router router
++--------------------------------------+------+-------------------+------------------------------------------------------------------------------+--------+
+| ID                                   | Name | MAC Address       | Fixed IP Addresses                                                           | Status |
++--------------------------------------+------+-------------------+------------------------------------------------------------------------------+--------+
+| 15d98612-b233-4fe7-b634-0bb7044676ad |      | fa:16:3e:78:0a:d2 | ip_address='192.168.0.103', subnet_id='a49f67b6-992e-4c2a-8ae3-bef3ba7b32e8' | ACTIVE |
+| 520ec710-03e4-4d9a-acc9-f961a4ae4a2b |      | fa:16:3e:d9:c9:d8 | ip_address='10.0.0.1', subnet_id='ce5991b8-2910-4687-8f84-af363272b823'      | ACTIVE |
++--------------------------------------+------+-------------------+------------------------------------------------------------------------------+--------+
+
+]$ ping -c 3 192.168.0.103
+PING 192.168.0.103 (192.168.0.103) 56(84) bytes of data.
+64 bytes from 192.168.0.103: icmp_seq=1 ttl=64 time=0.097 ms
+64 bytes from 192.168.0.103: icmp_seq=2 ttl=64 time=0.056 ms
+64 bytes from 192.168.0.103: icmp_seq=3 ttl=64 time=0.056 ms
+
+--- 192.168.0.103 ping statistics ---
+3 packets transmitted, 3 received, 0% packet loss, time 2000ms
+rtt min/avg/max/mdev = 0.056/0.069/0.097/0.021 ms
+$
+```
+
+### Create m1.nano flavor
+```
+$ source ~/admin-openrc.sh
+$ openstack flavor create --id 0 --vcpus 1 --ram 1024 --disk 1 m1.nano
++----------------------------+---------+
+| Field                      | Value   |
++----------------------------+---------+
+| OS-FLV-DISABLED:disabled   | False   |
+| OS-FLV-EXT-DATA:ephemeral  | 0       |
+| disk                       | 1       |
+| id                         | 0       |
+| name                       | m1.nano |
+| os-flavor-access:is_public | True    |
+| properties                 |         |
+| ram                        | 1024    |
+| rxtx_factor                | 1.0     |
+| swap                       |         |
+| vcpus                      | 1       |
++----------------------------+---------+
+
+$ openstack flavor create --id 1 --vcpus 2 --ram 4096 --disk 40 m1.small
++----------------------------+----------+
+| Field                      | Value    |
++----------------------------+----------+
+| OS-FLV-DISABLED:disabled   | False    |
+| OS-FLV-EXT-DATA:ephemeral  | 0        |
+| disk                       | 40       |
+| id                         | 1        |
+| name                       | m1.small |
+| os-flavor-access:is_public | True     |
+| properties                 |          |
+| ram                        | 4096     |
+| rxtx_factor                | 1.0      |
+| swap                       |          |
+| vcpus                      | 2        |
++----------------------------+----------+
+```
+
+### Generate a key pair
+```
+$ source ~/demo-openrc.sh
+$ openstack keypair create --public-key ~/.ssh/id_rsa_chef.pub chefkey
+$ openstack keypair list
++---------+-------------------------------------------------+
+| Name    | Fingerprint                                     |
++---------+-------------------------------------------------+
+| chefkey | f2:70:ad:9c:93:32:14:c0:36:e3:4f:ac:19:45:82:d2 |
++---------+-------------------------------------------------+
+```
+
+### Add security group rules
+```
+$ openstack security group rule create --proto icmp default
++-------------------+--------------------------------------+
+| Field             | Value                                |
++-------------------+--------------------------------------+
+| created_at        | 2019-02-24T12:01:21Z                 |
+| description       |                                      |
+| direction         | ingress                              |
+| ether_type        | IPv4                                 |
+| id                | f2689822-f5ac-48d4-be05-e361db09b2ad |
+| name              | None                                 |
+| port_range_max    | None                                 |
+| port_range_min    | None                                 |
+| project_id        | 4e50a5edae324c558727054db01e157d     |
+| protocol          | icmp                                 |
+| remote_group_id   | None                                 |
+| remote_ip_prefix  | 0.0.0.0/0                            |
+| revision_number   | 0                                    |
+| security_group_id | f7a7729d-d974-4fa0-8849-484395fe2322 |
+| updated_at        | 2019-02-24T12:01:21Z                 |
++-------------------+--------------------------------------+
+
+$ openstack security group rule create --proto tcp --dst-port 22 default
++-------------------+--------------------------------------+
+| Field             | Value                                |
++-------------------+--------------------------------------+
+| created_at        | 2019-02-24T12:01:42Z                 |
+| description       |                                      |
+| direction         | ingress                              |
+| ether_type        | IPv4                                 |
+| id                | 91430d90-7617-4dd7-a38d-4adf901922d4 |
+| name              | None                                 |
+| port_range_max    | 22                                   |
+| port_range_min    | 22                                   |
+| project_id        | 4e50a5edae324c558727054db01e157d     |
+| protocol          | tcp                                  |
+| remote_group_id   | None                                 |
+| remote_ip_prefix  | 0.0.0.0/0                            |
+| revision_number   | 0                                    |
+| security_group_id | f7a7729d-d974-4fa0-8849-484395fe2322 |
+| updated_at        | 2019-02-24T12:01:42Z                 |
++-------------------+--------------------------------------+
+```
