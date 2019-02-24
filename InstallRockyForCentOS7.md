@@ -1,6 +1,7 @@
 # Install OpenStack Rocky for CentOS7
 [OpenStack Installation Guide](https://docs.openstack.org/install-guide/)  
-Ubuntu18.04版がSegmentation Failtエラーが頻繁に出て不安定なため、CentOS7で構築をしてみる.
+Ubuntu18.04版がSegmentation Failtエラーが頻繁に出て不安定なため、CentOS7で構築をしてみる.  
+設定ファイル: [Rocky-InstallConfigsForCentOS7](https://github.com/ogalush/Rocky-InstallConfigsForCentOS7)
 ## 環境
 ```
 [ogalush@ryunosuke ~]$ uname -n
