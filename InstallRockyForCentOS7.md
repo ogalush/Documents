@@ -536,3 +536,12 @@ $ sudo bash -c "glance-manage db_sync" glance
 $ sudo systemctl enable openstack-glance-api.service openstack-glance-registry.service
 $ sudo systemctl start openstack-glance-api.service openstack-glance-registry.service
 ```
+
+### Verify operation
+```
+$ source ~/admin-openrc.sh
+$ sudo yum -y install wget
+$ wget http://download.cirros-cloud.net/0.4.0/cirros-0.4.0-x86_64-disk.img
+$ sudo mv -v cirros-0.4.0-x86_64-disk.img /usr/local/src
+$ openstack image create "cirros" --file /usr/local/src/cirros-0.4.0-x86_64-disk.img --disk-format qcow2 --container-format bare --public
+```
