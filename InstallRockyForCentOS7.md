@@ -27,6 +27,24 @@ ONBOOT=yes
 → マニュアル通り.
 ```
 
+## Hosts
+```
+$ sudo cp -pv /etc/hosts ~
+$ sudo vim /etc/hosts
+---
+192.168.0.200 ryunosuke.localdomain ryunosuke
+→ 追記
+---
+
+$ diff -u ~/hosts /etc/hosts
+--- /home/ogalush/hosts 2013-06-07 23:31:32.000000000 +0900
++++ /etc/hosts  2019-02-24 16:56:09.282865680 +0900
+@@ -1,2 +1,3 @@
+ 127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4
+ ::1         localhost localhost.localdomain localhost6 localhost6.localdomain6
++192.168.0.200 ryunosuke.localdomain ryunosuke
+```
+
 ## NTP
 ```
 [ogalush@ryunosuke ~]$ ntpq -p
@@ -69,9 +87,8 @@ $ sudo yum -y install openstack-selinux
 → SELinuxがデフォルトで有効になってるので、よしなにやってくれるらしい.
 ```
 
-# SQL database
-[Doc](https://docs.openstack.org/install-guide/environment-sql-database-rdo.html)
 ## SQL database for RHEL and CentOS
+[Doc](https://docs.openstack.org/install-guide/environment-sql-database-rdo.html)
 ```
 $ sudo yum -y install mariadb mariadb-server python2-PyMySQL
 $ sudo cp -rafv /etc/my.cnf* ~
@@ -96,4 +113,66 @@ Remove anonymous users? [Y/n] y
 Disallow root login remotely? [Y/n] y
 Remove test database and access to it? [Y/n] y
 Reload privilege tables now? [Y/n] y
+```
+
+## Message queue for RHEL and CentOS
+[Doc](https://docs.openstack.org/install-guide/environment-messaging-rdo.html)
+```
+$ sudo yum -y install rabbitmq-server
+$ sudo systemctl enable rabbitmq-server.service
+$ sudo systemctl start rabbitmq-server.service
+
+$ sudo rabbitmqctl add_user openstack password
+$ sudo rabbitmqctl set_permissions openstack ".*" ".*" ".*"
+```
+
+## Memcached for RHEL and CentOS
+[Doc](https://docs.openstack.org/install-guide/environment-memcached-rdo.html)
+```
+$ sudo yum -y install memcached python-memcached
+$ sudo cp -pv /etc/sysconfig/memcached ~
+$ sudo sed -i 's/127.0.0.1,::1/192.168.0.200/g' /etc/sysconfig/memcached
+$ diff -u ~/memcached /etc/sysconfig/memcached
+--- /home/ogalush/memcached     2018-03-01 18:49:35.000000000 +0900
++++ /etc/sysconfig/memcached    2019-02-24 16:54:13.502753139 +0900
+@@ -2,4 +2,4 @@
+ USER="memcached"
+ MAXCONN="1024"
+ CACHESIZE="64"
+-OPTIONS="-l 127.0.0.1,::1"
++OPTIONS="-l 192.168.0.200"
+$
+
+$ sudo systemctl enable memcached.service
+$ sudo systemctl start memcached.service
+```
+
+## Etcd for RHEL and CentOS
+[Doc](https://docs.openstack.org/install-guide/environment-etcd-rdo.html)
+```
+$ sudo yum -y install etcd
+$ sudo cp -pv /etc/etcd/etcd.conf ~
+$ sudo vim /etc/etcd/etcd.conf
+$ diff -u ~/etcd.conf /etc/etcd/etcd.conf |egrep '^(\+|\-)'
+--- /home/ogalush/etcd.conf     2019-02-14 01:56:03.000000000 +0900
++++ /etc/etcd/etcd.conf 2019-02-24 17:01:06.974445818 +0900
+-ETCD_LISTEN_CLIENT_URLS="http://localhost:2379"
++ETCD_LISTEN_PEER_URLS="http://192.168.0.200:2380"
++ETCD_LISTEN_CLIENT_URLS="http://192.168.0.200:2379"
+-ETCD_NAME="default"
++ETCD_NAME="ryunosuke"
+-#ETCD_INITIAL_ADVERTISE_PEER_URLS="http://localhost:2380"
+-ETCD_ADVERTISE_CLIENT_URLS="http://localhost:2379"
++ETCD_INITIAL_ADVERTISE_PEER_URLS="http://192.168.0.200:2380"
++ETCD_ADVERTISE_CLIENT_URLS="http://192.168.0.200:2379"
+-#ETCD_INITIAL_CLUSTER="default=http://localhost:2380"
+-#ETCD_INITIAL_CLUSTER_TOKEN="etcd-cluster"
+-#ETCD_INITIAL_CLUSTER_STATE="new"
++ETCD_INITIAL_CLUSTER="ryunosuke=http://192.168.0.200:2380"
++ETCD_INITIAL_CLUSTER_TOKEN="etcd-cluster-01"
++ETCD_INITIAL_CLUSTER_STATE="new"
+$
+
+$ sudo systemctl enable etcd
+$ sudo systemctl start etcd
 ```
