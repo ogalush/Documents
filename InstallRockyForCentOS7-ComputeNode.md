@@ -66,3 +66,66 @@ $ sudo yum -y install centos-release-openstack-rocky
 $ sudo yum -y update
 $ sudo yum -y install python-openstackclient openstack-selinux
 ```
+
+# Nova
+[Doc](https://docs.openstack.org/nova/rocky/install/compute-install-rdo.html)
+
+## Install and configure a compute node for Red Hat Enterprise Linux and CentOS
+```
+$ sudo yum -y install openstack-nova-compute
+$ sudo cp -rafv /etc/nova ~
+$ sudo vim /etc/nova/nova.conf
+----
+[DEFAULT]
+enabled_apis = osapi_compute,metadata
+transport_url = rabbit://openstack:password@192.168.0.200
+my_ip = 192.168.0.210
+use_neutron = true
+firewall_driver = nova.virt.firewall.NoopFirewallDriver
+...
+[api]
+auth_strategy = keystone
+...
+[keystone_authtoken]
+auth_url = http://192.168.0.200:5000/v3
+memcached_servers = 192.168.0.200:11211
+auth_type = password
+project_domain_name = default
+user_domain_name = default
+project_name = service
+username = nova
+password = password
+...
+[vnc]
+enabled = true
+server_listen = 0.0.0.0
+server_proxyclient_address = $my_ip
+novncproxy_base_url = http://192.168.0.200:6080/vnc_auto.html
+...
+[glance]
+api_servers = http://192.168.0.200:9292
+...
+[oslo_concurrency]
+lock_path = /var/lib/nova/tmp
+...
+[placement]
+region_name = RegionOne
+project_domain_name = default
+project_name = service
+auth_type = password
+user_domain_name = default
+auth_url = http://192.168.0.200:5000/v3
+username = placement
+password = password
+...
+[libvirt]
+virt_type = kvm 
+----
+
+$ egrep -c '(vmx|svm)' /proc/cpuinfo
+4
+→ 1以上なのでKVMのまま.
+
+$ sudo systemctl enable libvirtd.service openstack-nova-compute.service
+$ sudo systemctl start libvirtd.service openstack-nova-compute.service
+```
