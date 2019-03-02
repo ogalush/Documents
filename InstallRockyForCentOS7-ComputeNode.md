@@ -129,3 +129,105 @@ $ egrep -c '(vmx|svm)' /proc/cpuinfo
 $ sudo systemctl enable libvirtd.service openstack-nova-compute.service
 $ sudo systemctl start libvirtd.service openstack-nova-compute.service
 ```
+
+## ポート開放(Controller側)
+Controller側のFirewallで接続が繋がらないのでポート開放しておく.  
+[Table B.1. Default ports that OpenStack components use](https://access.redhat.com/documentation/en-us/red_hat_openstack_platform/8/html/configuration_reference_guide/firewalls-default-ports)
+```
+$ ssh controller
+$ sudo firewall-cmd --list-all
+----
+[sudo] password for ogalush: 
+public (active)
+  target: default
+  icmp-block-inversion: no
+  interfaces: enp3s0
+  sources: 
+  services: ssh dhcpv6-client http https
+  ports: 6080/tcp
+  protocols: 
+  masquerade: no
+  forward-ports: 
+  source-ports: 
+  icmp-blocks: 
+  rich rules:
+----
+
+(1) ComputeNode用にZoneを作る.
+$ sudo firewall-cmd --permanent --new-zone=ComputeZone
+$ sudo firewall-cmd --reload
+
+(2) 設定したルールを許可する形にする.
+$ sudo firewall-cmd --permanent --zone=ComputeZone --set-target=ACCEPT
+
+(3) 対象ホストの登録
+→ 今回は一旦/24にしておく.
+$ sudo firewall-cmd --permanent --zone=ComputeZone --add-source=192.168.0.0/24
+$ sudo firewall-cmd --reload
+$ sudo firewall-cmd --get-active-zones
+ComputeZone
+  sources: 192.168.0.0/24
+public
+  interfaces: enp3s0
+
+(4) ポート開放する一覧を設定する.
+$ ZONE="ComputeZone"
+$ sudo firewall-cmd --permanent --zone=${ZONE} --add-port=8773-8775/tcp
+→ nova
+$ sudo firewall-cmd --permanent --zone=${ZONE} --add-port=5900-5999/tcp
+→ Compute ports for access to virtual machine consoles
+$ sudo firewall-cmd --permanent --zone=${ZONE} --add-port=8773/tcp
+→ Compute API (nova-api) 
+$ sudo firewall-cmd --permanent --zone=${ZONE} --add-port=6080-6082/tcp
+→ Compute VNC proxy
+$ sudo firewall-cmd --permanent --zone=${ZONE} --add-port=5000/tcp
+→ Identity service public endpoint
+$ sudo firewall-cmd --permanent --zone=${ZONE} --add-port=9292/tcp
+→ Image service (glance) API
+$ sudo firewall-cmd --permanent --zone=${ZONE} --add-port=9696/tcp
+→ Networking (neutron)
+$ sudo firewall-cmd --permanent --zone=${ZONE} --add-port=5672/tcp
+→ RabbitMQ
+$ sudo firewall-cmd --permanent --zone=${ZONE} --add-port=11211/tcp 
+→ Memcached
+$ sudo firewall-cmd --reload
+→ 反映.
+$ sudo firewall-cmd --list-all --zone=${ZONE}
+----
+ComputeZone (active)
+  target: ACCEPT
+  icmp-block-inversion: no
+  interfaces: 
+  sources: 192.168.0.0/24
+  services: 
+  ports: 8773-8775/tcp 5900-5999/tcp 8773/tcp 6080-6082/tcp 5000/tcp 9292/tcp 9696/tcp 5672/tcp 11211/tcp
+  protocols: 
+  masquerade: no
+  forward-ports: 
+  source-ports: 
+  icmp-blocks: 
+  rich rules:
+----
+```
+
+## ComputeNode参加確認
+```
+@Controller
+$ source ~/admin-openrc.sh
+$ openstack compute service list --service nova-compute
++----+--------------+-----------------------+------+---------+-------+----------------------------+
+| ID | Binary       | Host                  | Zone | Status  | State | Updated At                 |
++----+--------------+-----------------------+------+---------+-------+----------------------------+
+|  9 | nova-compute | ryunosuke.localdomain | nova | enabled | up    | 2019-03-02T13:16:56.000000 |
+| 10 | nova-compute | hayao.localdomain     | nova | enabled | up    | 2019-03-02T13:17:01.000000 |
++----+--------------+-----------------------+------+---------+-------+----------------------------+
+$
+→ ComputeNodeが新たに追加されているのでOK.
+
+$ sudo bash -c "nova-manage cell_v2 discover_hosts --verbose" nova
+[sudo] password for ogalush: 
+Found 2 cell mappings.
+Skipping cell0 since it does not contain hosts.
+Getting computes from cell 'cell1': e687ffdf-f4f3-49f9-85a4-5e915dfd32ad
+Found 0 unmapped computes in cell: e687ffdf-f4f3-49f9-85a4-5e915dfd32ad
+```
