@@ -231,3 +231,83 @@ Skipping cell0 since it does not contain hosts.
 Getting computes from cell 'cell1': e687ffdf-f4f3-49f9-85a4-5e915dfd32ad
 Found 0 unmapped computes in cell: e687ffdf-f4f3-49f9-85a4-5e915dfd32ad
 ```
+
+# Neutron
+[Doc](https://docs.openstack.org/neutron/rocky/install/compute-install-rdo.html)
+
+## Install and configure compute node
+```
+$ sudo yum -y install openstack-neutron-linuxbridge ebtables ipset
+$ sudo cp -rafv /etc/neutron ~
+$ sudo vim /etc/neutron/neutron.conf
+----
+[DEFAULT]
+transport_url = rabbit://openstack:password@192.168.0.200
+auth_strategy = keystone
+...
+[keystone_authtoken]
+www_authenticate_uri = http://192.168.0.200:5000
+auth_url = http://192.168.0.200:5000
+memcached_servers = 192.168.0.200:11211
+auth_type = password
+project_domain_name = default
+user_domain_name = default
+project_name = service
+username = neutron
+password = password
+...
+[oslo_concurrency]
+lock_path = /var/lib/neutron/tmp
+----
+
+$ sudo vim /etc/neutron/plugins/ml2/linuxbridge_agent.ini
+----
+[linux_bridge]
+physical_interface_mappings = provider:enp3s0
+...
+[vxlan]
+enable_vxlan = true
+local_ip = 192.168.0.210
+l2_population = true
+...
+[securitygroup]
+enable_security_group = true
+firewall_driver = neutron.agent.linux.iptables_firewall.IptablesFirewallDriver
+----
+
+$ sudo vim /etc/sysctl.d/99-neutron.conf
+----
+net.bridge.bridge-nf-call-iptables=1
+net.bridge.bridge-nf-call-ip6tables=1
+----
+
+$ sudo sysctl --system
+...
+* Applying /usr/lib/sysctl.d/99-neutron-linuxbridge-agent.conf ...
+* Applying /etc/sysctl.d/99-neutron.conf ...
+* Applying /etc/sysctl.d/99-sysctl.conf ...
+* Applying /etc/sysctl.conf ...
+$ 
+
+$ sudo vim /etc/nova/nova.conf
+----
+...
+[neutron]
+url = http://192.168.0.200:9696
+auth_url = http://192.168.0.200:5000
+auth_type = password
+project_domain_name = default
+user_domain_name = default
+region_name = RegionOne
+project_name = service
+username = neutron
+password = password
+...
+----
+```
+
+## Finalize installation
+```
+$ sudo systemctl enable neutron-linuxbridge-agent.service
+$ sudo systemctl restart openstack-nova-compute.service neutron-linuxbridge-agent.service
+```
