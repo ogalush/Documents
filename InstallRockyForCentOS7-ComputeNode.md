@@ -304,10 +304,28 @@ username = neutron
 password = password
 ...
 ----
+
+$ sudo chmod -v 755 /var/log/{neutron,nova}
+$ ls -l /var/log/{neutron,nova}
 ```
 
 ## Finalize installation
 ```
 $ sudo systemctl enable neutron-linuxbridge-agent.service
 $ sudo systemctl restart openstack-nova-compute.service neutron-linuxbridge-agent.service
+$ sudo systemctl status openstack-nova-compute.service neutron-linuxbridge-agent.service
+```
+
+## 確認
+```
+$ source ~/admin-openrc.sh
+$ openstack network agent list                     
++--------------------------------------+--------------------+-----------------------+-------------------+-------+-------+---------------------------+
+| ID                                   | Agent Type         | Host                  | Availability Zone | Alive | State | Binary                    |                                                                       +--------------------------------------+--------------------+-----------------------+-------------------+-------+-------+---------------------------+
+| 07fa5bec-c424-41f0-8290-4f53b137c363 | Linux bridge agent | hayao.localdomain     | None              | :-)   | UP    | neutron-linuxbridge-agent |
+| 11156a4f-e96b-4bf7-ac65-8615e55d0359 | Metadata agent     | ryunosuke.localdomain | None              | :-)   | UP    | neutron-metadata-agent    |
+| 57657461-0ed0-4a7e-abf0-2566f062b789 | Linux bridge agent | ryunosuke.localdomain | None              | :-)   | UP    | neutron-linuxbridge-agent |
+| 84e2f8f8-2ab7-48e3-a13c-fdb60ea3eca7 | DHCP agent         | ryunosuke.localdomain | nova              | :-)   | UP    | neutron-dhcp-agent        |
+| db50608b-954f-4e7a-aaf1-2024ea3bb6a3 | L3 agent           | ryunosuke.localdomain | nova              | :-)   | UP    | neutron-l3-agent          |                                                                       +--------------------------------------+--------------------+-----------------------+-------------------+-------+-------+---------------------------+
+→ ComputeNode(hayao)のLinux Bridge AgentがUPになっているのでOK.
 ```
