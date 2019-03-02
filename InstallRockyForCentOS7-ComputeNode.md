@@ -188,8 +188,76 @@ $ sudo firewall-cmd --permanent --zone=${ZONE} --add-port=9696/tcp
 → Networking (neutron)
 $ sudo firewall-cmd --permanent --zone=${ZONE} --add-port=5672/tcp
 → RabbitMQ
-$ sudo firewall-cmd --permanent --zone=${ZONE} --add-port=11211/tcp 
+$ sudo firewall-cmd --permanent --zone=${ZONE} --add-port=11211/tcp
 → Memcached
+$ sudo firewall-cmd --permanent --zone=${ZONE} --add-port=4789/udp
+→ VXLANのデフォルトポート
+$ sudo firewall-cmd --reload
+→ 反映.
+$ sudo firewall-cmd --list-all --zone=${ZONE}
+----
+$ sudo firewall-cmd --list-all --zone=${ZONE}                   
+ComputeZone (active)
+  target: ACCEPT
+  icmp-block-inversion: no
+  interfaces: 
+  sources: 192.168.0.0/24
+  services: 
+  ports: 8773-8775/tcp 5900-5999/tcp 8773/tcp 6080-6082/tcp 5000/tcp 9292/tcp 9696/tcp 5672/tcp 11211/tcp 4789/udp
+  protocols: 
+  masquerade: no
+  forward-ports: 
+  source-ports: 
+  icmp-blocks: 
+  rich rules:
+----
+```
+
+## ポート開放(Compute側)
+```
+@ComputeNode
+$ sudo firewall-cmd --list-all
+----
+public (active)
+  target: default
+  icmp-block-inversion: no
+  interfaces: enp3s0
+  sources: 
+  services: ssh dhcpv6-client
+  ports: 
+  protocols: 
+  masquerade: no
+  forward-ports: 
+  source-ports: 
+  icmp-blocks: 
+  rich rules:
+----
+
+(1) ComputeNode用にZoneを作る.
+$ ZONE="ComputeZone"
+$ sudo firewall-cmd --permanent --new-zone=${ZONE}
+$ sudo firewall-cmd --reload
+
+(2) 設定したルールを許可する形にする.
+$ sudo firewall-cmd --permanent --zone=${ZONE} --set-target=ACCEPT
+
+(3) 対象ホストの登録
+→ 今回は一旦/24にしておく.
+$ sudo firewall-cmd --permanent --zone=${ZONE} --add-source=192.168.0.0/24
+$ sudo firewall-cmd --reload
+$ sudo firewall-cmd --get-active-zones
+----
+ComputeZone
+sources: 192.168.0.0/24
+public
+interfaces: enp3s0
+----
+
+(4) ポート開放する一覧を設定する.
+$ sudo firewall-cmd --permanent --zone=${ZONE} --add-port=5900-5999/tcp
+→ Compute ports for access to virtual machine consoles
+$ sudo firewall-cmd --permanent --zone=${ZONE} --add-port=4789/udp
+→ VXLANのデフォルトポート
 $ sudo firewall-cmd --reload
 → 反映.
 $ sudo firewall-cmd --list-all --zone=${ZONE}
@@ -200,7 +268,7 @@ ComputeZone (active)
   interfaces: 
   sources: 192.168.0.0/24
   services: 
-  ports: 8773-8775/tcp 5900-5999/tcp 8773/tcp 6080-6082/tcp 5000/tcp 9292/tcp 9696/tcp 5672/tcp 11211/tcp
+  ports: 5900-5999/tcp 4789/udp
   protocols: 
   masquerade: no
   forward-ports: 
