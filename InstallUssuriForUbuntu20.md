@@ -38,3 +38,15 @@ $ ntpq -p |grep '*'
 *ntp-a2.nict.go. .NICT.           1 u   52   64  177    4.558    1.035   2.728
 $
 ```
+
+## OpenStack packages for Ubuntu
+ussuriリポジトリは、Ubuntu18.04用らしい.
+```
+$ sudo add-apt-repository cloud-archive:ussuri
+ Ubuntu Cloud Archive for OpenStack Ussuri
+ More info: https://wiki.ubuntu.com/OpenStack/CloudArchive
+Press [ENTER] to continue or Ctrl-c to cancel adding it.
+
+cloud-archive for Ussuri only supported on bionic
+```
+[OpenStackのUssuriリリースがUbuntu 18.04 LTSと20.04 LTSで利用可能に](https://jp.ubuntu.com/blog/openstack%E3%81%AEussuri%E3%83%AA%E3%83%AA%E3%83%BC%E3%82%B9%E3%81%8Cubuntu-18-04-lts%E3%81%A820-04-lts%E3%81%A7%E5%88%A9%E7%94%A8%E5%8F%AF%E8%83%BD%E3%81%AB)を見ると利用できるはずだが.
