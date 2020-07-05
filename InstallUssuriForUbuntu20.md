@@ -8,8 +8,8 @@ Linux ryunosuke 5.4.0-40-generic #44-Ubuntu SMP Tue Jun 23 00:01:04 UTC 2020 x86
 ogalush@ryunosuke:~$
 ```
 
-## Networking
-### Configure network interfaces
+# Networking
+## Configure network interfaces
 127.0.1.1 がホスト名に紐づいているので、実際のIPアドレスへ置換する.
 ```
 $ sudo cp -pv /etc/hosts /tmp/hosts
@@ -39,7 +39,7 @@ $ ntpq -p |grep '*'
 $
 ```
 
-## OpenStack packages for Ubuntu
+# OpenStack packages for Ubuntu
 cloud-archive:UssuriはUbuntu18.04用となるのでスキップ.
 ```
 $ sudo add-apt-repository cloud-archive:ussuri
@@ -83,10 +83,9 @@ $ sudo apt -y dist-upgrade
 $ sudo apt -y autoremove
 ```
 
-## SQL database for Ubuntu
+# SQL database for Ubuntu
 https://docs.openstack.org/install-guide/environment-sql-database-ubuntu.html
-
-### Install and configure components¶
+## Install and configure components¶
 ```
 $ sudo apt -y install mariadb-server python3-pymysql
 $ sudo cp -rafv /etc/mysql ~
@@ -105,7 +104,7 @@ $ sudo vim /etc/mysql/mariadb.conf.d/50-server.cnf
 -----
 ```
 
-### Finalize installation
+## Finalize installation
 ```
 $ sudo service mysql restart
 $ sudo mysql_secure_installation
@@ -116,8 +115,8 @@ Remove test database and access to it? [Y/n] y
 Reload privilege tables now? [Y/n] y
 ```
 
-## Message queue for Ubuntu
-### Install and configure components
+# Message queue for Ubuntu
+## Install and configure components
 ```
 $ sudo apt -y install rabbitmq-server
 $ sudo rabbitmqctl add_user openstack password
@@ -126,8 +125,8 @@ $ sudo rabbitmqctl set_permissions openstack ".*" ".*" ".*"
 Setting permissions for user "openstack" in vhost "/" ...
 ```
 
-## Memcached for Ubuntu
-### Install and configure components
+# Memcached for Ubuntu
+## Install and configure components
 ubuntu20.04はpython2系を入れようとすると`E: Package 'python-memcache' has no installation candidate`となるため、  
 hoge-python3fooでインストールしていく.
 ```
@@ -144,7 +143,7 @@ $ diff --unified=0 ~/memcached.conf /etc/memcached.conf
 $
 ```
 
-### Finalize installation
+## Finalize installation
 ```
 $ sudo service memcached restart
 $ sudo service memcached status
@@ -152,4 +151,235 @@ $ sudo service memcached status
  Loaded: loaded (/lib/systemd/system/memcached.service; enabled; vendor preset: enabled)
  Active: active (running) since Sun 2020-07-05 20:31:50 JST; 3s ago
 ...
+```
+
+# Etcd for Ubuntu
+## Install and configure components
+```
+$ sudo apt -y install etcd
+$ sudo cp -pv /etc/default/etcd ~
+'/etc/default/etcd' -> '/home/ogalush/etcd'
+$ sudo vim /etc/default/etcd
+-----
+## etcd(1) daemon options
+## See "/usr/share/doc/etcd-server/op-guide/configuration.md.gz"
+
+### Member flags
+ETCD_NAME="ryunosuke"
+ETCD_DATA_DIR="/var/lib/etcd"
+ETCD_INITIAL_CLUSTER_STATE="new"
+ETCD_INITIAL_CLUSTER_TOKEN="etcd-cluster-01"
+ETCD_INITIAL_CLUSTER="ryunosuke=http://192.168.3.200:2380"
+ETCD_INITIAL_ADVERTISE_PEER_URLS="http://192.168.3.200:2380"
+ETCD_ADVERTISE_CLIENT_URLS="http://192.168.3.200:2379"
+ETCD_LISTEN_PEER_URLS="http://0.0.0.0:2380"
+ETCD_LISTEN_CLIENT_URLS="http://192.168.3.200:2379"
+-----
+```
+
+## Finalize installation
+```
+$ sudo systemctl enable etcd
+Synchronizing state of etcd.service with SysV service script with /lib/systemd/systemd-sysv-install.
+Executing: /lib/systemd/systemd-sysv-install enable etcd
+$ sudo systemctl restart etcd
+```
+
+# Install OpenStack services
+# Keystone Installation Tutorial for Ubuntu
+https://docs.openstack.org/keystone/ussuri/install/index-ubuntu.html
+## Install and configure
+```
+$ sudo mysql
+MariaDB [(none)]> CREATE DATABASE keystone;
+MariaDB [(none)]> GRANT ALL PRIVILEGES ON keystone.* TO 'keystone'@'%' IDENTIFIED BY 'password';
+MariaDB [(none)]> quit;
+```
+
+## Install and configure components
+```
+$ sudo apt -y install keystone
+$ sudo cp -rafv /etc/keystone ~
+$ sudo vim /etc/keystone/keystone.conf
+----
+[database]
+- connection = sqlite:////var/lib/keystone/keystone.db
++ connection = mysql+pymysql://keystone:password@192.168.3.200/keystone
+
+[token]
++ provider = fernet
+----
+
+$ sudo -s /bin/sh -c "keystone-manage db_sync" keystone
+$ sudo keystone-manage fernet_setup --keystone-user keystone --keystone-group keystone
+$ sudo keystone-manage credential_setup --keystone-user keystone --keystone-group keystone
+$ sudo keystone-manage bootstrap --bootstrap-password password --bootstrap-admin-url http://192.168.3.200:5000/v3/ --bootstrap-internal-url http://192.168.3.200:5000/v3/ --bootstrap-public-url http://192.168.3.200:5000/v3/ --bootstrap-region-id RegionOne
+
+$ sudo cp -rafv /etc/apache2 ~
+$ sudo vim /etc/apache2/apache2.conf 
+----
++ ServerName 192.168.3.200
+----
+```
+
+## Finalize the installation¶
+```
+$ sudo service apache2 restart
+$ export OS_USERNAME=admin
+$ export OS_PASSWORD=password
+$ export OS_PROJECT_NAME=admin
+$ export OS_USER_DOMAIN_NAME=default
+$ export OS_PROJECT_DOMAIN_NAME=default
+$ export OS_AUTH_URL=http://192.168.3.200:5000/v3
+$ export OS_IDENTITY_API_VERSION=3
+```
+
+## Create a domain, projects, users, and roles
+https://docs.openstack.org/keystone/ussuri/install/keystone-users-ubuntu.html
+```
+$ openstack domain create --description "An Example Domain" example
++-------------+----------------------------------+
+| Field       | Value                            |
++-------------+----------------------------------+
+| description | An Example Domain                |
+| enabled     | True                             |
+| id          | adf276b21c454713af49ca460bbe5a0f |
+| name        | example                          |
+| options     | {}                               |
+| tags        | []                               |
++-------------+----------------------------------+
+
+$ openstack project create --domain default --description "Service Project" service
++-------------+----------------------------------+
+| Field       | Value                            |
++-------------+----------------------------------+
+| description | Service Project                  |
+| domain_id   | default                          |
+| enabled     | True                             |
+| id          | 04d435f12be74783b884a829e66f208e |
+| is_domain   | False                            |
+| name        | service                          |
+| options     | {}                               |
+| parent_id   | default                          |
+| tags        | []                               |
++-------------+----------------------------------+
+
+$ openstack project create --domain default --description "Demo Project" myproject
++-------------+----------------------------------+
+| Field       | Value                            |
++-------------+----------------------------------+
+| description | Demo Project                     |
+| domain_id   | default                          |
+| enabled     | True                             |
+| id          | 2293c210ac4449c789c06f28529283db |
+| is_domain   | False                            |
+| name        | myproject                        |
+| options     | {}                               |
+| parent_id   | default                          |
+| tags        | []                               |
++-------------+----------------------------------+
+
+$ openstack user create --domain default --password-prompt myuser
+User Password:
+Repeat User Password:
++---------------------+----------------------------------+
+| Field               | Value                            |
++---------------------+----------------------------------+
+| domain_id           | default                          |
+| enabled             | True                             |
+| id                  | 2692597b24734a8fa49603afe095a9da |
+| name                | myuser                           |
+| options             | {}                               |
+| password_expires_at | None                             |
++---------------------+----------------------------------+
+
+$ openstack role create myrole
++-------------+----------------------------------+
+| Field       | Value                            |
++-------------+----------------------------------+
+| description | None                             |
+| domain_id   | None                             |
+| id          | d090dd95f75c4d939777cfaed97a7965 |
+| name        | myrole                           |
+| options     | {}                               |
++-------------+----------------------------------+
+
+$ openstack role add --project myproject --user myuser myrole
+```
+
+## Verify operation
+https://docs.openstack.org/keystone/ussuri/install/keystone-verify-ubuntu.html
+```
+$ unset OS_AUTH_URL OS_PASSWORD
+~$ openstack --os-auth-url http://192.168.3.200:5000/v3 --os-project-domain-name default --os-user-domain-name default --os-project-name admin --os-username admin token issue
+Password: 
++------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Field      | Value                                                                                                                                                                                   |
++------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| expires    | 2020-07-05T12:57:56+0000                                                                                                                                                                |
+| id         | gAAAAABfAcBEXM9ALGs9DnkRHLMELo8... |
+| project_id | 859c92e29d48481dba0674de75b3b0dc                                                                                                                                                        |
+| user_id    | c47d505202a9491cbd012e6f387f5da5                                                                                                                                                        |
++------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+
+$ openstack --os-auth-url http://192.168.3.200:5000/v3 --os-project-domain-name default --os-user-domain-name default --os-project-name myproject --os-username myuser token issue
+Password: 
++------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Field      | Value                                                                                                                                                                                   |
++------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| expires    | 2020-07-05T12:58:49+0000                                                                                                                                                                |
+| id         | gAAAAABfAcB5m8pnOjqhKUG_z5OWhaYe... |
+| project_id | 2293c210ac4449c789c06f28529283db                                                                                                                                                        |
+| user_id    | 2692597b24734a8fa49603afe095a9da                                                                                                                                                        |
++------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+```
+
+## Create OpenStack client environment scripts
+```
+$ cat > ~/admin-openrc << __EOF__
+export OS_PROJECT_DOMAIN_NAME=default
+export OS_USER_DOMAIN_NAME=default
+export OS_PROJECT_NAME=admin
+export OS_USERNAME=admin
+export OS_PASSWORD=password
+export OS_AUTH_URL=http://192.168.3.200:5000/v3
+export OS_IDENTITY_API_VERSION=3
+export OS_IMAGE_API_VERSION=2
+__EOF__
+
+$ cat > ~/demo-openrc << __EOF__
+export OS_PROJECT_DOMAIN_NAME=default
+export OS_USER_DOMAIN_NAME=default
+export OS_PROJECT_NAME=myproject
+export OS_USERNAME=myuser
+export OS_PASSWORD=password
+export OS_AUTH_URL=http://192.168.3.200:5000/v3
+export OS_IDENTITY_API_VERSION=3
+export OS_IMAGE_API_VERSION=2
+__EOF__
+```
+
+## Using the scripts
+```
+$ source ~/admin-openrc
+~$ openstack token issue
++------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Field      | Value                                                                                                                                                                                   |
++------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| expires    | 2020-07-05T13:04:01+0000                                                                                                                                                                |
+| id         | gAAAAABfAcGxE8xGBi08G-p... |
+| project_id | 859c92e29d48481dba0674de75b3b0dc                                                                                                                                                        |
+| user_id    | c47d505202a9491cbd012e6f387f5da5                                                                                                                                                        |
++------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+
+$ source ~/demo-openrc 
+$ openstack token issue
++------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Field      | Value                                                                                                                                                                                   |
++------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| expires    | 2020-07-05T13:04:24+0000                                                                                                                                                                |
+| id         | gAAAAABfAcHIFIAY_H7a5uLVV8DtJVZX5VcWu2EsXgu5OiAub1... |
+| project_id | 2293c210ac4449c789c06f28529283db                                                                                                                                                        |
+| user_id    | 2692597b24734a8fa49603afe095a9da                                                                                                                                                        |
++------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
 ```
