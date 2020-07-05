@@ -1,4 +1,4 @@
-# Install OpenStack Rocky on Ubuntu 20.04
+# Install OpenStack Ussuri on Ubuntu 20.04
 ドキュメント: [OpenStack Docs](https://docs.openstack.org/install-guide/)  
 インストール先: 192.168.3.200(192.168.3.200)  
 設定ファイル: [URL](URL)
@@ -383,3 +383,166 @@ $ openstack token issue
 | user_id    | 2692597b24734a8fa49603afe095a9da                                                                                                                                                        |
 +------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
 ```
+
+# Glance Installation
+https://docs.openstack.org/glance/ussuri/install/
+## Install and configure (Ubuntu)
+https://docs.openstack.org/glance/ussuri/install/install-ubuntu.html
+### Prerequisites
+```
+$ sudo mysql
+MariaDB [(none)]> CREATE DATABASE glance;
+MariaDB [(none)]> GRANT ALL PRIVILEGES ON glance.* TO 'glance'@'%' IDENTIFIED BY 'password';
+MariaDB [(none)]> quit;
+
+$ source ~/admin-openrc
+$ openstack user create --domain default --password-prompt glance
+User Password:
+Repeat User Password:
++---------------------+----------------------------------+
+| Field               | Value                            |
++---------------------+----------------------------------+
+| domain_id           | default                          |
+| enabled             | True                             |
+| id                  | 67549dc682a5428aa9eed4e9309a81e3 |
+| name                | glance                           |
+| options             | {}                               |
+| password_expires_at | None                             |
++---------------------+----------------------------------+
+
+$ openstack role add --project service --user glance admin
+$ openstack service create --name glance --description "OpenStack Image" image
++-------------+----------------------------------+
+| Field       | Value                            |
++-------------+----------------------------------+
+| description | OpenStack Image                  |
+| enabled     | True                             |
+| id          | 872c153f8ec44cd6859201d97a8949dd |
+| name        | glance                           |
+| type        | image                            |
++-------------+----------------------------------+
+
+$ openstack endpoint create --region RegionOne image public http://192.168.3.200:9292
++--------------+----------------------------------+
+| Field        | Value                            |
++--------------+----------------------------------+
+| enabled      | True                             |
+| id           | 80a49b4bc79a4ad9aea9159aba6c1f1d |
+| interface    | public                           |
+| region       | RegionOne                        |
+| region_id    | RegionOne                        |
+| service_id   | 872c153f8ec44cd6859201d97a8949dd |
+| service_name | glance                           |
+| service_type | image                            |
+| url          | http://192.168.3.200:9292        |
++--------------+----------------------------------+
+
+$ openstack endpoint create --region RegionOne image internal http://192.168.3.200:9292
++--------------+----------------------------------+
+| Field        | Value                            |
++--------------+----------------------------------+
+| enabled      | True                             |
+| id           | 73615ac4b9fd4944bde28e61ad5e2a84 |
+| interface    | internal                         |
+| region       | RegionOne                        |
+| region_id    | RegionOne                        |
+| service_id   | 872c153f8ec44cd6859201d97a8949dd |
+| service_name | glance                           |
+| service_type | image                            |
+| url          | http://192.168.3.200:9292        |
++--------------+----------------------------------+
+
+$ openstack endpoint create --region RegionOne image admin http://192.168.3.200:9292
++--------------+----------------------------------+
+| Field        | Value                            |
++--------------+----------------------------------+
+| enabled      | True                             |
+| id           | 830bf82101314b1683563d997c3d74fb |
+| interface    | admin                            |
+| region       | RegionOne                        |
+| region_id    | RegionOne                        |
+| service_id   | 872c153f8ec44cd6859201d97a8949dd |
+| service_name | glance                           |
+| service_type | image                            |
+| url          | http://192.168.3.200:9292        |
++--------------+----------------------------------+
+```
+
+### Install and configure components
+```
+$ sudo apt -y install glance
+$ sudo cp -rafv /etc/glance ~
+$ sudo vim /etc/glance/glance-api.conf
+-----
+[database]
+- connection = sqlite:////var/lib/glance/glance.sqlite
++ connection = mysql+pymysql://glance:password@192.168.3.200/glance
+...
+[keystone_authtoken]
++ www_authenticate_uri = http://192.168.3.200:5000
++ auth_url = http://192.168.3.200:5000
++ memcached_servers = 192.168.3.200:11211
++ auth_type = password
++ project_domain_name = default
++ user_domain_name = default
++ project_name = service
++ username = glance
++ password = password
+...
+[paste_deploy]
++ flavor = keystone
+...
+[glance_store]
++ stores = file,http
++ default_store = file
++ filesystem_store_datadir = /var/lib/glance/images/
+-----
+
+$ sudo -s /bin/sh -c "glance-manage db_sync" glance
+```
+### Finalize installation
+```
+$ sudo service glance-api restart
+```
+
+## Verify operation
+https://docs.openstack.org/glance/ussuri/install/verify.html
+```
+$ source ~/admin-openrc
+$ wget http://download.cirros-cloud.net/0.4.0/cirros-0.4.0-x86_64-disk.img
+$ sudo mv -v cirros-0.4.0-x86_64-disk.img /usr/local/src
+$ glance image-create --name "cirros" --file /usr/local/src/cirros-0.4.0-x86_64-disk.img --disk-format qcow2 --container-format bare --visibility=public
++------------------+----------------------------------------------------------------------------------+
+| Property         | Value                                                                            |
++------------------+----------------------------------------------------------------------------------+
+| checksum         | 443b7623e27ecf03dc9e01ee93f67afe                                                 |
+| container_format | bare                                                                             |
+| created_at       | 2020-07-05T12:48:39Z                                                             |
+| disk_format      | qcow2                                                                            |
+| id               | fdcafefe-c69e-4123-9966-718075127d80                                             |
+| min_disk         | 0                                                                                |
+| min_ram          | 0                                                                                |
+| name             | cirros                                                                           |
+| os_hash_algo     | sha512                                                                           |
+| os_hash_value    | 6513f21e44aa3da349f248188a44bc304a3653a04122d8fb4535423c8e1d14cd6a153f735bb0982e |
+|                  | 2161b5b5186106570c17a9e58b64dd39390617cd5a350f78                                 |
+| os_hidden        | False                                                                            |
+| owner            | 859c92e29d48481dba0674de75b3b0dc                                                 |
+| protected        | False                                                                            |
+| size             | 12716032                                                                         |
+| status           | active                                                                           |
+| tags             | []                                                                               |
+| updated_at       | 2020-07-05T12:48:39Z                                                             |
+| virtual_size     | Not available                                                                    |
+| visibility       | public                                                                           |
++------------------+----------------------------------------------------------------------------------+
+
+$ glance image-list
++--------------------------------------+--------+
+| ID                                   | Name   |
++--------------------------------------+--------+
+| fdcafefe-c69e-4123-9966-718075127d80 | cirros |
++--------------------------------------+--------+
+```
+
+To Be Continue.
