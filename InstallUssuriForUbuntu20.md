@@ -545,4 +545,189 @@ $ glance image-list
 +--------------------------------------+--------+
 ```
 
+
+# placement installation for Ussuri
+https://docs.openstack.org/placement/ussuri/install/
+
+## Install and configure Placement for Ubuntu
+https://docs.openstack.org/placement/ussuri/install/install-ubuntu.html  
+
+### Create Database¶
+```
+$ sudo mysql
+MariaDB [(none)]> CREATE DATABASE placement;
+MariaDB [(none)]> GRANT ALL PRIVILEGES ON placement.* TO 'placement'@'%' IDENTIFIED BY 'password';
+MariaDB [(none)]> FLUSH PRIVILEGES;
+MariaDB [(none)]> quit;
+```
+### Configure User and Endpoints
+```
+$ source ~/admin-openrc
+$ openstack user create --domain default --password-prompt placement
+User Password:
+Repeat User Password:
++---------------------+----------------------------------+
+| Field               | Value                            |
++---------------------+----------------------------------+
+| domain_id           | default                          |
+| enabled             | True                             |
+| id                  | 8f27d609f7be46fa93947eb8c497418f |
+| name                | placement                        |
+| options             | {}                               |
+| password_expires_at | None                             |
++---------------------+----------------------------------+
+
+$ openstack role add --project service --user placement admin
+$ openstack service create --name placement --description "Placement API" placement
++-------------+----------------------------------+
+| Field       | Value                            |
++-------------+----------------------------------+
+| description | Placement API                    |
+| enabled     | True                             |
+| id          | 2fa1d6b1943643c0875cc3556d0d0662 |
+| name        | placement                        |
+| type        | placement                        |
++-------------+----------------------------------+
+
+$ openstack endpoint create --region RegionOne placement public http://192.168.3.200:8778
++--------------+----------------------------------+
+| Field        | Value                            |
++--------------+----------------------------------+
+| enabled      | True                             |
+| id           | f7cd61929bc946cd9b281ec467e33ac7 |
+| interface    | public                           |
+| region       | RegionOne                        |
+| region_id    | RegionOne                        |
+| service_id   | 2fa1d6b1943643c0875cc3556d0d0662 |
+| service_name | placement                        |
+| service_type | placement                        |
+| url          | http://192.168.3.200:8778        |
++--------------+----------------------------------+
+
+$ openstack endpoint create --region RegionOne placement internal http://192.168.3.200:8778
++--------------+----------------------------------+
+| Field        | Value                            |
++--------------+----------------------------------+
+| enabled      | True                             |
+| id           | c091eea7c6bf4e0cac9b33653b2d1d4c |
+| interface    | internal                         |
+| region       | RegionOne                        |
+| region_id    | RegionOne                        |
+| service_id   | 2fa1d6b1943643c0875cc3556d0d0662 |
+| service_name | placement                        |
+| service_type | placement                        |
+| url          | http://192.168.3.200:8778        |
++--------------+----------------------------------+
+
+$ openstack endpoint create --region RegionOne placement admin http://192.168.3.200:8778
++--------------+----------------------------------+
+| Field        | Value                            |
++--------------+----------------------------------+
+| enabled      | True                             |
+| id           | 2f896aaef792410c901c45e59a601894 |
+| interface    | admin                            |
+| region       | RegionOne                        |
+| region_id    | RegionOne                        |
+| service_id   | 2fa1d6b1943643c0875cc3556d0d0662 |
+| service_name | placement                        |
+| service_type | placement                        |
+| url          | http://192.168.3.200:8778        |
++--------------+----------------------------------+
+```
+
+### Install and configure components
+```
+$ sudo apt -y install placement-api
+$ sudo vim /etc/placement/placement.conf
+-----
+[placement_database]
++ connection = mysql+pymysql://placement:password@192.168.3.200/placement
+- connection = sqlite:////var/lib/placement/placement.sqlite
+
+[api]
++ auth_strategy = keystone
+
+[keystone_authtoken]
++ auth_url = http://192.168.3.200:5000/v3
++ memcached_servers = 192.168.3.200:11211
++ auth_type = password
++ project_domain_name = default
++ user_domain_name = default
++ project_name = service
++ username = placement
++ password = password
+-----
+
+$ sudo -s /bin/sh -c "placement-manage db sync" placement
+$ sudo service apache2 restart
+$ sudo service apache2 status
+● apache2.service - The Apache HTTP Server
+     Loaded: loaded (/lib/systemd/system/apache2.service; enabled; vendor preset: enabled)
+     Active: active (running) since Mon 2020-07-13 00:26:25 JST; 2s ago
+       Docs: https://httpd.apache.org/docs/2.4/
+    Process: 4640 ExecStart=/usr/sbin/apachectl start (code=exited, status=0/SUCCESS)
+```
+
+## Verify Installation
+https://docs.openstack.org/placement/ussuri/install/verify.html
+```
+$ source ~/admin-openrc
+$ placement-status upgrade check
+$ sudo placement-status upgrade check
++----------------------------------+
+| Upgrade Check Results            |
++----------------------------------+
+| Check: Missing Root Provider IDs |
+| Result: Success                  |
+| Details: None                    |
++----------------------------------+
+| Check: Incomplete Consumers      |
+| Result: Success                  |
+| Details: None                    |
++----------------------------------+
+
+$ sudo apt -y install python3-pip
+$ sudo pip3 install osc-placement
+$ openstack --os-placement-api-version 1.2 resource class list --sort-column name
++----------------------------+
+| name                       |
++----------------------------+
+| DISK_GB                    |
+| FPGA                       |
+| IPV4_ADDRESS               |
+| MEMORY_MB                  |
+| MEM_ENCRYPTION_CONTEXT     |
+| NET_BW_EGR_KILOBIT_PER_SEC |
+| NET_BW_IGR_KILOBIT_PER_SEC |
+| NUMA_CORE                  |
+| NUMA_MEMORY_MB             |
+| NUMA_SOCKET                |
+| NUMA_THREAD                |
+| PCI_DEVICE                 |
+| PCPU                       |
+| PGPU                       |
+| SRIOV_NET_VF               |
+| VCPU                       |
+| VGPU                       |
+| VGPU_DISPLAY_HEAD          |
++----------------------------+
+
+$ openstack --os-placement-api-version 1.6 trait list --sort-column name
++---------------------------------------+
+| name                                  |
++---------------------------------------+
+| COMPUTE_ACCELERATORS                  |
+| COMPUTE_DEVICE_TAGGING                |
+| COMPUTE_GRAPHICS_MODEL_CIRRUS         |
+| COMPUTE_GRAPHICS_MODEL_GOP            |
+| COMPUTE_GRAPHICS_MODEL_NONE           |
+| COMPUTE_GRAPHICS_MODEL_QXL            |
+| COMPUTE_GRAPHICS_MODEL_VGA            |
+...
+| HW_NUMA_ROOT                          |
+| MISC_SHARES_VIA_AGGREGATE             |
+| STORAGE_DISK_HDD                      |
+| STORAGE_DISK_SSD                      |
++---------------------------------------+
+```
 To Be Continue.
