@@ -1483,5 +1483,6 @@ $ openstack router create router
 $ openstack router add subnet router selfservice
 $ openstack router set router --external-gateway provider
 Segmentation fault (core dumped)
+→ 治るかと思ってRebootしたら、「VFS: Unable to mount root fs UUID=...」でKernelPanicを起こして治らず.
 ```
 ToBe Continue
