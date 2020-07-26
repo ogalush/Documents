@@ -568,3 +568,145 @@ $ glance image-list
 +--------------------------------------+--------+
 → 登録できたのでOK.
 ```
+
+# Install and configure Placement for Red Hat Enterprise Linux and CentOS
+https://docs.openstack.org/placement/ussuri/install/install-rdo.html
+## Prerequisites
+```
+$ sudo mysql
+MariaDB [(none)]> CREATE DATABASE placement;
+MariaDB [(none)]> GRANT ALL PRIVILEGES ON placement.* TO 'placement'@'%' IDENTIFIED BY 'password';                                                                                          MariaDB [(none)]> FLUSH PRIVILEGES;                                                                                                                                                         
+MariaDB [(none)]> quit;
+```
+### Configure User and Endpoints
+```
+$ source ~/admin-openrc
+$ openstack user create --domain default --password-prompt placement
+User Password:
+Repeat User Password:
++---------------------+----------------------------------+
+| Field               | Value                            |
++---------------------+----------------------------------+
+| domain_id           | default                          |
+| enabled             | True                             |
+| id                  | 5d4a89ddfea045e1830685832e113f2d |
+| name                | placement                        |
+| options             | {}                               |
+| password_expires_at | None                             |
++---------------------+----------------------------------+
+
+$ openstack role add --project service --user placement admin
+$ openstack service create --name placement --description "Placement API" placement
++-------------+----------------------------------+
+| Field       | Value                            |
++-------------+----------------------------------+
+| description | Placement API                    |
+| enabled     | True                             |
+| id          | 8d7494d6a1b74fc9adf9ba2836c37c84 |
+| name        | placement                        |
+| type        | placement                        |
++-------------+----------------------------------+
+
+$ openstack endpoint create --region RegionOne placement public http://192.168.3.200:8778
++--------------+----------------------------------+
+| Field        | Value                            |
++--------------+----------------------------------+
+| enabled      | True                             |
+| id           | dd47589a2a2a448c961a1c889990042d |
+| interface    | public                           |
+| region       | RegionOne                        |
+| region_id    | RegionOne                        |
+| service_id   | 8d7494d6a1b74fc9adf9ba2836c37c84 |
+| service_name | placement                        |
+| service_type | placement                        |
+| url          | http://192.168.3.200:8778        |
++--------------+----------------------------------+
+
+$ openstack endpoint create --region RegionOne placement internal http://192.168.3.200:8778
++--------------+----------------------------------+
+| Field        | Value                            |
++--------------+----------------------------------+
+| enabled      | True                             |
+| id           | 2d9542edcb544e6b85d5b5d34c52efe0 |
+| interface    | internal                         |
+| region       | RegionOne                        |
+| region_id    | RegionOne                        |
+| service_id   | 8d7494d6a1b74fc9adf9ba2836c37c84 |
+| service_name | placement                        |
+| service_type | placement                        |
+| url          | http://192.168.3.200:8778        |
++--------------+----------------------------------+
+
+$ openstack endpoint create --region RegionOne placement admin http://192.168.3.200:8778
++--------------+----------------------------------+
+| Field        | Value                            |
++--------------+----------------------------------+
+| enabled      | True                             |
+| id           | 3e7c067c54364bec81ac61dc96937f38 |
+| interface    | admin                            |
+| region       | RegionOne                        |
+| region_id    | RegionOne                        |
+| service_id   | 8d7494d6a1b74fc9adf9ba2836c37c84 |
+| service_name | placement                        |
+| service_type | placement                        |
+| url          | http://192.168.3.200:8778        |
++--------------+----------------------------------+
+```
+
+### Install and configure components
+```
+$ sudo yum -y install openstack-placement-api
+$ sudo vim /etc/placement/placement.conf
+----
+[placement_database]
++ connection = mysql+pymysql://placement:password@192.168.3.200/placement
+...
+[api]
++ auth_strategy = keystone
+...
+[keystone_authtoken]
++ auth_url = http://192.168.3.200:5000/v3
++ memcached_servers = 192.168.3.200:11211
++ auth_type = password
++ project_domain_name = default
++ user_domain_name = default
++ project_name = service
++ username = placement
++ password = password
+----
+
+$ sudo chmod -v 644 /etc/placement/placement.conf
+$ sudo chmod -v 644 /usr/share/placement/placement-dist.conf
+→ 後で動作確認する際にPermission Deniedとなるので権限を入れておく.
+
+$ sudo -s /bin/sh -c "placement-manage db sync" placement
+```
+
+### Finalize installation
+```
+$ sudo systemctl restart httpd
+$ sudo systemctl status httpd
+```
+
+## Verify Installation
+https://docs.openstack.org/placement/ussuri/install/verify.html
+```
+$ source ~/admin-openrc 
+$ placement-status upgrade check
++----------------------------------+
+| Upgrade Check Results            |
++----------------------------------+
+| Check: Missing Root Provider IDs |
+| Result: Success                  |
+| Details: None                    |
++----------------------------------+
+| Check: Incomplete Consumers      |
+| Result: Success                  |
+| Details: None                    |
++----------------------------------+
+
+$ sudo pip3 install osc-placement
+$ openstack --os-placement-api-version 1.2 resource class list
+Expecting value: line 1 column 1 (char 0)
+→ 未登録なので見えなくて良いのかな..?
+```
