@@ -1,7 +1,7 @@
 # Install OpenStack Ussuri on CentOS8
 ドキュメント: [OpenStack Docs](https://docs.openstack.org/install-guide/)  
 インストール先: 192.168.3.200  
-設定ファイル: [URL](URL)
+設定ファイル: [Ussuri-InstallConfigsForCentOS8](https://github.com/ogalush/Ussuri-InstallConfigsForCentOS8)
 ```
 $ uname -n
 ryunosuke.localdomain
