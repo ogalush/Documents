@@ -1,6 +1,6 @@
 # Install OpenStack Ussuri on CentOS8
 ドキュメント: [OpenStack Docs](https://docs.openstack.org/install-guide/)  
-インストール先: 192.168.3.200(192.168.3.200)  
+インストール先: 192.168.3.200  
 設定ファイル: [URL](URL)
 ```
 $ uname -n
@@ -169,4 +169,222 @@ $ diff --unified=0 /tmp/etcd/etcd.conf /etc/etcd/etcd.conf |grep -v '^@@'
 $ sudo systemctl enable etcd
 $ sudo systemctl restart etcd
 $ sudo systemctl status etcd
+```
+
+# Keystone Installation Tutorial for Red Hat Enterprise Linux and CentOS
+https://docs.openstack.org/keystone/ussuri/install/index-rdo.html
+## Install and configure
+https://docs.openstack.org/keystone/ussuri/install/keystone-install-rdo.html
+### Prerequisites
+```
+$ sudo mysql
+MariaDB [(none)]> CREATE DATABASE keystone;
+MariaDB [(none)]> GRANT ALL PRIVILEGES ON keystone.* TO 'keystone'@'%' IDENTIFIED BY 'password';
+MariaDB [(none)]> FLUSH PRIVILEGES;
+MariaDB [(none)]> quit;
+```
+### Install and configure components
+```
+$ sudo yum -y install openstack-keystone httpd python3-mod_wsgi
+$ sudo vim /etc/keystone/keystone.conf
+----
+[database]
++ connection = mysql+pymysql://keystone:password@192.168.3.200/keystone
+...
+[token]
++ provider = fernet
+----
+
+$ sudo -s /bin/sh -c "keystone-manage db_sync" keystone
+$ sudo keystone-manage fernet_setup --keystone-user keystone --keystone-group keystone
+$ sudo keystone-manage credential_setup --keystone-user keystone --keystone-group keystone
+$ sudo keystone-manage bootstrap --bootstrap-password password --bootstrap-admin-url http://192.168.3.200:5000/v3/ --bootstrap-internal-url http://192.168.3.200:5000/v3/ --bootstrap-public-url http://192.168.3.200:5000/v3/ --bootstrap-region-id RegionOne
+```
+
+### Configure the Apache HTTP server
+```
+$ sudo vim /etc/httpd/conf/httpd.conf
+----
++ ServerName 192.168.3.200
+----
+$ sudo ln -s /usr/share/keystone/wsgi-keystone.conf /etc/httpd/conf.d/
+```
+### SSL
+省略.  
+よしなにSSL構成にするかSSL終端して下さいの記載のみとなっているため.
+### Finalize the installation
+```
+$ sudo apachectl configtest
+Syntax OK
+$ sudo systemctl enable httpd.service
+$ sudo systemctl restart httpd.service
+$ sudo systemctl status httpd.service
+
+$ export OS_USERNAME=admin
+$ export OS_PASSWORD=password
+$ export OS_PROJECT_NAME=admin
+$ export OS_USER_DOMAIN_NAME=default
+$ export OS_PROJECT_DOMAIN_NAME=default
+$ export OS_AUTH_URL=http://192.168.3.200:5000/v3
+$ export OS_IDENTITY_API_VERSION=3
+→ この辺の変数は次の手順で利用する.
+```
+
+## Create a domain, projects, users, and roles
+https://docs.openstack.org/keystone/ussuri/install/keystone-users-rdo.html
+```
+$ openstack domain create --description "An Example Domain" example
++-------------+----------------------------------+
+| Field       | Value                            |
++-------------+----------------------------------+
+| description | An Example Domain                |
+| enabled     | True                             |
+| id          | fdd499b8c5a3423f8bd068c9d86724e7 |
+| name        | example                          |
+| options     | {}                               |
+| tags        | []                               |
++-------------+----------------------------------+
+
+$ openstack project create --domain default --description "Service Project" service
++-------------+----------------------------------+
+| Field       | Value                            |
++-------------+----------------------------------+
+| description | Service Project                  |
+| domain_id   | default                          |
+| enabled     | True                             |
+| id          | 5fe4e13210ac4b28865b982aa6ce0385 |
+| is_domain   | False                            |
+| name        | service                          |
+| options     | {}                               |
+| parent_id   | default                          |
+| tags        | []                               |
++-------------+----------------------------------+
+
+$ openstack project create --domain default --description "Demo Project" demo
++-------------+----------------------------------+
+| Field       | Value                            |
++-------------+----------------------------------+
+| description | Demo Project                     |
+| domain_id   | default                          |
+| enabled     | True                             |
+| id          | 14b03537059c4f5ebade3a03a70219d4 |
+| is_domain   | False                            |
+| name        | demo                             |
+| options     | {}                               |
+| parent_id   | default                          |
+| tags        | []                               |
++-------------+----------------------------------+
+
+$ openstack user create --domain default --password-prompt demo
+User Password:
+Repeat User Password:
++---------------------+----------------------------------+
+| Field               | Value                            |
++---------------------+----------------------------------+
+| domain_id           | default                          |
+| enabled             | True                             |
+| id                  | 251d7c850e994535be3b4f1a8b67750a |
+| name                | demo                             |
+| options             | {}                               |
+| password_expires_at | None                             |
++---------------------+----------------------------------+
+
+$ openstack role create demo
++-------------+----------------------------------+
+| Field       | Value                            |
++-------------+----------------------------------+
+| description | None                             |
+| domain_id   | None                             |
+| id          | 245a95fee8f74b00850452809cba5f5d |
+| name        | demo                             |
+| options     | {}                               |
++-------------+----------------------------------+
+
+$ openstack role add --project demo --user demo demo
+```
+
+## Verify operation
+https://docs.openstack.org/keystone/ussuri/install/keystone-verify-rdo.html
+```
+$ unset OS_AUTH_URL OS_PASSWORD
+$ openstack --os-auth-url http://192.168.3.200:5000/v3 --os-project-domain-name default --os-user-domain-name default --os-project-name admin --os-username admin token issue
+Password: 
++------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Field      | Value                                                                                                                                                                                   |
++------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| expires    | 2020-07-26T08:29:12+0000                                                                                                                                                                |
+| id         | gAAAAABfHTDI2Cuu7wbjWIG2nAN7Wb5oyHNi7TtaI4GU3XCFizW1nyboTzpT461867WLxoL6xCF0RWv6NBPC0VQ6FCqwLgyqfkiYFjyb7ggXjbAwovTBj4MZDz8OwUbxnk-3aRXFdchl2BBpru53_n5OCuJax7VWBWdeNwQdWrfA9KX7Ulr_tgA |
+| project_id | 2994f37f552943bfbf00e1deaf0b483e                                                                                                                                                        |
+| user_id    | 2bf771765b114d47bf77f63a6a2e90e8                                                                                                                                                        |
++------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+
+$ openstack --os-auth-url http://192.168.3.200:5000/v3 --os-project-domain-name default --os-user-domain-name default --os-project-name demo --os-username demo token issue
+Password: 
++------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Field      | Value                                                                                                                                                                                   |
++------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| expires    | 2020-07-26T08:29:49+0000                                                                                                                                                                |
+| id         | gAAAAABfHTDtEQQ2NC2CyNHUHSEoHC1cbPpGL5f4c6IHjxMGaMgrfqJ1M3nA6J9gaFmv9F-4vYLKalu0CZtHOELY96elWWJYzYishFhPmf1LGVaDm5Vrttv3RaYBmSHAXWOyYUs2t82ol9d2rnkQ0Ve7HMOzdf8_NIfyfRREp_fM6i2JBBJvdTI |
+| project_id | 14b03537059c4f5ebade3a03a70219d4                                                                                                                                                        |
+| user_id    | 251d7c850e994535be3b4f1a8b67750a                                                                                                                                                        |
++------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+```
+
+## Create OpenStack client environment scripts
+https://docs.openstack.org/keystone/ussuri/install/keystone-openrc-rdo.html
+### Creating the scripts
+```
+$ cat << _EOF_ > ~/admin-openrc
+> export OS_PROJECT_DOMAIN_NAME=default
+> export OS_USER_DOMAIN_NAME=default
+> export OS_PROJECT_NAME=admin
+> export OS_USERNAME=admin
+> export OS_PASSWORD=password
+> export OS_AUTH_URL=http://192.168.3.200:5000/v3
+> export OS_IDENTITY_API_VERSION=3
+> export OS_IMAGE_API_VERSION=2
+> _EOF_
+
+$ cat << _EOF_ > ~/demo-openrc
+> export OS_PROJECT_DOMAIN_NAME=default
+> export OS_USER_DOMAIN_NAME=default
+> export OS_PROJECT_NAME=demo
+> export OS_USERNAME=demo
+> export OS_PASSWORD=password
+> export OS_AUTH_URL=http://192.168.3.200:5000/v3
+> export OS_IDENTITY_API_VERSION=3
+> export OS_IMAGE_API_VERSION=2
+> _EOF_
+
+$ chmod -v 400 ~/{admin,demo}-openrc
+mode of '/home/ogalush/admin-openrc' changed from 0664 (rw-rw-r--) to 0400 (r--------)
+mode of '/home/ogalush/demo-openrc' changed from 0664 (rw-rw-r--) to 0400 (r--------)
+
+$ ls -l ~/{admin,demo}-openrc
+-r-------- 1 ogalush ogalush 266 Jul 26 16:31 /home/ogalush/admin-openrc
+-r-------- 1 ogalush ogalush 264 Jul 26 16:32 /home/ogalush/demo-openrc
+
+$ source ~/admin-openrc
+$ openstack token issue
++------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Field      | Value                                                                                                                                                                                   |
++------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| expires    | 2020-07-26T08:33:07+0000                                                                                                                                                                |
+| id         | gAAAAABfHTGzMptbJWB1NKTTRIhGSQkTZYqlgGP6iD77EdVl_zqvfE0akDKxlrZKS7MS6nQBYa0ZSsDnDX_DYdksr2CyXvS4tp-s0gBRLBe-6OZ-9z3Nh8pxaXqhJF42shMs6dXPInOvgr6BCC4M9XmI1sMgYQ-FwejY0dRbbfwLKM-RCdCyL4E |
+| project_id | 2994f37f552943bfbf00e1deaf0b483e                                                                                                                                                        |
+| user_id    | 2bf771765b114d47bf77f63a6a2e90e8                                                                                                                                                        |
++------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+→ 値を取得できているのでOK.
+
+$ source ~/demo-openrc 
+$ openstack token issue
++------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Field      | Value                                                                                                                                                                                   |
++------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| expires    | 2020-07-26T08:33:13+0000                                                                                                                                                                |
+| id         | gAAAAABfHTG5zo-KUsBnJVePNuDVsN0S2eRidsfxse8iTAaRP8Lb56L4z2rPUBWWGzExc1AX64qKkq7zI_by7aR2FuGawZpxYlK7UgLQuc8pBgPxeC9oGKX7UKXXpa7UDGR7NDVhApp7KfuJNtKLNS-bXlXoi_sRi763B5G1YbdpTFi-Eb63M4U |
+| project_id | 14b03537059c4f5ebade3a03a70219d4                                                                                                                                                        |
+| user_id    | 251d7c850e994535be3b4f1a8b67750a                                                                                                                                                        |
++------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+→ 値を取得できているのでOK.
 ```
