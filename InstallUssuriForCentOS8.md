@@ -67,3 +67,106 @@ $ sudo yum -y upgrade
 $ sudo yum -y install python3-openstackclient
 $ sudo yum -y install openstack-selinux
 ```
+
+## SQL database for RHEL and CentOS
+https://docs.openstack.org/install-guide/environment-sql-database-rdo.html
+### Install and configure components
+```
+$ sudo yum -y install mariadb mariadb-server python3-PyMySQL
+$ sudo cp -rafv /etc/my.cnf.d /tmp
+$ sudo vim /etc/my.cnf.d/mariadb-server.cnf
+----
+[mysqld]
+...
++ bind-address = 192.168.3.200
++ default-storage-engine = innodb
++ innodb_file_per_table = on
++ max_connections = 4096
++ collation-server = utf8_general_ci
++ character-set-server = utf8
+----
+```
+### Finalize installation
+```
+$ sudo systemctl enable mariadb.service
+$ sudo systemctl restart mariadb.service
+$ sudo systemctl status mariadb.service
+$ sudo mysql_secure_installation
+Enter current password for root (enter for none):なし
+Set root password? [Y/n] n
+Remove anonymous users? [Y/n] y
+Disallow root login remotely? [Y/n] y
+Remove test database and access to it? [Y/n] y
+Reload privilege tables now? [Y/n] y
+```
+
+## Message queue for RHEL and CentOS
+https://docs.openstack.org/install-guide/environment-messaging-rdo.html
+### Install and configure components
+```
+$ sudo yum -y install rabbitmq-server
+$ sudo systemctl enable rabbitmq-server.service
+$ sudo systemctl restart rabbitmq-server.service
+$ sudo rabbitmqctl add_user openstack password
+Adding user "openstack" ...
+$ sudo rabbitmqctl set_permissions openstack ".*" ".*" ".*"
+Setting permissions for user "openstack" in vhost "/" ...
+```
+
+## Memcached for RHEL and CentOS
+https://docs.openstack.org/install-guide/environment-memcached-rdo.html
+### Install and configure components
+```
+$ sudo yum -y install memcached python3-memcached
+$ sudo cp -pv /etc/sysconfig/memcached /tmp
+$ sudo vim /etc/sysconfig/memcached
+----
+- OPTIONS="-l 127.0.0.1,::1"
++ OPTIONS="-l 127.0.0.1,::1,192.168.3.200"
+----
+```
+### Finalize installation
+```
+$ sudo systemctl enable memcached.service
+$ sudo systemctl restart memcached.service
+$ sudo netstat -lnp |grep 11211
+tcp        0      0 192.168.3.200:11211     0.0.0.0:*               LISTEN      9001/memcached      
+tcp        0      0 127.0.0.1:11211         0.0.0.0:*               LISTEN      9001/memcached      
+tcp6       0      0 ::1:11211               :::*                    LISTEN      9001/memcached    
+```
+
+## Etcd for RHEL and CentOS
+https://docs.openstack.org/install-guide/environment-etcd-rdo.html
+### Install and configure components
+```
+$ sudo yum -y install etcd
+$ sudo cp -rafv /etc/etcd /tmp
+$ sudo vim /etc/etcd/etcd.conf
+-----
+$ diff --unified=0 /tmp/etcd/etcd.conf /etc/etcd/etcd.conf |grep -v '^@@'
+--- /tmp/etcd/etcd.conf 2020-01-29 01:51:46.000000000 +0900
++++ /etc/etcd/etcd.conf 2020-07-26 16:05:16.713981639 +0900
+-#ETCD_LISTEN_PEER_URLS="http://localhost:2380"
+-ETCD_LISTEN_CLIENT_URLS="http://localhost:2379"
++ETCD_LISTEN_PEER_URLS="http://192.168.3.200:2380"
++ETCD_LISTEN_CLIENT_URLS="http://192.168.3.200:2379"
+-ETCD_NAME="default"
++ETCD_NAME="ryunosuke"
+-#ETCD_INITIAL_ADVERTISE_PEER_URLS="http://localhost:2380"
+-ETCD_ADVERTISE_CLIENT_URLS="http://localhost:2379"
++ETCD_INITIAL_ADVERTISE_PEER_URLS="http://192.168.3.200:2380"
++ETCD_ADVERTISE_CLIENT_URLS="http://192.168.3.200:2379"
+-#ETCD_INITIAL_CLUSTER="default=http://localhost:2380"
+-#ETCD_INITIAL_CLUSTER_TOKEN="etcd-cluster"
+-#ETCD_INITIAL_CLUSTER_STATE="new"
++ETCD_INITIAL_CLUSTER="ryunosuke=http://192.168.3.200:2380"
++ETCD_INITIAL_CLUSTER_TOKEN="etcd-cluster-01"
++ETCD_INITIAL_CLUSTER_STATE="new"
+-----
+```
+### Finalize installation
+```
+$ sudo systemctl enable etcd
+$ sudo systemctl restart etcd
+$ sudo systemctl status etcd
+```
