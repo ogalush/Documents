@@ -1315,3 +1315,199 @@ $ openstack network agent list
 +--------------------------------------+--------------------+-----------------------+-------------------+-------+-------+---------------------------+
 → 全てのagentがUPしているのでOK.
 ```
+
+
+# Launch an instance
+https://docs.openstack.org/install-guide/launch-instance.html
+## Create virtual networks
+### Provider network
+https://docs.openstack.org/install-guide/launch-instance-networks-provider.html
+```
+$ source ~/admin-openrc
+$ openstack network create --share --external --provider-physical-network provider --provider-network-type flat provider
++---------------------------+---------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Field                     | Value                                                                                                                                                   |
++---------------------------+---------------------------------------------------------------------------------------------------------------------------------------------------------+
+| admin_state_up            | UP                                                                                                                                                      |
+| availability_zone_hints   |                                                                                                                                                         |
+| availability_zones        |                                                                                                                                                         |
+| created_at                | 2020-07-26T09:57:46Z                                                                                                                                    |
+| description               |                                                                                                                                                         |
+| dns_domain                | None                                                                                                                                                    |
+| id                        | d14b13e6-a8c2-4d19-8161-8d7b4f6a8722                                                                                                                    |
+| ipv4_address_scope        | None                                                                                                                                                    |
+| ipv6_address_scope        | None                                                                                                                                                    |
+| is_default                | False                                                                                                                                                   |
+| is_vlan_transparent       | None                                                                                                                                                    |
+| location                  | cloud='', project.domain_id=, project.domain_name='default', project.id='2994f37f552943bfbf00e1deaf0b483e', project.name='admin', region_name='', zone= |
+| mtu                       | 1500                                                                                                                                                    |
+| name                      | provider                                                                                                                                                |
+| port_security_enabled     | True                                                                                                                                                    |
+| project_id                | 2994f37f552943bfbf00e1deaf0b483e                                                                                                                        |
+| provider:network_type     | flat                                                                                                                                                    |
+| provider:physical_network | provider                                                                                                                                                |
+| provider:segmentation_id  | None                                                                                                                                                    |
+| qos_policy_id             | None                                                                                                                                                    |
+| revision_number           | 1                                                                                                                                                       |
+| router:external           | External                                                                                                                                                |
+| segments                  | None                                                                                                                                                    |
+| shared                    | True                                                                                                                                                    |
+| status                    | ACTIVE                                                                                                                                                  |
+| subnets                   |                                                                                                                                                         |
+| tags                      |                                                                                                                                                         |
+| updated_at                | 2020-07-26T09:57:46Z                                                                                                                                    |
++---------------------------+---------------------------------------------------------------------------------------------------------------------------------------------------------+
+
+$ openstack subnet create --network provider --allocation-pool start=192.168.3.130,end=192.168.3.150 --dns-nameserver 192.168.3.220 --gateway 192.168.3.254 --subnet-range 192.168.3.0/24 provider
++----------------------+---------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Field                | Value                                                                                                                                                   |
++----------------------+---------------------------------------------------------------------------------------------------------------------------------------------------------+
+| allocation_pools     | 192.168.3.130-192.168.3.150                                                                                                                             |
+| cidr                 | 192.168.3.0/24                                                                                                                                          |
+| created_at           | 2020-07-26T09:59:27Z                                                                                                                                    |
+| description          |                                                                                                                                                         |
+| dns_nameservers      | 192.168.3.220                                                                                                                                           |
+| dns_publish_fixed_ip | None                                                                                                                                                    |
+| enable_dhcp          | True                                                                                                                                                    |
+| gateway_ip           | 192.168.3.254                                                                                                                                           |
+| host_routes          |                                                                                                                                                         |
+| id                   | 509f5eea-b007-4431-88a0-9117637636c1                                                                                                                    |
+| ip_version           | 4                                                                                                                                                       |
+| ipv6_address_mode    | None                                                                                                                                                    |
+| ipv6_ra_mode         | None                                                                                                                                                    |
+| location             | cloud='', project.domain_id=, project.domain_name='default', project.id='2994f37f552943bfbf00e1deaf0b483e', project.name='admin', region_name='', zone= |
+| name                 | provider                                                                                                                                                |
+| network_id           | d14b13e6-a8c2-4d19-8161-8d7b4f6a8722                                                                                                                    |
+| prefix_length        | None                                                                                                                                                    |
+| project_id           | 2994f37f552943bfbf00e1deaf0b483e                                                                                                                        |
+| revision_number      | 0                                                                                                                                                       |
+| segment_id           | None                                                                                                                                                    |
+| service_types        |                                                                                                                                                         |
+| subnetpool_id        | None                                                                                                                                                    |
+| tags                 |                                                                                                                                                         |
+| updated_at           | 2020-07-26T09:59:27Z                                                                                                                                    |
++----------------------+---------------------------------------------------------------------------------------------------------------------------------------------------------+
+```
+
+### Self-service network
+```
+$ source ~/demo-openrc
+$ openstack network create selfservice
++---------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Field                     | Value                                                                                                                                                  |
++---------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------+
+| admin_state_up            | UP                                                                                                                                                     |
+| availability_zone_hints   |                                                                                                                                                        |
+| availability_zones        |                                                                                                                                                        |
+| created_at                | 2020-07-26T10:00:23Z                                                                                                                                   |
+| description               |                                                                                                                                                        |
+| dns_domain                | None                                                                                                                                                   |
+| id                        | ccc1e57e-483f-4a30-bf13-beaafbae9517                                                                                                                   |
+| ipv4_address_scope        | None                                                                                                                                                   |
+| ipv6_address_scope        | None                                                                                                                                                   |
+| is_default                | False                                                                                                                                                  |
+| is_vlan_transparent       | None                                                                                                                                                   |
+| location                  | cloud='', project.domain_id=, project.domain_name='default', project.id='14b03537059c4f5ebade3a03a70219d4', project.name='demo', region_name='', zone= |
+| mtu                       | 1450                                                                                                                                                   |
+| name                      | selfservice                                                                                                                                            |
+| port_security_enabled     | True                                                                                                                                                   |
+| project_id                | 14b03537059c4f5ebade3a03a70219d4                                                                                                                       |
+| provider:network_type     | None                                                                                                                                                   |
+| provider:physical_network | None                                                                                                                                                   |
+| provider:segmentation_id  | None                                                                                                                                                   |
+| qos_policy_id             | None                                                                                                                                                   |
+| revision_number           | 1                                                                                                                                                      |
+| router:external           | Internal                                                                                                                                               |
+| segments                  | None                                                                                                                                                   |
+| shared                    | False                                                                                                                                                  |
+| status                    | ACTIVE                                                                                                                                                 |
+| subnets                   |                                                                                                                                                        |
+| tags                      |                                                                                                                                                        |
+| updated_at                | 2020-07-26T10:00:23Z                                                                                                                                   |
++---------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------+
+
+$ openstack subnet create --network selfservice --dns-nameserver 192.168.3.220 --gateway 10.0.0.1 --subnet-range 10.0.0.0/24 selfservice
++----------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Field                | Value                                                                                                                                                  |
++----------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------+
+| allocation_pools     | 10.0.0.2-10.0.0.254                                                                                                                                    |
+| cidr                 | 10.0.0.0/24                                                                                                                                            |
+| created_at           | 2020-07-26T10:02:00Z                                                                                                                                   |
+| description          |                                                                                                                                                        |
+| dns_nameservers      | 192.168.3.220                                                                                                                                          |
+| dns_publish_fixed_ip | None                                                                                                                                                   |
+| enable_dhcp          | True                                                                                                                                                   |
+| gateway_ip           | 10.0.0.1                                                                                                                                               |
+| host_routes          |                                                                                                                                                        |
+| id                   | 9e74a535-6bdf-4991-b12e-00f2b918520e                                                                                                                   |
+| ip_version           | 4                                                                                                                                                      |
+| ipv6_address_mode    | None                                                                                                                                                   |
+| ipv6_ra_mode         | None                                                                                                                                                   |
+| location             | cloud='', project.domain_id=, project.domain_name='default', project.id='14b03537059c4f5ebade3a03a70219d4', project.name='demo', region_name='', zone= |
+| name                 | selfservice                                                                                                                                            |
+| network_id           | ccc1e57e-483f-4a30-bf13-beaafbae9517                                                                                                                   |
+| prefix_length        | None                                                                                                                                                   |
+| project_id           | 14b03537059c4f5ebade3a03a70219d4                                                                                                                       |
+| revision_number      | 0                                                                                                                                                      |
+| segment_id           | None                                                                                                                                                   |
+| service_types        |                                                                                                                                                        |
+| subnetpool_id        | None                                                                                                                                                   |
+| tags                 |                                                                                                                                                        |
+| updated_at           | 2020-07-26T10:02:00Z                                                                                                                                   |
++----------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------+
+
+$ openstack router create router
++-------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Field                   | Value                                                                                                                                                  |
++-------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------+
+| admin_state_up          | UP                                                                                                                                                     |
+| availability_zone_hints |                                                                                                                                                        |
+| availability_zones      |                                                                                                                                                        |
+| created_at              | 2020-07-26T10:02:19Z                                                                                                                                   |
+| description             |                                                                                                                                                        |
+| external_gateway_info   | null                                                                                                                                                   |
+| flavor_id               | None                                                                                                                                                   |
+| id                      | 64b976b9-9456-4ad5-a86f-33055a5b5740                                                                                                                   |
+| location                | cloud='', project.domain_id=, project.domain_name='default', project.id='14b03537059c4f5ebade3a03a70219d4', project.name='demo', region_name='', zone= |
+| name                    | router                                                                                                                                                 |
+| project_id              | 14b03537059c4f5ebade3a03a70219d4                                                                                                                       |
+| revision_number         | 1                                                                                                                                                      |
+| routes                  |                                                                                                                                                        |
+| status                  | ACTIVE                                                                                                                                                 |
+| tags                    |                                                                                                                                                        |
+| updated_at              | 2020-07-26T10:02:19Z                                                                                                                                   |
++-------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------+
+
+$ openstack router add subnet router selfservice
+$ openstack router set router --external-gateway provider
+```
+
+## Verify operation¶
+```
+$ source ~/admin-openrc
+$ ip netns
+qrouter-64b976b9-9456-4ad5-a86f-33055a5b5740 (id: 2)
+qdhcp-ccc1e57e-483f-4a30-bf13-beaafbae9517 (id: 1)
+qdhcp-d14b13e6-a8c2-4d19-8161-8d7b4f6a8722 (id: 0)
+
+$ openstack port list --router router
++--------------------------------------+------+-------------------+------------------------------------------------------------------------------+--------+
+| ID                                   | Name | MAC Address       | Fixed IP Addresses                                                           | Status |
++--------------------------------------+------+-------------------+------------------------------------------------------------------------------+--------+
+| 506ec5ab-85d3-4b95-8087-a5a63b3aad15 |      | fa:16:3e:f7:b7:9b | ip_address='10.0.0.1', subnet_id='9e74a535-6bdf-4991-b12e-00f2b918520e'      | ACTIVE |
+| e88b3d08-502e-440c-bb30-933098dfaa90 |      | fa:16:3e:37:2e:f9 | ip_address='192.168.3.148', subnet_id='509f5eea-b007-4431-88a0-9117637636c1' | ACTIVE |
++--------------------------------------+------+-------------------+------------------------------------------------------------------------------+--------+
+
+$ ping -c 4 192.168.3.148
+PING 192.168.3.148 (192.168.3.148) 56(84) bytes of data.
+64 bytes from 192.168.3.148: icmp_seq=1 ttl=64 time=0.102 ms
+64 bytes from 192.168.3.148: icmp_seq=2 ttl=64 time=0.055 ms
+64 bytes from 192.168.3.148: icmp_seq=3 ttl=64 time=0.052 ms
+64 bytes from 192.168.3.148: icmp_seq=4 ttl=64 time=0.054 ms
+
+--- 192.168.3.148 ping statistics ---
+4 packets transmitted, 4 received, 0% packet loss, time 68ms
+rtt min/avg/max/mdev = 0.052/0.065/0.102/0.023 ms
+[ogalush@ryunosuke ~]$
+→ 上記RouterのIP(192.168.3.148)へpingを通せたのでOK.
+```
