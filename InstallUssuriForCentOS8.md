@@ -1511,3 +1511,239 @@ rtt min/avg/max/mdev = 0.052/0.065/0.102/0.023 ms
 [ogalush@ryunosuke ~]$
 → 上記RouterのIP(192.168.3.148)へpingを通せたのでOK.
 ```
+
+## Create m1.nano flavor
+https://docs.openstack.org/install-guide/launch-instance.html#launch-instance-networks
+```
+$ source ~/admin-openrc 
+$ openstack flavor create --id 0 --vcpus 1 --ram 64 --disk 1 m1.nano
++----------------------------+---------+
+| Field                      | Value   |
++----------------------------+---------+
+| OS-FLV-DISABLED:disabled   | False   |
+| OS-FLV-EXT-DATA:ephemeral  | 0       |
+| disk                       | 1       |
+| id                         | 0       |
+| name                       | m1.nano |
+| os-flavor-access:is_public | True    |
+| properties                 |         |
+| ram                        | 64      |
+| rxtx_factor                | 1.0     |
+| swap                       |         |
+| vcpus                      | 1       |
++----------------------------+---------+
+```
+
+## Generate a key pair
+```
+$ source ~/demo-openrc
+$ openstack keypair create --public-key ~/.ssh/authorized_keys ogalush_key
++-------------+-------------------------------------------------+
+| Field       | Value                                           |
++-------------+-------------------------------------------------+
+| fingerprint | 95:93:ad:1a:4a:1c:41:7b:26:b7:c7:fc:3b:0a:91:df |
+| name        | ogalush_key                                     |
+| user_id     | 251d7c850e994535be3b4f1a8b67750a                |
++-------------+-------------------------------------------------+
+
+$ openstack keypair list
++-------------+-------------------------------------------------+
+| Name        | Fingerprint                                     |
++-------------+-------------------------------------------------+
+| ogalush_key | 95:93:ad:1a:4a:1c:41:7b:26:b7:c7:fc:3b:0a:91:df |
++-------------+-------------------------------------------------+
+```
+
+## Add security group rules
+```
+$ source ~/demo-openrc
+$ openstack security group rule create --proto icmp default
++-------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Field             | Value                                                                                                                                                  |
++-------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------+
+| created_at        | 2020-07-26T10:10:07Z                                                                                                                                   |
+| description       |                                                                                                                                                        |
+| direction         | ingress                                                                                                                                                |
+| ether_type        | IPv4                                                                                                                                                   |
+| id                | 5e27a211-50c3-40f2-8625-a27fb66bb534                                                                                                                   |
+| location          | cloud='', project.domain_id=, project.domain_name='default', project.id='14b03537059c4f5ebade3a03a70219d4', project.name='demo', region_name='', zone= |
+| name              | None                                                                                                                                                   |
+| port_range_max    | None                                                                                                                                                   |
+| port_range_min    | None                                                                                                                                                   |
+| project_id        | 14b03537059c4f5ebade3a03a70219d4                                                                                                                       |
+| protocol          | icmp                                                                                                                                                   |
+| remote_group_id   | None                                                                                                                                                   |
+| remote_ip_prefix  | 0.0.0.0/0                                                                                                                                              |
+| revision_number   | 0                                                                                                                                                      |
+| security_group_id | ccabec2b-283a-4c70-8ec8-de07b72f4fc4                                                                                                                   |
+| tags              | []                                                                                                                                                     |
+| updated_at        | 2020-07-26T10:10:07Z                                                                                                                                   |
++-------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------+
+
+$ openstack security group rule create --proto tcp --dst-port 22 default
++-------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Field             | Value                                                                                                                                                  |
++-------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------+
+| created_at        | 2020-07-26T10:10:25Z                                                                                                                                   |
+| description       |                                                                                                                                                        |
+| direction         | ingress                                                                                                                                                |
+| ether_type        | IPv4                                                                                                                                                   |
+| id                | 104d141d-e96e-4c6b-87fe-37624c50a79e                                                                                                                   |
+| location          | cloud='', project.domain_id=, project.domain_name='default', project.id='14b03537059c4f5ebade3a03a70219d4', project.name='demo', region_name='', zone= |
+| name              | None                                                                                                                                                   |
+| port_range_max    | 22                                                                                                                                                     |
+| port_range_min    | 22                                                                                                                                                     |
+| project_id        | 14b03537059c4f5ebade3a03a70219d4                                                                                                                       |
+| protocol          | tcp                                                                                                                                                    |
+| remote_group_id   | None                                                                                                                                                   |
+| remote_ip_prefix  | 0.0.0.0/0                                                                                                                                              |
+| revision_number   | 0                                                                                                                                                      |
+| security_group_id | ccabec2b-283a-4c70-8ec8-de07b72f4fc4                                                                                                                   |
+| tags              | []                                                                                                                                                     |
+| updated_at        | 2020-07-26T10:10:25Z                                                                                                                                   |
++-------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------+
+```
+
+## Launch an instance on the self-service network
+https://docs.openstack.org/install-guide/launch-instance-selfservice.html
+```
+$ source ~/demo-openrc
+$ openstack flavor list
++----+---------+-----+------+-----------+-------+-----------+
+| ID | Name    | RAM | Disk | Ephemeral | VCPUs | Is Public |
++----+---------+-----+------+-----------+-------+-----------+
+| 0  | m1.nano |  64 |    1 |         0 |     1 | True      |
++----+---------+-----+------+-----------+-------+-----------+
+
+$ openstack image list
++--------------------------------------+--------+--------+
+| ID                                   | Name   | Status |
++--------------------------------------+--------+--------+
+| 64becb16-bd9a-41c0-b955-e8bf38fa1348 | cirros | active |
++--------------------------------------+--------+--------+
+
+$ openstack network list
++--------------------------------------+-------------+--------------------------------------+
+| ID                                   | Name        | Subnets                              |
++--------------------------------------+-------------+--------------------------------------+
+| ccc1e57e-483f-4a30-bf13-beaafbae9517 | selfservice | 9e74a535-6bdf-4991-b12e-00f2b918520e |
+| d14b13e6-a8c2-4d19-8161-8d7b4f6a8722 | provider    | 509f5eea-b007-4431-88a0-9117637636c1 |
++--------------------------------------+-------------+--------------------------------------+
+
+$ openstack security group list
++--------------------------------------+---------+------------------------+----------------------------------+------+
+| ID                                   | Name    | Description            | Project                          | Tags |
++--------------------------------------+---------+------------------------+----------------------------------+------+
+| ccabec2b-283a-4c70-8ec8-de07b72f4fc4 | default | Default security group | 14b03537059c4f5ebade3a03a70219d4 | []   |
++--------------------------------------+---------+------------------------+----------------------------------+------+
+
+$ openstack server create --flavor m1.nano --image cirros --nic net-id=ccc1e57e-483f-4a30-bf13-beaafbae9517 --security-group default --key-name ogalush_key selfservice-instance
++-----------------------------+-----------------------------------------------+
+| Field                       | Value                                         |
++-----------------------------+-----------------------------------------------+
+| OS-DCF:diskConfig           | MANUAL                                        |
+| OS-EXT-AZ:availability_zone |                                               |
+| OS-EXT-STS:power_state      | NOSTATE                                       |
+| OS-EXT-STS:task_state       | scheduling                                    |
+| OS-EXT-STS:vm_state         | building                                      |
+| OS-SRV-USG:launched_at      | None                                          |
+| OS-SRV-USG:terminated_at    | None                                          |
+| accessIPv4                  |                                               |
+| accessIPv6                  |                                               |
+| addresses                   |                                               |
+| adminPass                   | 8i56sY6dFYB9                                  |
+| config_drive                |                                               |
+| created                     | 2020-07-26T10:27:57Z                          |
+| flavor                      | m1.nano (0)                                   |
+| hostId                      |                                               |
+| id                          | 735f59fa-4a72-4787-8768-1ab4d6824a4e          |
+| image                       | cirros (64becb16-bd9a-41c0-b955-e8bf38fa1348) |
+| key_name                    | ogalush_key                                   |
+| name                        | selfservice-instance                          |
+| progress                    | 0                                             |
+| project_id                  | 14b03537059c4f5ebade3a03a70219d4              |
+| properties                  |                                               |
+| security_groups             | name='ccabec2b-283a-4c70-8ec8-de07b72f4fc4'   |
+| status                      | BUILD                                         |
+| updated                     | 2020-07-26T10:27:57Z                          |
+| user_id                     | 251d7c850e994535be3b4f1a8b67750a              |
+| volumes_attached            |                                               |
++-----------------------------+-----------------------------------------------+
+
+$ openstack server list
++--------------------------------------+----------------------+--------+------------------------+--------+---------+
+| ID                                   | Name                 | Status | Networks               | Image  | Flavor  |
++--------------------------------------+----------------------+--------+------------------------+--------+---------+
+| 735f59fa-4a72-4787-8768-1ab4d6824a4e | selfservice-instance | ACTIVE | selfservice=10.0.0.228 | cirros | m1.nano |
++--------------------------------------+----------------------+--------+------------------------+--------+---------+
+→ ActiveとなったのでOK.
+```
+
+### Access the instance using a virtual console
+```
+$ openstack console url show selfservice-instance
++-------+----------------------------------------------------------------------------------------------+
+| Field | Value                                                                                        |
++-------+----------------------------------------------------------------------------------------------+
+| type  | novnc                                                                                        |
+| url   | http://192.168.3.200:6080/vnc_auto.html?path=%3Ftoken%3D0993a177-3377-4004-bb58-70ba47601967 |
++-------+----------------------------------------------------------------------------------------------+
+→ 接続を確立できず.
+とりあえず続ける.
+```
+
+### Access the instance remotely
+```
+$ openstack floating ip create provider
++---------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Field               | Value                                                                                                                                                                            |
++---------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| created_at          | 2020-07-26T10:50:34Z                                                                                                                                                             |
+| description         |                                                                                                                                                                                  |
+| dns_domain          | None                                                                                                                                                                             |
+| dns_name            | None                                                                                                                                                                             |
+| fixed_ip_address    | None                                                                                                                                                                             |
+| floating_ip_address | 192.168.3.144                                                                                                                                                                    |
+| floating_network_id | d14b13e6-a8c2-4d19-8161-8d7b4f6a8722                                                                                                                                             |
+| id                  | 52942075-d49e-4b85-b37b-76b051d9c141                                                                                                                                             |
+| location            | Munch({'cloud': '', 'region_name': '', 'zone': None, 'project': Munch({'id': '14b03537059c4f5ebade3a03a70219d4', 'name': 'demo', 'domain_id': None, 'domain_name': 'default'})}) |
+| name                | 192.168.3.144                                                                                                                                                                    |
+| port_details        | None                                                                                                                                                                             |
+| port_id             | None                                                                                                                                                                             |
+| project_id          | 14b03537059c4f5ebade3a03a70219d4                                                                                                                                                 |
+| qos_policy_id       | None                                                                                                                                                                             |
+| revision_number     | 0                                                                                                                                                                                |
+| router_id           | None                                                                                                                                                                             |
+| status              | DOWN                                                                                                                                                                             |
+| subnet_id           | None                                                                                                                                                                             |
+| tags                | []                                                                                                                                                                               |
+| updated_at          | 2020-07-26T10:50:34Z                                                                                                                                                             |
++---------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+
+$ openstack server add floating ip selfservice-instance 192.168.3.144
+$ openstack server list
++--------------------------------------+----------------------+--------+---------------------------------------+--------+---------+
+| ID                                   | Name                 | Status | Networks                              | Image  | Flavor  |
++--------------------------------------+----------------------+--------+---------------------------------------+--------+---------+
+| 735f59fa-4a72-4787-8768-1ab4d6824a4e | selfservice-instance | ACTIVE | selfservice=10.0.0.228, 192.168.3.144 | cirros | m1.nano |
++--------------------------------------+----------------------+--------+---------------------------------------+--------+---------+
+→ インスタンスにFloatingIPが付いたのでOK.
+
+[ogalush@ryunosuke ~]$ ping -c 3 192.168.3.144
+PING 192.168.3.144 (192.168.3.144) 56(84) bytes of data.
+From 192.168.3.144 icmp_seq=1 Destination Host Unreachable
+From 192.168.3.144 icmp_seq=2 Destination Host Unreachable
+From 192.168.3.144 icmp_seq=3 Destination Host Unreachable
+
+--- 192.168.3.144 ping statistics ---
+3 packets transmitted, 0 received, +3 errors, 100% packet loss, time 60ms
+pipe 3
+[ogalush@ryunosuke ~]$ ping -c 3 10.0.0.228
+PING 10.0.0.228 (10.0.0.228) 56(84) bytes of data.
+
+--- 10.0.0.228 ping statistics ---
+3 packets transmitted, 0 received, 100% packet loss, time 52ms
+
+[ogalush@ryunosuke ~]$
+→ これまた繋がらない.
+```
