@@ -867,6 +867,33 @@ $ sudo -s /bin/sh -c "nova-manage cell_v2 list_cells" nova
 | cell1 | 373f5d0c-ac8f-4864-aa93-db34aead5187 | rabbit://openstack:****@192.168.3.200:5672/ |    mysql+pymysql://nova:****@192.168.3.200/nova    |  False   |
 +-------+--------------------------------------+---------------------------------------------+----------------------------------------------------+----------+
 → 表示されたのでOK.
+
+※バグ対応(nova-status upgrade checkでエラーとなる対応)
+・On Stein, "nova-status upgrade check" check failed [closed]
+https://ask.openstack.org/en/question/122313/on-stein-nova-status-upgrade-check-check-failed/
+----
+$ sudo chmod -v 644 /etc/nova/nova.conf
+mode of '/etc/nova/nova.conf' changed from 0640 (rw-r-----) to 0644 (rw-r--r--)
+$ sudo chmod -v 644 /etc/nova/policy.json
+mode of '/etc/nova/policy.json' changed from 0640 (rw-r-----) to 0644 (rw-r--r--)
+$ sudo chmod -v 644 /usr/share/nova/nova-dist.conf
+$ sudo cp -pv /etc/httpd/conf.d/00-placement-api.conf  /tmp
+$ sudo diff --unified=0 /tmp/00-placement-api.conf /etc/httpd/conf.d/00-placement-api.conf 
+--- /tmp/00-placement-api.conf  2020-05-13 21:20:33.000000000 +0900
++++ /etc/httpd/conf.d/00-placement-api.conf     2020-07-26 17:43:23.757368457 +0900
+@@ -15,0 +16,9 @@
++  <Directory /usr/bin>
++    <IfVersion >= 2.4>
++      Require all granted
++    </IfVersion>
++    <IfVersion < 2.4>
++      Order allow,deny
++      Allow from all
++    </IfVersion>
++  </Directory>
+$
+→ VirtualHostの中にDirectory設定を入れる.
+----
 ```
 
 ### Finalize installation
@@ -987,27 +1014,28 @@ $ openstack image list
 | 64becb16-bd9a-41c0-b955-e8bf38fa1348 | cirros | active |
 +--------------------------------------+--------+--------+
 
-[ogalush@ryunosuke ~]$ sudo chmod -v 644 /etc/nova/nova.conf 
-mode of '/etc/nova/nova.conf' changed from 0640 (rw-r-----) to 0644 (rw-r--r--)
-[ogalush@ryunosuke ~]$ sudo chmod -v 644 /usr/share/nova/nova-dist.conf
-mode of '/usr/share/nova/nova-dist.conf' changed from 0640 (rw-r-----) to 0644 (rw-r--r--)
 $ nova-status upgrade check
-Error:
-Traceback (most recent call last):
-  File "/usr/lib/python3.6/site-packages/nova/cmd/status.py", line 465, in main
-    ret = fn(*fn_args, **fn_kwargs)
-  File "/usr/lib/python3.6/site-packages/oslo_upgradecheck/upgradecheck.py", line 102, in check
-    result = func(self)
-  File "/usr/lib/python3.6/site-packages/nova/cmd/status.py", line 165, in _check_placement
-    versions = self._placement_get("/")
-  File "/usr/lib/python3.6/site-packages/nova/cmd/status.py", line 155, in _placement_get
-    return client.get(path, raise_exc=True).json()
-  File "/usr/lib/python3.6/site-packages/keystoneauth1/adapter.py", line 386, in get
-    return self.request(url, 'GET', **kwargs)
-  File "/usr/lib/python3.6/site-packages/keystoneauth1/adapter.py", line 248, in request
-    return self.session.request(url, method, **kwargs)
-  File "/usr/lib/python3.6/site-packages/keystoneauth1/session.py", line 968, in request
-    raise exceptions.from_response(resp, method, url)
-keystoneauth1.exceptions.http.Forbidden: Forbidden (HTTP 403)
-→ なんかエラー
++------------------------------------+
+| Upgrade Check Results              |
++------------------------------------+
+| Check: Cells v2                    |
+| Result: Success                    |
+| Details: None                      |
++------------------------------------+
+| Check: Placement API               |
+| Result: Success                    |
+| Details: None                      |
++------------------------------------+
+| Check: Ironic Flavor Migration     |
+| Result: Success                    |
+| Details: None                      |
++------------------------------------+
+| Check: Cinder API                  |
+| Result: Success                    |
+| Details: None                      |
++------------------------------------+
+| Check: Policy Scope-based Defaults |
+| Result: Success                    |
+| Details: None                      |
++------------------------------------+
 ```
