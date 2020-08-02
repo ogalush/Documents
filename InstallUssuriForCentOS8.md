@@ -854,6 +854,7 @@ $ sudo vim /etc/nova/nova.conf
 + enabled = true
 + server_listen = $my_ip
 + server_proxyclient_address = $my_ip
++ keymap=ja
 ...
 [glance]
 + api_servers = http://192.168.3.200:9292
