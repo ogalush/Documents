@@ -854,7 +854,6 @@ $ sudo vim /etc/nova/nova.conf
 + enabled = true
 + server_listen = $my_ip
 + server_proxyclient_address = $my_ip
-+ keymap=ja
 ...
 [glance]
 + api_servers = http://192.168.3.200:9292
@@ -872,6 +871,11 @@ $ sudo vim /etc/nova/nova.conf
 + username = placement
 + password = password
 ----
+
+※2020.8.2
+keymap=jaは無効化されたため利用不可。
+代替案は不明。(無さそう)
+https://bugs.launchpad.net/nova/+bug/1682020
 
 $ sudo -s /bin/sh -c "nova-manage api_db sync" nova
 $ sudo -s /bin/sh -c "nova-manage cell_v2 map_cell0" nova
