@@ -1793,3 +1793,61 @@ rtt min/avg/max/mdev = 0.218/0.234/0.244/0.021 ms
 → FloatingIPへのpingが通ったのでOK.
 ```
 
+# Horizon
+https://docs.openstack.org/horizon/ussuri/install/
+## Install and configure for Red Hat Enterprise Linux and CentOS
+https://docs.openstack.org/horizon/ussuri/install/install-rdo.html
+### Install and configure components
+```
+$ sudo yum install -y openstack-dashboard
+$ sudo vim /etc/openstack-dashboard/local_settings 
+----
+- OPENSTACK_HOST = "127.0.0.1"
++ OPENSTACK_HOST = "192.168.3.200"
+- ALLOWED_HOSTS = ['horizon.example.com', 'localhost']
++ ALLOWED_HOSTS = ['*']
++ SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
++ CACHES = {
++     'default': {
++          'BACKEND': 'django.core.cache.backends.memcached.MemcachedCache',
++          'LOCATION': '192.168.3.200:11211',
++     }
++ }
+...
++ OPENSTACK_API_VERSIONS = {
++     "identity": 3,
++     "image": 2,
++     "volume": 3,
++ }
++ OPENSTACK_KEYSTONE_DEFAULT_DOMAIN = "default"
++ OPENSTACK_KEYSTONE_DEFAULT_ROLE = "user"
+- TIME_ZONE = "UTC"
++ TIME_ZONE = "Asia/Tokyo"
++ WEBROOT = '/dashboard'
+----
+WEBROOTを入れたのは以下のバグ対応のため.
+[Horizon Install Guide - missing 'WEBROOT' directive in horizon config file](https://bugs.launchpad.net/horizon/+bug/1853651)  
+
+$ sudo vim /etc/httpd/conf.d/openstack-dashboard.conf
+----
++ WSGIApplicationGroup %{GLOBAL}
+----
+```
+
+### Finalize installation
+```
+$ sudo systemctl restart httpd.service memcached.service
+$ sudo systemctl is-active httpd.service memcached.service
+active
+active
+```
+
+## Verify operation for Red Hat Enterprise Linux and CentOS
+https://docs.openstack.org/horizon/ussuri/install/verify-rdo.html  
+以下へアクセスしてみる.
+[http://192.168.3.200/dashboard](http://192.168.3.200/dashboard)
+```
+http://192.168.3.200/auth/login/?next=/dashboard/
+Not Found
+The requested URL /auth/login/ was not found on this server.
+```
