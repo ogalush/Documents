@@ -1804,6 +1804,8 @@ $ sudo vim /etc/openstack-dashboard/local_settings
 ----
 - OPENSTACK_HOST = "127.0.0.1"
 + OPENSTACK_HOST = "192.168.3.200"
+- OPENSTACK_KEYSTONE_URL = "http://%s/identity/v3" % OPENSTACK_HOST
++ OPENSTACK_KEYSTONE_URL = "http://%s:5000/identity/v3" % OPENSTACK_HOST
 - ALLOWED_HOSTS = ['horizon.example.com', 'localhost']
 + ALLOWED_HOSTS = ['*']
 + SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
