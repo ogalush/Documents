@@ -1762,7 +1762,8 @@ PING 10.0.0.228 (10.0.0.228) 56(84) bytes of data.
 
 ## firewalld
 Firewalldが起動している状態の場合、vncなどの接続が切れるので無効化しておく.  
-参考: http://www.oss-note.com/centos/centos76/stein2
+参考: http://www.oss-note.com/centos/centos76/stein2  
+https://docs.openstack.org/install-guide/firewalls-default-ports.html
 ```
 $ sudo systemctl is-enabled firewalld
 enabled
