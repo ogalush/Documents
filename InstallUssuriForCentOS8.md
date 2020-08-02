@@ -111,6 +111,17 @@ $ sudo rabbitmqctl add_user openstack password
 Adding user "openstack" ...
 $ sudo rabbitmqctl set_permissions openstack ".*" ".*" ".*"
 Setting permissions for user "openstack" in vhost "/" ...
+
+OS再起動時にrabbitmq-serverの起動に失敗するので自動再起動設定を入れておく. (IPv6があるとなるらしい)
+$ ls -l /etc/systemd/system/multi-user.target.wants/rabbitmq-server.service
+lrwxrwxrwx 1 root root 47 Jul 26 15:55 /etc/systemd/system/multi-user.target.wants/rabbitmq-server.service -> /usr/lib/systemd/system/rabbitmq-server.service
+$ sudo cp -pv /usr/lib/systemd/system/rabbitmq-server.service ~
+'/usr/lib/systemd/system/rabbitmq-server.service' -> '/home/ogalush/rabbitmq-server.service'
+$ sudo vim /usr/lib/systemd/system/rabbitmq-server.service
+----
++Restart=on-failure
++RestartSec=10
+----
 ```
 
 ## Memcached for RHEL and CentOS
