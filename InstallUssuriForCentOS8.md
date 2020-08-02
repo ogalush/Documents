@@ -1758,3 +1758,36 @@ PING 10.0.0.228 (10.0.0.228) 56(84) bytes of data.
 [ogalush@ryunosuke ~]$
 → これまた繋がらない.
 ```
+
+## firewalld
+Firewalldが起動している状態の場合、vncなどの接続が切れるので無効化しておく.  
+参考: http://www.oss-note.com/centos/centos76/stein2
+```
+$ sudo systemctl is-enabled firewalld
+enabled
+$ sudo systemctl is-active firewalld
+active
+$ sudo systemctl stop firewalld
+$ sudo systemctl disable firewalld
+Removed /etc/systemd/system/multi-user.target.wants/firewalld.service.
+Removed /etc/systemd/system/dbus-org.fedoraproject.FirewallD1.service.
+$ sudo systemctl is-enabled firewalld
+disabled
+$ sudo systemctl is-active firewalld
+inactive
+```
+確認
+```
+$ ping -c 4 192.168.3.144
+PING 192.168.3.144 (192.168.3.144) 56(84) bytes of data.
+64 bytes from 192.168.3.144: icmp_seq=1 ttl=63 time=0.242 ms
+64 bytes from 192.168.3.144: icmp_seq=2 ttl=63 time=0.218 ms
+64 bytes from 192.168.3.144: icmp_seq=3 ttl=63 time=0.244 ms
+64 bytes from 192.168.3.144: icmp_seq=4 ttl=63 time=0.235 ms
+
+--- 192.168.3.144 ping statistics ---
+4 packets transmitted, 4 received, 0% packet loss, time 73ms
+rtt min/avg/max/mdev = 0.218/0.234/0.244/0.021 ms
+→ FloatingIPへのpingが通ったのでOK.
+```
+
