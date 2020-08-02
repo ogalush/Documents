@@ -1157,6 +1157,7 @@ $ sudo vim /etc/neutron/neutron.conf
 + auth_strategy = keystone
 + notify_nova_on_port_status_changes = true
 + notify_nova_on_port_data_changes = true
++ dns_domain = localdomain
 ...
 [database]
 + connection = mysql+pymysql://neutron:password@192.168.3.200/neutron
