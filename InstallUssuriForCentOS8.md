@@ -135,7 +135,17 @@ $ sudo vim /etc/sysconfig/memcached
 - OPTIONS="-l 127.0.0.1,::1"
 + OPTIONS="-l 127.0.0.1,::1,192.168.3.200"
 ----
+
+$ sudo vim /usr/lib/systemd/system/memcached.service
+----
+[Service]
+...
++ Restart=on-failure
++ RestartSec=10
+----
+→ OS起動時にデーモン起動に失敗するため入れておく.
 ```
+
 ### Finalize installation
 ```
 $ sudo systemctl enable memcached.service
