@@ -133,8 +133,12 @@ $ sudo cp -pv /etc/sysconfig/memcached /tmp
 $ sudo vim /etc/sysconfig/memcached
 ----
 - OPTIONS="-l 127.0.0.1,::1"
-+ OPTIONS="-l 127.0.0.1,::1,192.168.3.200"
++ OPTIONS="-l *"
 ----
+→ インターフェイス指定の場合、OS起動時にmemcached起動に失敗するため全てのインターフェイスへ変更した.
+・0009662: Memcached fails to start on boot if it is bound to ip address from DHCP
+https://bugs.centos.org/view.php?id=9662
+
 
 $ sudo vim /usr/lib/systemd/system/memcached.service
 ----
