@@ -42,7 +42,7 @@ MS Name/IP address         Stratum Poll Reach LastRx Last sample
 https://docs.openstack.org/install-guide/environment-packages-rdo.html
 ```
 $ sudo yum -y install centos-release-openstack-ussuri
-$ sudo yum config-manager --set-enabled PowerTools
+$ sudo yum config-manager --set-enabled powertools
 $ sudo yum -y upgrade
 $ sudo yum -y install python3-openstackclient
 $ sudo yum -y install openstack-selinux
@@ -133,4 +133,80 @@ Checking host mapping for compute host 'hayao.localdomain': 88361479-0cc7-40f6-9
 Creating host mapping for compute host 'hayao.localdomain': 88361479-0cc7-40f6-9e1e-43ba2c7bf616
 Found 1 unmapped computes in cell: 373f5d0c-ac8f-4864-aa93-db34aead5187
 [ogalush@ryunosuke ~]$
+```
+
+# Neutron
+## Install and configure compute node
+https://docs.openstack.org/neutron/ussuri/install/compute-install-rdo.html
+### Install the components
+```
+$ sudo yum -y install openstack-neutron-linuxbridge ebtables ipset
+```
+### Configure the common component
+```
+$ sudo vim /etc/neutron/neutron.conf
+----
+[DEFAULT]
++ transport_url = rabbit://openstack:password@192.168.3.200
++ auth_strategy = keystone
+...
+[keystone_authtoken]
++ www_authenticate_uri = http://192.168.3.200:5000
++ auth_url = http://192.168.3.200:5000
++ memcached_servers = 192.168.3.200:11211
++ auth_type = password
++ project_domain_name = default
++ user_domain_name = default
++ project_name = service
++ username = neutron
++ password = password
+[oslo_concurrency]
++ lock_path = /var/lib/neutron/tmp
+----
+```
+### Configure networking options
+Networking Option 2: Self-service networks
+https://docs.openstack.org/neutron/ussuri/install/compute-install-option2-rdo.html
+#### Configure the Linux bridge agent
+```
+$ sudo vim /etc/neutron/plugins/ml2/linuxbridge_agent.ini
+---
++ [linux_bridge]
++ physical_interface_mappings = provider:enp3s0
+
++ [vxlan]
++ enable_vxlan = true
++ local_ip = 192.168.3.210
++ l2_population = true
+
++ [securitygroup]
++ enable_security_group = true
++ firewall_driver = neutron.agent.linux.iptables_firewall.IptablesFirewallDriver
+---
+```
+### Configure the Compute service to use the Networking service
+```
+$ sudo vim /etc/nova/nova.conf
+---
+[neutron]
++ auth_url = http://192.168.3.200:5000
++ auth_type = password
++ project_domain_name = default
++ user_domain_name = default
++ region_name = RegionOne
++ project_name = service
++ username = neutron
++ password = password
+---
+```
+### Finalize installation
+```
+$ sudo systemctl restart openstack-nova-compute.service
+$ sudo systemctl enable neutron-linuxbridge-agent.service
+Created symlink /etc/systemd/system/multi-user.target.wants/neutron-linuxbridge-agent.service → /usr/lib/systemd/system/neutron-linuxbridge-agent.service.
+$ sudo systemctl start neutron-linuxbridge-agent.service
+$ sudo systemctl is-active neutron-linuxbridge-agent.service
+active
+$ sudo systemctl is-enabled neutron-linuxbridge-agent.service
+enabled
 ```
