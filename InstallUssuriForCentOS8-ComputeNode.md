@@ -38,6 +38,28 @@ MS Name/IP address         Stratum Poll Reach LastRx Last sample
 [ogalush@hayao ~]$ 
 → 同期しているためOK.
 ```
+## Firewalld
+Firewalldが起動している状態の場合、vncなどの接続が切れるので無効化しておく.  
+参考: http://www.oss-note.com/centos/centos76/stein2  
+https://docs.openstack.org/install-guide/firewalls-default-ports.html  
+```
+[ogalush@hayao ~]$ uname -n
+hayao.localdomain
+[ogalush@hayao ~]$ sudo systemctl is-enabled firewalld
+enabled
+[ogalush@hayao ~]$ sudo systemctl is-active firewalld
+active
+[ogalush@hayao ~]$ sudo systemctl stop firewalld
+[ogalush@hayao ~]$ sudo systemctl disable firewalld
+Removed /etc/systemd/system/multi-user.target.wants/firewalld.service.
+Removed /etc/systemd/system/dbus-org.fedoraproject.FirewallD1.service.
+[ogalush@hayao ~]$ sudo systemctl is-enabled firewalld
+disabled
+[ogalush@hayao ~]$ sudo systemctl is-active firewalld
+inactive
+[ogalush@hayao ~]$ 
+```
+# Install Packages
 ## OpenStack packages for RHEL and CentOS
 https://docs.openstack.org/install-guide/environment-packages-rdo.html
 ```
