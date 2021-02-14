@@ -47,3 +47,90 @@ $ sudo yum -y upgrade
 $ sudo yum -y install python3-openstackclient
 $ sudo yum -y install openstack-selinux
 ```
+# Nova
+## Install and configure a compute node for Red Hat Enterprise Linux and CentOS
+https://docs.openstack.org/nova/ussuri/install/compute-install-rdo.html
+### Install and configure components
+```
+$ sudo yum install -y openstack-nova-compute
+$ sudo vim /etc/nova/nova.conf
+---
++ [DEFAULT]
++ enabled_apis = osapi_compute,metadata
++ transport_url = rabbit://openstack:password@192.168.3.200
++ my_ip = 192.168.3.210
+...
+[api]
++ auth_strategy = keystone
+...
+[keystone_authtoken]
++ www_authenticate_uri = http://192.168.3.200:5000/
++ auth_url = http://192.168.3.200:5000/
++ memcached_servers = 192.168.3.200:11211
++ auth_type = password
++ project_domain_name = default
++ user_domain_name = default
++ project_name = service
++ username = nova
++ password = password
+...
+[vnc]
++ enabled = true
++ server_listen = 0.0.0.0
++ server_proxyclient_address = $my_ip
++ novncproxy_base_url = http://192.168.3.200:6080/vnc_auto.html
+...
+[glance]
++ api_servers = http://192.168.3.200:9292
+...
+[oslo_concurrency]
++ lock_path = /var/lib/nova/tmp
+...
+[placement]
++ region_name = RegionOne
++ project_domain_name = default
++ project_name = service
++ auth_type = password
++ user_domain_name = default
++ auth_url = http://192.168.3.200:5000/v3
++ username = placement
++ password = password
+...
+[libvirt]
++ virt_type = kvm
+...
+[scheduler]
++ discover_hosts_in_cells_interval = 300
+---
+```
+### Finalize installation
+```
+$ egrep -c '(vmx|svm)' /proc/cpuinfo
+4
+$ sudo systemctl enable libvirtd.service openstack-nova-compute.service
+Created symlink /etc/systemd/system/multi-user.target.wants/openstack-nova-compute.service → /usr/lib/systemd/system/openstack-nova-compute.service.
+$ sudo systemctl start libvirtd.service openstack-nova-compute.service
+```
+### Add the compute node to the cell database
+```
+[ogalush@ryunosuke ~]$ source ~/admin-openrc 
+[ogalush@ryunosuke ~]$ openstack compute service list --service nova-compute
++----+--------------+-----------------------+------+---------+-------+----------------------------+
+| ID | Binary       | Host                  | Zone | Status  | State | Updated At                 |
++----+--------------+-----------------------+------+---------+-------+----------------------------+
+|  7 | nova-compute | ryunosuke.localdomain | nova | enabled | up    | 2021-02-14T15:21:33.000000 |
+|  8 | nova-compute | hayao.localdomain     | nova | enabled | up    | 2021-02-14T15:21:38.000000 |
++----+--------------+-----------------------+------+---------+-------+----------------------------+
+[ogalush@ryunosuke ~]$
+→ 追加したホスト(hayao)が入っているためOK.
+
+[ogalush@ryunosuke ~]$ sudo -s /bin/sh -c "nova-manage cell_v2 discover_hosts --verbose" nova
+[sudo] password for ogalush: 
+Found 2 cell mappings.
+Skipping cell0 since it does not contain hosts.
+Getting computes from cell 'cell1': 373f5d0c-ac8f-4864-aa93-db34aead5187
+Checking host mapping for compute host 'hayao.localdomain': 88361479-0cc7-40f6-9e1e-43ba2c7bf616
+Creating host mapping for compute host 'hayao.localdomain': 88361479-0cc7-40f6-9e1e-43ba2c7bf616
+Found 1 unmapped computes in cell: 373f5d0c-ac8f-4864-aa93-db34aead5187
+[ogalush@ryunosuke ~]$
+```
