@@ -183,6 +183,14 @@ $ sudo vim /etc/neutron/plugins/ml2/linuxbridge_agent.ini
 + enable_security_group = true
 + firewall_driver = neutron.agent.linux.iptables_firewall.IptablesFirewallDriver
 ---
+
+$ sudo vim /etc/sysctl.conf
+---
+net.bridge.bridge-nf-call-iptables=1
+net.bridge.bridge-nf-call-ip6tables=1
+---
+$ sudo sysctl -p
+→ 反映.
 ```
 ### Configure the Compute service to use the Networking service
 ```
