@@ -210,3 +210,20 @@ active
 $ sudo systemctl is-enabled neutron-linuxbridge-agent.service
 enabled
 ```
+### Verificaiton
+```
+[ogalush@ryunosuke ~]$ source ~/admin-openrc 
+[ogalush@ryunosuke ~]$ neutron agent-list
+neutron CLI is deprecated and will be removed in the future. Use openstack CLI instead.
++--------------------------------------+--------------------+-----------------------+-------------------+-------+----------------+---------------------------+
+| id                                   | agent_type         | host                  | availability_zone | alive | admin_state_up | binary                    |
++--------------------------------------+--------------------+-----------------------+-------------------+-------+----------------+---------------------------+
+| 33b9dedc-4ca4-4c85-ab58-4af65ff33f2c | Linux bridge agent | ryunosuke.localdomain |                   | :-)   | True           | neutron-linuxbridge-agent |
+| 5416772c-ffd0-4d98-bdfa-0152d21f820e | Linux bridge agent | hayao.localdomain     |                   | :-)   | True           | neutron-linuxbridge-agent |
+| 8e5ee9c9-ae94-4ba9-8b12-169b2945647e | DHCP agent         | ryunosuke.localdomain | nova              | :-)   | True           | neutron-dhcp-agent        |
+| ba69e63d-65a0-4154-84bf-3412beaea557 | L3 agent           | ryunosuke.localdomain | nova              | :-)   | True           | neutron-l3-agent          |
+| bae18d7b-c8a1-48a0-bb2f-3a43013002d6 | Metadata agent     | ryunosuke.localdomain |                   | :-)   | True           | neutron-metadata-agent    |
++--------------------------------------+--------------------+-----------------------+-------------------+-------+----------------+---------------------------+
+[ogalush@ryunosuke ~]$
+→ 追加したNode(hayao)のagentが入っていればOK.
+```
