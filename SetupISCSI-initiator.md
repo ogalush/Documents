@@ -13,11 +13,10 @@ qnapnas(QNAP TS-231p)
 OpenStack nova  
 10.0.0.0/24
 ```
-[ogalush@hayao-test ~]$ cat /etc/redhat-release
+$ cat /etc/redhat-release
 CentOS Stream release 8
-[ogalush@hayao-test ~]$ ip addr show eth0 |grep 10\.0\.0
+$ ip addr show eth0 |grep 10\.0\.0
     inet 10.0.0.52/24 brd 10.0.0.255 scope global dynamic noprefixroute eth0
-[ogalush@hayao-test ~]$
 ```
 ## 手順
 ### iSCSI Target準備
@@ -122,12 +121,11 @@ sda  2:0:0:0    disk QNAP     iSCSI Storage    4.0  iscsi
 ### フォーマット
 #### Partition作成
 ```
-[ogalush@hayao-test ~]$ sudo fdisk /dev/sda -l
+$ sudo fdisk /dev/sda -l
 Disk /dev/sda: 20 GiB, 21474836480 bytes, 41943040 sectors
 Units: sectors of 1 * 512 = 512 bytes
 Sector size (logical/physical): 512 bytes / 512 bytes
 I/O size (minimum/optimal): 2048 bytes / 2048 bytes
-[ogalush@hayao-test ~]$
 → 20GBと認識している.
 
 作成
@@ -171,16 +169,15 @@ The partition table has been altered.
 Calling ioctl() to re-read partition table.
 Syncing disks.
 
-[ogalush@hayao-test ~]$ ls -l /dev/sda*
+$ ls -l /dev/sda*
 brw-rw---- 1 root disk 8, 0 Feb 23 18:34 /dev/sda
 brw-rw---- 1 root disk 8, 1 Feb 23 18:34 /dev/sda1
-[ogalush@hayao-test ~]$
 → /dev/sda1が作成できたのでOK.
 ```
 #### Format Partition
 xfsでフォーマットしておく.
 ```
-[ogalush@hayao-test ~]$ sudo mkfs -t xfs /dev/sda1
+$ sudo mkfs -t xfs /dev/sda1
 mkfs.xfs: Volume reports stripe unit of 2048 bytes and stripe width of 0, ignoring.
 meta-data=/dev/sda1              isize=512    agcount=4, agsize=1310656 blks
          =                       sectsz=512   attr=2, projid32bit=1
@@ -192,12 +189,11 @@ naming   =version 2              bsize=4096   ascii-ci=0, ftype=1
 log      =internal log           bsize=4096   blocks=2560, version=2
          =                       sectsz=512   sunit=0 blks, lazy-count=1
 realtime =none                   extsz=4096   blocks=0, rtextents=0
-[ogalush@hayao-test ~]$
 ```
 #### Mount Partition
 ```
 $ sudo mkdir -pv /mnt/iscsidrive
-[ogalush@hayao-test ~]$ sudo mount -t xfs /dev/sda1 /mnt
+$ sudo mount -t xfs /dev/sda1 /mnt
 $ sudo mount -t xfs /dev/sda1 /mnt/iscsidrive
 $ df -h /mnt/iscsidrive
 Filesystem      Size  Used Avail Use% Mounted on
@@ -211,7 +207,7 @@ OS再起動後もマウントさせる場合は/etc/fstabへも設定する.
 #### 接続情報の表示(参考)
 セッション情報を表示するコマンド.
 ```
-[ogalush@hayao-test ~]$ sudo iscsiadm -m session -P 3
+$ sudo iscsiadm -m session -P 3
 iSCSI Transport Class version 2.0-870
 version 6.2.1.2-0
 Target: iqn.2004-04.com.qnap:ts-231p:iscsi.qnapnas.22dcb3 (non-flash)
@@ -266,8 +262,8 @@ $
 ```
 ## 性能測定
 ### Read性能
-689.76Mbps  
-(= 86.22MB * 8(Byte → bit))  
+689.76 Mbps  
+(= 86.22 MB * 8(Byte → bit))  
 * NIC: 1Gbps  
 * NAS: 6Gbps (SATA 6Gbps * 2本 RAID1)  
 
@@ -290,3 +286,20 @@ $ sudo hdparm -Tt /dev/vda1
  Timing buffered disk reads: 2058 MB in  3.02 seconds = 682.34 MB/sec・・・キャッシュ無し
 ```
 ### Write性能
+576.0 Mbps  
+(= 72.0 MB * 8(Byte → bit))  
+dd + oflag=directでキャッシュ無し書き込み.
+```
+iSCSI性能
+$ dd if=/dev/zero of=/mnt/iscsidrive/testdir/1gb.dat bs=1M count=1000 oflag=direct
+1000+0 records in
+1000+0 records out
+1048576000 bytes (1.0 GB, 1000 MiB) copied, 14.5656 s, 72.0 MB/s
+
+
+SATA SSD性能（比較用）
+$ dd if=/dev/zero of=/tmp/1gb.dat bs=1M count=1000 oflag=direct
+1000+0 records in
+1000+0 records out
+1048576000 bytes (1.0 GB, 1000 MiB) copied, 4.68762 s, 224 MB/s
+```
