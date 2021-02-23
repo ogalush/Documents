@@ -19,6 +19,7 @@ CentOS Stream release 8
     inet 10.0.0.52/24 brd 10.0.0.255 scope global dynamic noprefixroute eth0
 [ogalush@hayao-test ~]$
 ```
+## 手順
 ### iSCSI Target準備
 #### 保存領域を準備する
 ストレージ＆スナップショットで、ボリュームサイズ変更をして保存領域を空ける.
@@ -77,31 +78,128 @@ $ sudo iscsiadm -m discovery -t st -p 192.168.3.248
 #### Set Authentication File
 iscsi.confを編集して認証情報を設定する.  
 CHAP認証をするためauthmethodを設定.  
-node.session.auth.username_in(password_in)を設定する.  
-node.session.auth.username(password)はTarget側のパラメータのため変更しなくてOK.  
+node.session.auth.username(password)を設定する.  
+node.session.auth.username_in(password_in)はTarget→Initiator方向の認証パラメータのため省略OK.  
 ```
 $ sudo cp -v /etc/iscsi/iscsid.conf{,.def}
 '/etc/iscsi/iscsid.conf' -> '/etc/iscsi/iscsid.conf.def'
 $ sudo vim /etc/iscsi/iscsid.conf
-
 $ sudo diff --unified=0 /etc/iscsi/iscsid.conf{.def,}
 --- /etc/iscsi/iscsid.conf.def  2021-02-23 17:55:34.050254657 +0900
-+++ /etc/iscsi/iscsid.conf      2021-02-23 18:05:00.515715318 +0900
++++ /etc/iscsi/iscsid.conf      2021-02-23 18:26:21.507143301 +0900
 @@ -58 +58 @@
 -#node.session.auth.authmethod = CHAP
 +node.session.auth.authmethod = CHAP
-@@ -74,2 +74,2 @@
--#node.session.auth.username_in = username_in
--#node.session.auth.password_in = password_in
-+node.session.auth.username_in = admin
-+node.session.auth.password_in = passwordpassword
-[ogalush@hayao-test ~]$
+@@ -65 +65 @@
+-#node.session.auth.chap_algs = SHA3-256,SHA256,SHA1,MD5
++node.session.auth.chap_algs = SHA3-256,SHA256,SHA1,MD5
+@@ -69,2 +69,2 @@
+-#node.session.auth.username = username
+-#node.session.auth.password = password
++node.session.auth.username = admin
++node.session.auth.password = (パスワード文字列)
 
 適用
 $ sudo systemctl restart iscsid.service
 $ sudo systemctl status iscsid.service |grep Active
    Active: active (running) since Tue 2021-02-23 18:00:03 JST; 23s ago
 ```
-#### Connect iSCSI Target
+### iSCSI接続
+#### initiator → target接続確認
 ```
+$ sudo iscsiadm -m node -T iqn.2004-04.com.qnap:ts-231p:iscsi.qnapnas.22dcb3 -p 192.168.3.248 --login
+Logging in to [iface: default, target: iqn.2004-04.com.qnap:ts-231p:iscsi.qnapnas.22dcb3, portal: 192.168.3.248,3260]
+Login to [iface: default, target: iqn.2004-04.com.qnap:ts-231p:iscsi.qnapnas.22dcb3, portal: 192.168.3.248,3260] successful.
+→ successfulと表示されているためOK.
 ```
+#### ブロックデバイスとして認識したか確認
+```
+$ sudo lsblk --scsi
+NAME HCTL       TYPE VENDOR   MODEL             REV TRAN
+sda  2:0:0:0    disk QNAP     iSCSI Storage    4.0  iscsi
+→ QNAP + iscsi表示できているためOK.
+```
+### フォーマット
+#### Partition作成
+```
+[ogalush@hayao-test ~]$ sudo fdisk /dev/sda -l
+Disk /dev/sda: 20 GiB, 21474836480 bytes, 41943040 sectors
+Units: sectors of 1 * 512 = 512 bytes
+Sector size (logical/physical): 512 bytes / 512 bytes
+I/O size (minimum/optimal): 2048 bytes / 2048 bytes
+[ogalush@hayao-test ~]$
+→ 20GBと認識している.
+
+作成
+$ sudo fdisk /dev/sda
+Welcome to fdisk (util-linux 2.32.1).
+Changes will remain in memory only, until you decide to write them.
+Be careful before using the write command.
+
+Device does not contain a recognized partition table.
+Created a new DOS disklabel with disk identifier 0x2205b7ed.
+
+Command (m for help): p
+Disk /dev/sda: 20 GiB, 21474836480 bytes, 41943040 sectors
+Units: sectors of 1 * 512 = 512 bytes
+Sector size (logical/physical): 512 bytes / 512 bytes
+I/O size (minimum/optimal): 2048 bytes / 2048 bytes
+Disklabel type: dos
+Disk identifier: 0x2205b7ed
+→ 同じブロックデバイスを指定しているためOK.
+
+Command (m for help): n
+→ 新しいパーティション作成
+
+Partition type
+   p   primary (0 primary, 0 extended, 4 free)
+   e   extended (container for logical partitions)
+Select (default p): p
+Partition number (1-4, default 1): 1
+→ プライマリパーティション, 1番目を作成.
+
+First sector (2048-41943039, default 2048):
+Last sector, +sectors or +size{K,M,G,T,P} (2048-41943039, default 41943039):
+→ 指定無しで最大容量作成
+
+Created a new partition 1 of type 'Linux' and of size 20 GiB.
+
+Command (m for help): w
+→ 反映
+
+The partition table has been altered.
+Calling ioctl() to re-read partition table.
+Syncing disks.
+
+[ogalush@hayao-test ~]$ ls -l /dev/sda*
+brw-rw---- 1 root disk 8, 0 Feb 23 18:34 /dev/sda
+brw-rw---- 1 root disk 8, 1 Feb 23 18:34 /dev/sda1
+[ogalush@hayao-test ~]$
+→ /dev/sda1が作成できたのでOK.
+```
+#### Format Partition
+xfsでフォーマットしておく.
+```
+[ogalush@hayao-test ~]$ sudo mkfs -t xfs /dev/sda1
+mkfs.xfs: Volume reports stripe unit of 2048 bytes and stripe width of 0, ignoring.
+meta-data=/dev/sda1              isize=512    agcount=4, agsize=1310656 blks
+         =                       sectsz=512   attr=2, projid32bit=1
+         =                       crc=1        finobt=1, sparse=1, rmapbt=0
+         =                       reflink=1
+data     =                       bsize=4096   blocks=5242624, imaxpct=25
+         =                       sunit=0      swidth=0 blks
+naming   =version 2              bsize=4096   ascii-ci=0, ftype=1
+log      =internal log           bsize=4096   blocks=2560, version=2
+         =                       sectsz=512   sunit=0 blks, lazy-count=1
+realtime =none                   extsz=4096   blocks=0, rtextents=0
+[ogalush@hayao-test ~]$
+```
+#### mount Partition
+```
+[ogalush@hayao-test ~]$ sudo mount -t xfs /dev/sda1 /mnt
+[ogalush@hayao-test ~]$ df -h /mnt
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/sda1        20G  175M   20G   1% /mnt
+[ogalush@hayao-test ~]$
+```
+→ マウントできればOK.
