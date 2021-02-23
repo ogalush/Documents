@@ -264,3 +264,29 @@ Target: iqn.2004-04.com.qnap:ts-231p:iscsi.qnapnas.22dcb3 (non-flash)
                         Attached scsi disk sda          State: running
 $ 
 ```
+## 性能測定
+### Read性能
+689.76Mbps  
+(= 86.22MB * 8(Byte → bit))  
+* NIC: 1Gbps  
+* NAS: 6Gbps (SATA 6Gbps * 2本 RAID1)  
+
+NICに依存しいるように見える.  
+Neutron L3 agent(Router)を介しているためNIC速度よりも若干遅れる部分も妥当な印象.
+```
+iSCSI性能
+$ sudo hdparm -Tt /dev/sda1
+
+/dev/sda1:
+ Timing cached reads:   19918 MB in  1.99 seconds = 10007.56 MB/sec・・・キャッシュ有
+ Timing buffered disk reads: 260 MB in  3.02 seconds =  86.22 MB/sec・・・キャッシュ無し
+
+
+SATA SSD性能（比較用）
+$ sudo hdparm -Tt /dev/vda1
+
+/dev/vda1:
+ Timing cached reads:   19570 MB in  1.99 seconds = 9832.63 MB/sec・・・キャッシュ有
+ Timing buffered disk reads: 2058 MB in  3.02 seconds = 682.34 MB/sec・・・キャッシュ無し
+```
+### Write性能
