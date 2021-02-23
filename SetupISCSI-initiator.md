@@ -194,12 +194,16 @@ log      =internal log           bsize=4096   blocks=2560, version=2
 realtime =none                   extsz=4096   blocks=0, rtextents=0
 [ogalush@hayao-test ~]$
 ```
-#### mount Partition
+#### Mount Partition
 ```
+$ sudo mkdir -pv /mnt/iscsidrive
 [ogalush@hayao-test ~]$ sudo mount -t xfs /dev/sda1 /mnt
-[ogalush@hayao-test ~]$ df -h /mnt
+$ sudo mount -t xfs /dev/sda1 /mnt/iscsidrive
+$ df -h /mnt/iscsidrive
 Filesystem      Size  Used Avail Use% Mounted on
-/dev/sda1        20G  175M   20G   1% /mnt
-[ogalush@hayao-test ~]$
+/dev/sda1        20G  175M   20G   1% /mnt/iscsidrive
 ```
 → マウントできればOK.
+
+#### fstab設定 (適宜)
+OS再起動後もマウントさせる場合は/etc/fstabへも設定する.
