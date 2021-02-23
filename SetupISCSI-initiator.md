@@ -207,3 +207,60 @@ Filesystem      Size  Used Avail Use% Mounted on
 
 #### fstab設定 (適宜)
 OS再起動後もマウントさせる場合は/etc/fstabへも設定する.
+
+#### 接続情報の表示(参考)
+セッション情報を表示するコマンド.
+```
+[ogalush@hayao-test ~]$ sudo iscsiadm -m session -P 3
+iSCSI Transport Class version 2.0-870
+version 6.2.1.2-0
+Target: iqn.2004-04.com.qnap:ts-231p:iscsi.qnapnas.22dcb3 (non-flash)
+        Current Portal: 192.168.3.248:3260,1
+        Persistent Portal: 192.168.3.248:3260,1
+                **********
+                Interface:
+                **********
+                Iface Name: default
+                Iface Transport: tcp
+                Iface Initiatorname: iqn.1994-05.com.redhat:408bbd707ab
+                Iface IPaddress: 10.0.0.52
+                Iface HWaddress: default
+                Iface Netdev: default
+                SID: 27
+                iSCSI Connection State: LOGGED IN
+                iSCSI Session State: LOGGED_IN
+                Internal iscsid Session State: NO CHANGE
+                *********
+                Timeouts:
+                *********
+                Recovery Timeout: 120
+                Target Reset Timeout: 30
+                LUN Reset Timeout: 30
+                Abort Timeout: 15
+                *****
+                CHAP:
+                *****
+                username: admin
+                password: ********
+                username_in: <empty>
+                password_in: ********
+                ************************
+                Negotiated iSCSI params:
+                ************************
+                HeaderDigest: None
+                DataDigest: None
+                MaxRecvDataSegmentLength: 262144
+                MaxXmitDataSegmentLength: 262144
+                FirstBurstLength: 65536
+                MaxBurstLength: 262144
+                ImmediateData: Yes
+                InitialR2T: Yes
+                MaxOutstandingR2T: 1
+                ************************
+                Attached SCSI devices:
+                ************************
+                Host Number: 2  State: running
+                scsi2 Channel 00 Id 0 Lun: 0
+                        Attached scsi disk sda          State: running
+$ 
+```
