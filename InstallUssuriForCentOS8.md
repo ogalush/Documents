@@ -363,26 +363,26 @@ https://docs.openstack.org/keystone/ussuri/install/keystone-openrc-rdo.html
 ### Creating the scripts
 ```
 $ cat << _EOF_ > ~/admin-openrc
-> export OS_PROJECT_DOMAIN_NAME=default
-> export OS_USER_DOMAIN_NAME=default
-> export OS_PROJECT_NAME=admin
-> export OS_USERNAME=admin
-> export OS_PASSWORD=password
-> export OS_AUTH_URL=http://192.168.3.200:5000/v3
-> export OS_IDENTITY_API_VERSION=3
-> export OS_IMAGE_API_VERSION=2
-> _EOF_
+ export OS_PROJECT_DOMAIN_NAME=default
+ export OS_USER_DOMAIN_NAME=default
+ export OS_PROJECT_NAME=admin
+ export OS_USERNAME=admin
+ export OS_PASSWORD=password
+ export OS_AUTH_URL=http://192.168.3.200:5000/v3
+ export OS_IDENTITY_API_VERSION=3
+ export OS_IMAGE_API_VERSION=2
+_EOF_
 
 $ cat << _EOF_ > ~/demo-openrc
-> export OS_PROJECT_DOMAIN_NAME=default
-> export OS_USER_DOMAIN_NAME=default
-> export OS_PROJECT_NAME=demo
-> export OS_USERNAME=demo
-> export OS_PASSWORD=password
-> export OS_AUTH_URL=http://192.168.3.200:5000/v3
-> export OS_IDENTITY_API_VERSION=3
-> export OS_IMAGE_API_VERSION=2
-> _EOF_
+ export OS_PROJECT_DOMAIN_NAME=default
+ export OS_USER_DOMAIN_NAME=default
+ export OS_PROJECT_NAME=demo
+ export OS_USERNAME=demo
+ export OS_PASSWORD=password
+ export OS_AUTH_URL=http://192.168.3.200:5000/v3
+ export OS_IDENTITY_API_VERSION=3
+ export OS_IMAGE_API_VERSION=2
+_EOF_
 
 $ chmod -v 400 ~/{admin,demo}-openrc
 mode of '/home/ogalush/admin-openrc' changed from 0664 (rw-rw-r--) to 0400 (r--------)
