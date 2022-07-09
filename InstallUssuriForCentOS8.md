@@ -67,8 +67,9 @@ $ sudo yum -y upgrade
 $ sudo yum -y install python3-openstackclient
 $ sudo yum -y install openstack-selinux
 ```
+※PowerTools → powertools  
 https://wiki.centos.org/Manuals/ReleaseNotes/CentOS8.2011#Yum_repo_file_and_repoid_changes
-※PowerTools → powertools
+
 
 ## SQL database for RHEL and CentOS
 https://docs.openstack.org/install-guide/environment-sql-database-rdo.html
