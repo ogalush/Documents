@@ -62,11 +62,13 @@ https://hackers-high.com/linux/easy-chrony-settings/
 https://docs.openstack.org/install-guide/environment-packages-rdo.html
 ```
 $ sudo yum -y install centos-release-openstack-ussuri
-$ sudo yum config-manager --set-enabled PowerTools
+$ sudo yum config-manager --set-enabled powertools
 $ sudo yum -y upgrade
 $ sudo yum -y install python3-openstackclient
 $ sudo yum -y install openstack-selinux
 ```
+https://wiki.centos.org/Manuals/ReleaseNotes/CentOS8.2011#Yum_repo_file_and_repoid_changes
+※PowerTools → powertools
 
 ## SQL database for RHEL and CentOS
 https://docs.openstack.org/install-guide/environment-sql-database-rdo.html
