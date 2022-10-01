@@ -374,16 +374,7 @@ OpenVPN対応の無料Clientがあるのでインストールする.
 - 接続先登録後、ta.keyは削除する.(初回のみファイルが存在しないとチェックされるため)
 - その後、VPN接続でサーバへ接続できれば完了.
 
-## ルータのポート開放
-ルータの管理画面でUDP 1194をOpenVPNサーバへ転送する設定にする.
-
-# 参考
-- [OpenVPN.Net](https://openvpn.net/)
-- [Ubuntu 16.04 の OpenVPN サーバの設定](http://transitive.info/2016/05/21/openvpn-on-ubuntu-1604/)
-- [OpenVPN and Routing and IPtables](https://serverfault.com/questions/570164/openvpn-and-routing-and-iptables)
-
-
-## 2022.10.1追記 IPv6設定
+## IPv6設定 (2022.10.1追記)
 IPv6アドレスでVPN接続出来るようにす.  
 ISPを変更するとIPv4 Over IPv6(MAP-E, transix)の影響で外部からIPv4接続でPort番号の制限を受けるため.  
   
@@ -415,3 +406,11 @@ SoftBank光(BBユニット)でIPv6をポート開放する.
 有効  2  許可  2400:xxxx:xxxx:xxxx:xxxx:xxxx:xxxx:b55f/128  UDP  1194-1194  LAN→WAN
 ANY  ANY
 ```
+
+## ルータのポート開放
+ルータの管理画面でUDP 1194をOpenVPNサーバへ転送する設定にする.
+
+# 参考
+- [OpenVPN.Net](https://openvpn.net/)
+- [Ubuntu 16.04 の OpenVPN サーバの設定](http://transitive.info/2016/05/21/openvpn-on-ubuntu-1604/)
+- [OpenVPN and Routing and IPtables](https://serverfault.com/questions/570164/openvpn-and-routing-and-iptables)
