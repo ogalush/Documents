@@ -374,8 +374,11 @@ OpenVPN対応の無料Clientがあるのでインストールする.
 - 接続先登録後、ta.keyは削除する.(初回のみファイルが存在しないとチェックされるため)
 - その後、VPN接続でサーバへ接続できれば完了.
 
+## ルータのポート開放
+ルータの管理画面でUDP 1194をOpenVPNサーバへ転送する設定にする.
+
 ## IPv6設定 (2022.10.1追記)
-IPv6アドレスでVPN接続出来るようにす.  
+IPv6アドレスでVPN接続出来るようにする.  
 ISPを変更するとIPv4 Over IPv6(MAP-E, transix)の影響で外部からIPv4接続でPort番号の制限を受けるため.  
   
 参考: [IPv6 in OpenVPN](https://community.openvpn.net/openvpn/wiki/IPv6)  
@@ -407,8 +410,6 @@ SoftBank光(BBユニット)でIPv6をポート開放する.
 ANY  ANY
 ```
 
-## ルータのポート開放
-ルータの管理画面でUDP 1194をOpenVPNサーバへ転送する設定にする.
 
 # 参考
 - [OpenVPN.Net](https://openvpn.net/)
