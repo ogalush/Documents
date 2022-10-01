@@ -387,11 +387,11 @@ ISPを変更するとIPv4 Over IPv6(MAP-E, transix)の影響で外部からIPv4�
 ## For IPv6 Settings (2022.10.1)
 ## https://community.openvpn.net/openvpn/wiki/IPv6
 proto udp6
-##server-ipv6 2400:2410:a741:fc00::/64
+##server-ipv6 2400:xxxx:xxxx:xxxx::/64
 ##tun-ipv6
 ##push tun-ipv6
-##ifconfig-ipv6 2400:2410:a741:fc00::1 2400:2410:a741:fc00::2
-##push "route-ipv6 2400:2410:a741:fc00::/64"
+##ifconfig-ipv6 2400:xxxx:xxxx:xxxx::1 2400:xxxx:xxxx:xxxx::2
+##push "route-ipv6 2400:xxxx:xxxx:xxxx::/64"
 ```
 ### IPv6 Port開放
 SoftBank光(BBユニット)でIPv6をポート開放する.  
