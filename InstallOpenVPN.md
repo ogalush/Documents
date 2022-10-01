@@ -5,7 +5,8 @@
 ## 環境
 |マシン|OS|IPアドレス|
 |---|---|---|
-|VPNServer|Ubuntu16.04(x86_64)|192.168.0.220/24|
+|VPNServer(IPv4)|Ubuntu16.04(x86_64)|192.168.0.220/24|
+|VPNServer(IPv6)|Ubuntu22.04(x86_64)|2400:2410:xxxx:xxxx::b55f/64|
 |クライアント|macOS Sierra(10.12.4)|任意(外部からの接続)|
 
 ## 構成
@@ -380,3 +381,37 @@ OpenVPN対応の無料Clientがあるのでインストールする.
 - [OpenVPN.Net](https://openvpn.net/)
 - [Ubuntu 16.04 の OpenVPN サーバの設定](http://transitive.info/2016/05/21/openvpn-on-ubuntu-1604/)
 - [OpenVPN and Routing and IPtables](https://serverfault.com/questions/570164/openvpn-and-routing-and-iptables)
+
+
+## 2022.10.1追記 IPv6設定
+IPv6アドレスでVPN接続出来るようにす.  
+ISPを変更するとIPv4 Over IPv6(MAP-E, transix)の影響で外部からIPv4接続でPort番号の制限を受けるため.  
+  
+参考: [IPv6 in OpenVPN](https://community.openvpn.net/openvpn/wiki/IPv6)  
+### OpenVPN設定
+```
+## For IPv6 Settings (2022.10.1)
+## https://community.openvpn.net/openvpn/wiki/IPv6
+proto udp6
+##server-ipv6 2400:2410:a741:fc00::/64
+##tun-ipv6
+##push tun-ipv6
+##ifconfig-ipv6 2400:2410:a741:fc00::1 2400:2410:a741:fc00::2
+##push "route-ipv6 2400:2410:a741:fc00::/64"
+```
+### IPv6 Port開放
+SoftBank光(BBユニット)でIPv6をポート開放する.  
+  
+「ルーター機能の設定」 → パケットフィルタ設定 → フィルタエントリー設定（IPv6）
+```
+有効/無効  ルールNo.  種類  送信元IPv6アドレス  プロトコル  送信元ポート番号 	通信方向
+宛先IPv6アドレス  宛先ポート番号
+
+(1) 往路
+有効  1  許可  ANY  UDP  ANY  WAN→LAN
+2400:xxxx:xxxx:xxxx:xxxx:xxxx:xxxx:b55f/128  1194-1194
+
+(2) 復路
+有効  2  許可  2400:xxxx:xxxx:xxxx:xxxx:xxxx:xxxx:b55f/128  UDP  1194-1194  LAN→WAN
+ANY  ANY
+```
