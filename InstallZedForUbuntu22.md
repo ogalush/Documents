@@ -15,7 +15,7 @@ Linux ryunosuke 5.15.0-50-generic #56-Ubuntu SMP Tue Sep 20 13:23:26 UTC 2022 x8
 $ ansible-playbook -i "192.168.3.200," initialize_instance.yml --user=ubuntu -k -bK --list-hosts
 $ ansible-playbook -i "192.168.3.200," initialize_instance.yml --user=ubuntu -k -bK
 ```
-## disable systemd-resolved
+## Disable systemd-resolved
 /etc/resolve.confの問い合わせ先が `127.0.0.53` となっておりDNS正引きが不調だったため無効化する.  
 https://blog.jicoman.info/2020/06/how-to-resolve-problem-of-name-resolution-to-local-on-ubuntu-2004/
 ```
@@ -84,6 +84,7 @@ $ sudo apt -y update
 $ sudo apt -y upgrade
 $ sudo apt -y dist-upgrade
 $ sudo apt -y autoremove
+$ sudo reboot
 ```
 
 # SQL database for Ubuntu
@@ -534,6 +535,7 @@ https://docs.openstack.org/glance/zed/install/verify.html
 ```
 $ source ~/admin-openrc
 $ wget http://download.cirros-cloud.net/0.4.0/cirros-0.4.0-x86_64-disk.img
+$ sudo mv -v cirros-0.4.0-x86_64-disk.img /usr/local/src
 $ glance image-create --name "cirros" --file /usr/local/src/cirros-0.4.0-x86_64-disk.img --disk-format qcow2 --container-format bare --visibility=public
 +------------------+----------------------------------------------------------------------------------+
 | Property         | Value                                                                            |
@@ -731,25 +733,43 @@ $ sudo placement-status upgrade check
 $ sudo apt -y install python3-pip
 $ sudo pip3 install osc-placement
 $ openstack --os-placement-api-version 1.2 resource class list --sort-column name
-openstack: '--os-placement-api-version 1.2 resource class list --sort-column name' is not an openstack command. See 'openstack --help'.
-Did you mean one of these?
-  application credential create
-  application credential delete
-  application credential list
-  application credential show
-  configuration show
++----------------------------------------+
+| name                                   |
++----------------------------------------+
+| DISK_GB                                |
+| FPGA                                   |
+| IPV4_ADDRESS                           |
+| MEMORY_MB                              |
+| MEM_ENCRYPTION_CONTEXT                 |
+| NET_BW_EGR_KILOBIT_PER_SEC             |
+| NET_BW_IGR_KILOBIT_PER_SEC             |
+| NET_PACKET_RATE_EGR_KILOPACKET_PER_SEC |
+| NET_PACKET_RATE_IGR_KILOPACKET_PER_SEC |
+| NET_PACKET_RATE_KILOPACKET_PER_SEC     |
+| NUMA_CORE                              |
+| NUMA_MEMORY_MB                         |
+| NUMA_SOCKET                            |
+| NUMA_THREAD                            |
+| PCI_DEVICE                             |
+| PCPU                                   |
+| PGPU                                   |
+| SRIOV_NET_VF                           |
+| VCPU                                   |
+| VGPU                                   |
+| VGPU_DISPLAY_HEAD                      |
++----------------------------------------+
+
 $ openstack --os-placement-api-version 1.6 trait list --sort-column name
-openstack: '--os-placement-api-version 1.6 trait list --sort-column name' is not an openstack command. See 'openstack --help'.
-Did you mean one of these?
-  application credential create
-  application credential delete
-  application credential list
-  application credential show
-  configuration show
-→ 確認コマンドが無くなった模様.
++---------------------------------------+
+| name                                  |
++---------------------------------------+
+| COMPUTE_ACCELERATORS                  |
+| COMPUTE_ARCH_AARCH64                  |
+...
+| STORAGE_DISK_HDD                      |
+| STORAGE_DISK_SSD                      |
++---------------------------------------+
 ```
-
-
 
 
 # Compute service
@@ -1286,6 +1306,7 @@ https://bugs.launchpad.net/nova/+bug/1980948
 
 #### Configure the Modular Layer 2 (ML2) plug-in
 ```
+$ sudo vim /etc/neutron/plugins/ml2/ml2_conf.ini
 $ sudo diff --unified=2 ~/neutron/plugins/ml2/ml2_conf.ini /etc/neutron/plugins/ml2/ml2_conf.ini
 ----
 --- /home/ogalush/neutron/plugins/ml2/ml2_conf.ini      2022-10-07 11:45:06.000000000 +0900
@@ -1415,7 +1436,7 @@ $ sudo systemctl status nova-api neutron-server neutron-linuxbridge-agent neutro
 https://docs.openstack.org/neutron/zed/install/verify.html
 ```
 $ source ~/admin-openrc
-ogalush@ryunosuke:~$ openstack extension list --network
+$ openstack extension list --network
 +----------------------------------------------------------------------------------------------------------------------------------------------------------------+---------------------------------------+-------------------------
 ---------------------------------------------------------------------------------------------------------------------------------+
 | Name                                                                                                                                                           | Alias                                 | Description             
