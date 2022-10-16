@@ -1,20 +1,22 @@
 # Install OpenStack Zed on Ubuntu 22.04
-ドキュメント: [OpenStack Docs](https://docs.openstack.org/install-guide/)  
-インストール先: 192.168.3.200(192.168.3.200)  
-設定ファイル: [URL](URL)
+OpenStack Document: [OpenStack Docs](https://docs.openstack.org/install-guide/)  
+Configs: [Zed-InstallConfigs](https://github.com/ogalush/Zed-InstallConfigs)  
+TargetHost: 192.168.3.200
 ```
 $ uname -na
 Linux ryunosuke 5.15.0-50-generic #56-Ubuntu SMP Tue Sep 20 13:23:26 UTC 2022 x86_64 x86_64 x86_64 GNU/Linux
 ```
 
-# Base Installation
+# Install OS Settings.
 個人アカウント、ntpdなどの基本パッケージをインストールする.
-## install Base Packages.
+## Install BasePackages.
 ```
 @admin
 $ ansible-playbook -i "192.168.3.200," initialize_instance.yml --user=ubuntu -k -bK --list-hosts
 $ ansible-playbook -i "192.168.3.200," initialize_instance.yml --user=ubuntu -k -bK
 ```
+Ref: [initialize_instance.yml](https://github.com/ogalush/Anything/blob/master/initialize_instance.yml)  
+
 ## Disable systemd-resolved
 /etc/resolve.confの問い合わせ先が `127.0.0.53` となっておりDNS正引きが不調だったため無効化する.  
 https://blog.jicoman.info/2020/06/how-to-resolve-problem-of-name-resolution-to-local-on-ubuntu-2004/
