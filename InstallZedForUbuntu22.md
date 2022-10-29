@@ -967,6 +967,16 @@ $ sudo diff -u ~/nova/nova.conf /etc/nova/nova.conf
  # console access to instances for tenants and/or administrators.
 ----
 
+※追加
+VM作成時に「ホスト名.novalocal」になるためDHCPドメインを設定する.
+$ sudo vim /etc/nova/nova.conf
+----
+[DEFAULT]
+...
+dhcp_domain = localdomain
+----
+
+
 $ sudo -s /bin/sh -c "nova-manage api_db sync" nova
 $ sudo -s /bin/sh -c "nova-manage cell_v2 map_cell0" nova
 $ sudo -s /bin/sh -c "nova-manage cell_v2 create_cell --name=cell1 --verbose" nova
