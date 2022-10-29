@@ -1905,3 +1905,62 @@ $ glance image-list
 | 5befb15d-7e69-416c-bc7a-1004742f487f | ubuntu22.04 |
 +--------------------------------------+-------------+
 ```
+
+# Disable virbr0
+OpenStackインストール時にlibvirtdが入るため、 `virbr0` のInterfaceが有効化される.  
+このインターフェイスは利用しないため無効化する.  
+参考: [virbr0を削除する](https://tech.nosuz.jp/blog/2011/09/17-23/)
+
+## Show virbr0
+```
+$ ip addr show virbr0
+4: virbr0: <NO-CARRIER,BROADCAST,MULTICAST,UP> mtu 1500 qdisc noqueue state DOWN group default qlen 1000
+    link/ether 52:54:00:83:d9:7e brd ff:ff:ff:ff:ff:ff
+    inet 192.168.122.1/24 brd 192.168.122.255 scope global virbr0
+       valid_lft forever preferred_lft forever
+$
+ogalush@ryunosuke:~$ virsh net-list
+ Name      State    Autostart   Persistent
+--------------------------------------------
+ default   active   yes         yes
+
+ogalush@ryunosuke:~$ virsh net-dumpxml default
+<network>
+  <name>default</name>
+  <uuid>73c83bdd-9aa3-4c03-8aa9-4ccb74fcc9f2</uuid>
+  <forward mode='nat'>
+    <nat>
+      <port start='1024' end='65535'/>
+    </nat>
+  </forward>
+  <bridge name='virbr0' stp='on' delay='0'/>
+  <mac address='52:54:00:83:d9:7e'/>
+  <ip address='192.168.122.1' netmask='255.255.255.0'>
+    <dhcp>
+      <range start='192.168.122.2' end='192.168.122.254'/>
+    </dhcp>
+  </ip>
+</network>
+
+ogalush@ryunosuke:~$ 
+```
+
+## Delete And Disable virbr0
+```
+$ virsh net-destroy default
+Network default destroyed
+
+$ virsh net-autostart default --disable
+Network default unmarked as autostarted
+```
+
+## virbr0削除確認
+```
+$ virsh net-list --all
+ Name      State      Autostart   Persistent
+----------------------------------------------
+ default   inactive   no          yes
+
+$
+→ Autostart = No, State = inactiveになっていればOK.
+```
