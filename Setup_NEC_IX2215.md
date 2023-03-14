@@ -342,3 +342,57 @@ https://192.168.3.254/admin/detail/dhcp_server.html
 
 ##設定3
 [NECルータIX2215の初期設定（その３）PPPoEの設定](https://souiunogaii.hatenablog.com/entry/NEC-IX2215-PPPoE) から必要な設定を行う.
+#### NAPT設定
+そのままだとNAT設定が入らないため、IPv4 NATさせる.
+```
+ogarouter1(config)# interface Tunnel0.0
+ogarouter1(config-Tunnel0.0)# ip napt enable
+ogarouter1(config-Tunnel0.0)# ip tcp adjust-mss auto
+ogarouter1(config-Tunnel0.0)# no shutdown
+ogarouter1(config-Tunnel0.0)# exit
+ogarouter1(config)# copy run start
+Copying from "running-config" to "startup-config"
+Building configuration...
+% Warning: do NOT enter CNTL/Z while saving to avoid config corruption.
+ogarouter1(config)#
+```
+
+#### ルーティング設定
+ルータの検索キャッシュの有効化と、デフォルトルートを設定する.
+```
+ogarouter1(config)# ip ufs-cache enable
+ogarouter1(config)# ip route default Tunnel0.0
+ogarouter1(config)# copy running-config startup-config
+Copying from "running-config" to "startup-config"
+Building configuration...
+% Warning: do NOT enter CNTL/Z while saving to avoid config corruption.
+```
+
+#### ping確認
+Ping確認を行い、L3まで接続出来る事を確認する.
+##### ping4
+```
+ogalush@MacBook-Pro1 ~ % ping -c 3 8.8.8.8
+PING 8.8.8.8 (8.8.8.8): 56 data bytes
+64 bytes from 8.8.8.8: icmp_seq=0 ttl=120 time=4.210 ms
+64 bytes from 8.8.8.8: icmp_seq=1 ttl=120 time=3.658 ms
+64 bytes from 8.8.8.8: icmp_seq=2 ttl=120 time=3.712 ms
+
+--- 8.8.8.8 ping statistics ---
+3 packets transmitted, 3 packets received, 0.0% packet loss
+round-trip min/avg/max/stddev = 3.658/3.860/4.210/0.248 ms
+ogalush@MacBook-Pro1 ~ % 
+```
+##### ping6
+```
+ogalush@MacBook-Pro1 ~ % ping6 -c 3 www.google.com
+PING6(56=40+8+8 bytes) 240b:10:a742:fb00:3904:db76:3a14:b650 --> 2404:6800:4004:820::2004
+16 bytes from 2404:6800:4004:820::2004, icmp_seq=0 hlim=116 time=14.323 ms
+16 bytes from 2404:6800:4004:820::2004, icmp_seq=1 hlim=116 time=4.126 ms
+16 bytes from 2404:6800:4004:820::2004, icmp_seq=2 hlim=116 time=3.724 ms
+
+--- www.google.com ping6 statistics ---
+3 packets transmitted, 3 packets received, 0.0% packet loss
+round-trip min/avg/max/std-dev = 3.724/7.391/14.323/4.904 ms
+ogalush@MacBook-Pro1 ~ % 
+```
