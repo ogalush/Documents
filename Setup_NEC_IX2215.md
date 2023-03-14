@@ -215,3 +215,20 @@ Building configuration...
 ## 設定手順2
 [NECルータIX2215の初期設定（その２）telnet接続、WEBコンソール](https://souiunogaii.hatenablog.com/entry/NEC-IX2215-telnet)  
 の必要な箇所を流していく.
+
+### DNS設定
+[DNS Proxy](https://changineer.info/network/nec_ix/nec_ix_dns.html) を設定する.  
+DNSキャッシュの設定もあるが、細かい内容は一旦割愛する.
+```
+ogarouter1(config)# proxy-dns ip enable
+ogarouter1(config)# proxy-dns ip request both
+```
+
+### DHCP設定
+[NEC IXのDHCP設定](https://changineer.info/network/nec_ix/nec_ix_dhcp_example.html) のDHCPサーバ設定を行う.
+```
+ogarouter1(config)# ip dhcp enable
+ip dhcp profile web-dhcp-gigaethernet2.0
+  assignable-range 192.168.3.10 192.168.3.99
+  dns-server 192.168.3.254
+```
