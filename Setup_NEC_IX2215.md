@@ -224,11 +224,121 @@ ogarouter1(config)# proxy-dns ip enable
 ogarouter1(config)# proxy-dns ip request both
 ```
 
-### DHCP設定
-[NEC IXのDHCP設定](https://changineer.info/network/nec_ix/nec_ix_dhcp_example.html) のDHCPサーバ設定を行う.
+### IPアドレス設定
+MacBookへStatic IPアドレス設定をする.
+|title|value|
+|IP Address|192.168.3.xx|
+|Subnet Mask|255.255.255.0|
+|Default Gateway|192.168.3.254|
 ```
-ogarouter1(config)# ip dhcp enable
-ip dhcp profile web-dhcp-gigaethernet2.0
-  assignable-range 192.168.3.10 192.168.3.99
-  dns-server 192.168.3.254
+ogalush@MacBook-Pro1 ~ % ifconfig en9 |grep 192
+	inet 192.168.3.10 netmask 0xffffff00 broadcast 192.168.3.255
 ```
+
+### ping疎通テスト
+```
+ogalush@MacBook-Pro1 ~ % ping -c 3 192.168.3.254
+PING 192.168.3.254 (192.168.3.254): 56 data bytes
+64 bytes from 192.168.3.254: icmp_seq=0 ttl=64 time=0.534 ms
+64 bytes from 192.168.3.254: icmp_seq=1 ttl=64 time=0.618 ms
+64 bytes from 192.168.3.254: icmp_seq=2 ttl=64 time=0.556 ms
+
+--- 192.168.3.254 ping statistics ---
+3 packets transmitted, 3 packets received, 0.0% packet loss
+round-trip min/avg/max/stddev = 0.534/0.569/0.618/0.036 ms
+ogalush@MacBook-Pro1 ~ %
+
+→ Echo Replyが返ってこえばOK.
+```
+
+### Telnetサーバの有効化
+```
+ogarouter1(config)# telnet-server ip enable
+ogarouter1(config)# 
+```
+### WEBコンソール画面の有効化
+```
+ogarouter1(config)# http-server ip enable
+ogarouter1(config)# http-server username admin
+```
+
+### 設定保存
+```
+ogarouter1(config)# copy running-config startup-config
+Copying from "running-config" to "startup-config"
+Building configuration...
+% Warning: do NOT enter CNTL/Z while saving to avoid config corruption.
+ogarouter1(config)# exit
+ogarouter1# exit
+```
+
+### アクセス確認
+#### Telnet
+```
+ogalush@MacBook-Pro1 ~ % telnet 192.168.3.254
+Trying 192.168.3.254...
+Connected to 192.168.3.254.
+Escape character is '^]'.
+login: xxxx
+Password: xxxxx
+NEC Portable Internetwork Core Operating System Software
+Copyright Notices:
+Copyright (c) NEC Corporation 2001-2022. All rights reserved.
+Copyright (c) 1985-1998 OpenROUTE Networks, Inc.
+Copyright (c) 1984-1987, 1989 J. Noel Chiappa.
+ogarouter1#
+→ Promptが表示されればOK.
+```
+#### Web Console
+https://192.168.3.254/  
+→ WebUIの表示とアクセスが出来ればOK.
+
+
+## 設定3
+DHCP, IPoE設定を行う.
+### IPoE設定
+#### WebUIログイン
+https://192.168.3.254/
+```
+「かんたん設定」  
+↓
+「接続種別の選択」
+IPv6 IPoE接続
+↓
+パスワードの設定変更せず
+次へ
+↓
+プロバイダの設定: JPNE(v6プラス）
+グローバルIPアドレスの割り当て方式: 動的
+↓
+インターネット接続の設定
+インターネット接続: IPv4接続＋IPv6接続
+セキュリティ強度 レベル1
+----
+レベル1
+- 外部からの不要なパケットを
+NAPT(IPv4)、ダイナミックフィルタ(IPv6)により廃棄します。
+----
+LAN1: LANの設定(GigaEthernet2.0)
+LAN側IPアドレス 192.168.3.254/24
+----
+↓
+設定の確認と反映
+内容が良ければ「反映」ボタン.
+↓
+「設定の保存」をする.
+```
+
+#### DHCP設定
+「詳細設定」→「DHCPサーバの設定」  
+https://192.168.3.254/admin/detail/dhcp_server.html  
+|項目|値|
+|---|---|
+|DHCPサーバ|有効|
+|割り当て範囲|固定設定|
+|IPアドレス|192.168.3.10 - 192.168.3.99|
+
+→ 保存、設定の反映を進める.
+
+##設定3
+[NECルータIX2215の初期設定（その３）PPPoEの設定](https://souiunogaii.hatenablog.com/entry/NEC-IX2215-PPPoE) から必要な設定を行う.
