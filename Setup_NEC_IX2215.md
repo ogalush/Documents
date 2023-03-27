@@ -133,9 +133,11 @@ ogarouter1(config)# username admin password plain 1 ***(naisho)*** administrator
 ```
 
 ### NTPの設定と時刻の確認
-信頼できるNTPサーバのIPアドレスを指定する.
+信頼できるNTPサーバのIPアドレスを指定する.  
 [ＮＴＰサーバーの構築（タイムサーバー）](http://miyakoshi.mydns.jp/freebsd/ntp.html)
+
 |項目|FQDN|IP Address|
+|---|---|---|
 |東京大学|ntp.nc.u-tokyo.ac.jp|130.69.251.23|
 ```
 ogarouter1(config)# ntp interval 3600
@@ -225,8 +227,9 @@ ogarouter1(config)# proxy-dns ip request both
 ```
 
 ### IPアドレス設定
-MacBookへStatic IPアドレス設定をする.
+MacBookへStatic IPアドレス設定をする.  
 |title|value|
+|---|---|
 |IP Address|192.168.3.xx|
 |Subnet Mask|255.255.255.0|
 |Default Gateway|192.168.3.254|
@@ -386,7 +389,7 @@ ogalush@MacBook-Pro1 ~ %
 ##### ping6
 ```
 ogalush@MacBook-Pro1 ~ % ping6 -c 3 www.google.com
-PING6(56=40+8+8 bytes) 240b:10:a742:fb00:3904:db76:3a14:b650 --> 2404:6800:4004:820::2004
+PING6(56=40+8+8 bytes) 2001:db8:xxx:1 --> 2404:6800:4004:820::2004
 16 bytes from 2404:6800:4004:820::2004, icmp_seq=0 hlim=116 time=14.323 ms
 16 bytes from 2404:6800:4004:820::2004, icmp_seq=1 hlim=116 time=4.126 ms
 16 bytes from 2404:6800:4004:820::2004, icmp_seq=2 hlim=116 time=3.724 ms
