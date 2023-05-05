@@ -207,8 +207,22 @@ ogarouter1(config)# logging buffered
 ```
 ogarouter1(config)# show logging
 Buffer logging enabled, 131072 bytes, type cyclic
-  0 messages (0-0), 0 bytes logged, 0 messages dropped
+  3 messages (1-3), 209 bytes logged, 0 messages dropped
+
+Log Buffer (1-3):
+2023/05/06 03:44:37 CNFG.003: Startup config write done  (TTY:1).
 ogarouter1(config)#
+```
+メモリ上に周期的に記録する(ringbuffer的な)動きの模様.  
+
+logging出来るメモリ量は `show memory` で余っている量を割り当てられるとのこと.  
+今回はとりあえずログ記録しておく位の優先度のためデフォルトを利用する.  
+[UNIVERGE IXシリーズ　FAQ - ロギング、SYSLOGに関するFAQ](https://jpn.nec.com/univerge/ix/faq/els.html)  
+```
+Q.1-5 メモリに蓄積できるログの量は設定できますか？
+Q.1-4のメモリ蓄積コマンドの[バッファサイズ]（単位：バイト）で、蓄積するログの量を設定することができます。
+ロギングメッセージ1行あたり、80バイト程度となりますので、show memoryコマンドで残りのメモリ量を見て、
+何行程度ログを保存するかを確認の上、バッファサイズを決定してください。
 ```
 
 #### 設定確認
