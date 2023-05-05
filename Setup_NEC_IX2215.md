@@ -76,12 +76,13 @@ Router#
 
 ### オペレーションモードからグローバルコンフィグモードに移行
 Router/Switch全般によくある話.  
-* 一般モード / 特権モード
-* オペレーションモード
-* GlobalConfigMode
-* 特定ConfigMode
+|項目|役割|接続方法|プロンプト表示|
+|---|---|---|---|
+|オペレーションモード|設定を閲覧するモード|Console or telnet(有効化後)| `Router#` |
+|Global ConfigMode|Configモード.<br>ルータ全般の設定.| `Router# enable-config` | `Router(config)#` |
+|Device ConfigMode|各ポートの物理的な設定(Speed, Duplex)| `Router(config)# device GigaEthernet2` | `Router(config-GigaEthernet2)#` |
+|Interface ConfigMode|各ポートの論理的な設定(IP Address, VLAN etc...)| `Router(config)# interface GigaEthernet2.0` | `Router(config-GigaEthernet2.0)#` |
 
-と同じ考え方でモード切り替えが出来る.
 ```
 Router# config
 Enter configuration commands, one per line. End with CNTL/Z.
@@ -188,6 +189,26 @@ ogarouter1(config-GigaEthernet2)# interface GigaEthernet2.0
 ogarouter1(config-GigaEthernet2.0)# ip address 192.168.3.254/24
 ogarouter1(config-GigaEthernet2.0)# no shutdown
 ogarouter1(config-GigaEthernet2.0)# exit 
+```
+
+#### logging設定
+[実機演習資料(初級編)実機演習資料(初級編) UNIVERGE IX2215 ](https://www.express.nec.co.jp/idaten/network/ix/ix2k3k-learning-ver8.10_10.0.pdf)  
+→ 「ログの収集(2)」  
+に触れられている基本的なログ設定を行っておく.
+```
+ogarouter1(config)# logging subsystem all warn
+→ 全ての機能で警告レベルのみにする.
+ogarouter1(config)# logging timestamp datetime
+→ 人が見やすいようにdatetime形式にする
+ogarouter1(config)# logging buffered
+→ ログを内部バッファに保存する
+```
+ログ参照時は `show logging` を利用する.
+```
+ogarouter1(config)# show logging
+Buffer logging enabled, 131072 bytes, type cyclic
+  0 messages (0-0), 0 bytes logged, 0 messages dropped
+ogarouter1(config)#
 ```
 
 #### 設定確認
