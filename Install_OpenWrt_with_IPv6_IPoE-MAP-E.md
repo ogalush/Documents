@@ -203,8 +203,8 @@ http://ipv4.web.fc2.com/map-e.html
 |IPv4 アドレス|106.72.xx.xx|
 |PSID|xxx|
 ```
-option peeraddr 2404:9200:225:100::64  ・・・ JPNEのBR (Border Relay)の模様.
-option ipaddr 106.72.0.0
+option peeraddr 2404:...  ・・・ JPNEのBR (Border Relay)の模様.
+option ipaddr 106.72.xxx.xxx
 option ip4prefixlen 15
 option ip6prefix 240b:10::
 option ip6prefixlen a
@@ -224,8 +224,8 @@ MAP-E接続用のInterfaceを作成してIPoE接続をする.
 ```
 - Protocol MAP / LW4over6
 - Type MAP-E
-- BR / DMR / AFTR 2404:9200:225:100::64
-- IPv4 prefix 106.72.0.0
+- BR / DMR / AFTR 2404:...
+- IPv4 prefix 106.72.xxx.xxx
 - IPv4 prefix length 15
 - IPv6 prefix 240b:10::
 - IPv6 prefix length a
@@ -383,8 +383,8 @@ config interface 'wan6'
 config interface 'wan6_MAPE'
 	option proto 'map'
 	option maptype 'map-e'
-	option peeraddr '2404:9200:225:100::64'
-	option ipaddr '106.72.0.0'
+	option peeraddr '2404:...'
+	option ipaddr '106.72.xxx.xxx'
 	option ip4prefixlen '15'
 	option ip6prefix '240b:10::'
 	option ip6prefixlen 'xx'
