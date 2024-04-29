@@ -1,7 +1,13 @@
 # Install OpenStack Caracal on Ubuntu 24.04
-OpenStack Document: [OpenStack Docs](https://docs.openstack.org/install-guide/)  , [Archtecture](https://object-storage-ca-ymq-1.vexxhost.net/swift/v1/6e4619c416ff4bd19e1c087f27a43eea/www-assets-prod/openstack-map/openstack-map-v20240401.pdf)
-Configs: TBD
-TargetHost: 192.168.3.200
+OpenStack Document:
+* [Archtecture](https://object-storage-ca-ymq-1.vexxhost.net/swift/v1/6e4619c416ff4bd19e1c087f27a43eea/www-assets-prod/openstack-map/openstack-map-v20240401.pdf)
+* [OpenStack Docs](https://docs.openstack.org/install-guide/)
+  
+Configs:
+* TBD
+  
+TargetHost:
+* 192.168.3.200
 ```
 $ uname -na
 Linux ryunosuke 6.8.0-31-generic #31-Ubuntu SMP PREEMPT_DYNAMIC Sat Apr 20 00:40:06 UTC 2024 x86_64 x86_64 x86_64 GNU/Linux
