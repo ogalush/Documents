@@ -1496,43 +1496,49 @@ $ openstack network agent list
 ```
 
 # Horizon
-https://docs.openstack.org/horizon/zed/install/
+https://docs.openstack.org/horizon/2023.2/install/
 ## Install and configure for Ubuntu
-https://docs.openstack.org/horizon/zed/install/install-ubuntu.html
+https://docs.openstack.org/horizon/2023.2/install/install-ubuntu.html
 ### Install and configure components
 ```
 $ sudo apt -y install openstack-dashboard
-$ sudo cp -rafv /etc/openstack-dashboard ~
+$ sudo cp -rfv /etc/openstack-dashboard ~
 $ sudo vim /etc/openstack-dashboard/local_settings.py
-$ sudo diff --unified=0 ~/openstack-dashboard/local_settings.py /etc/openstack-dashboard/local_settings.py
 ----
---- /home/ogalush/openstack-dashboard/local_settings.py 2022-10-07 11:12:02.000000000 +0900
-+++ /etc/openstack-dashboard/local_settings.py  2022-10-15 23:46:52.593685906 +0900
-@@ -112,0 +113,7 @@
-+SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
-+CACHES = {
-+    'default': {
-+         'BACKEND': 'django.core.cache.backends.memcached.MemcachedCache',
-+         'LOCATION': '192.168.3.200:11211',
-+    }
-+}
-@@ -126,2 +133,11 @@
--OPENSTACK_HOST = "127.0.0.1"
--OPENSTACK_KEYSTONE_URL = "http://%s/identity/v3" % OPENSTACK_HOST
-+OPENSTACK_HOST = "192.168.3.200"
-+OPENSTACK_KEYSTONE_URL = "http://%s:5000/identity/v3" % OPENSTACK_HOST
-+OPENSTACK_KEYSTONE_MULTIDOMAIN_SUPPORT = False
-+OPENSTACK_API_VERSIONS = {
-+    "identity": 3,
-+    "image": 2,
-+    "volume": 3,
-+}
-+OPENSTACK_KEYSTONE_DEFAULT_DOMAIN = "default"
-+OPENSTACK_KEYSTONE_DEFAULT_ROLE = "user"
-+
-@@ -131 +147 @@
--TIME_ZONE = "UTC"
-+TIME_ZONE = "Asia/Tokyo"
+- OPENSTACK_HOST = "127.0.0.1"
+- OPENSTACK_KEYSTONE_URL = "http://%s/identity/v3" % OPENSTACK_HOST
++ OPENSTACK_HOST = "192.168.3.200"
++ OPENSTACK_KEYSTONE_URL = "http://%s:5000/identity/v3" % OPENSTACK_HOST
++ ALLOWED_HOSTS = ['*']
+...
++ SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
+...
+- CACHES = {
+-     'default': {
+-         'BACKEND': 'django.core.cache.backends.memcached.PyMemcacheCache',
+-         'LOCATION': '127.0.0.1:11211',
+-     },
+- }
++ CACHES = {
++     'default': {
++          'BACKEND': 'django.core.cache.backends.memcached.MemcachedCache',
++          'LOCATION': '192.168.3.200:11211',
++     }
++ }
+...
++ ## HorizonSettings From Manual
++ OPENSTACK_KEYSTONE_MULTIDOMAIN_SUPPORT = False
++ OPENSTACK_API_VERSIONS = {
++     "identity": 3,
++     "image": 2,
++     "volume": 3,
++ }
+...
++ OPENSTACK_KEYSTONE_DEFAULT_DOMAIN = "default"
++ OPENSTACK_KEYSTONE_DEFAULT_ROLE = "user"
+...
+- TIME_ZONE = "UTC"
++ TIME_ZONE = "Asia/Tokyo"
 ----
 
 
@@ -1541,9 +1547,13 @@ $ sudo grep 'WSGIApplicationGroup %{GLOBAL}' /etc/apache2/conf-available/opensta
 WSGIApplicationGroup %{GLOBAL}
 → 元々設定が入っているので追加せず.
 
-$ sudo systemctl reload apache2.service
+$ sudo systemctl restart apache2.service
 $ sudo systemctl status apache2.service |grep Active
- Active: active (running) since Sat 2022-10-15 23:27:59 JST; 16min ago
+  Active: active (running) since Mon 2024-04-29 20:07:33 JST; 2s ago
+$ sudo systemctl is-active apache2.service
+active
+$ sudo systemctl is-enabled apache2.service
+enabled
 ```
 
 ## Verify operation for Ubuntu
