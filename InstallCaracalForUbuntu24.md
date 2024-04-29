@@ -1186,11 +1186,11 @@ $ sudo nova-status upgrade check
 
 
 # Neutron
-https://docs.openstack.org/neutron/zed/install/
+https://docs.openstack.org/neutron/2023.2/install/
 ## Install and configure for Ubuntu
-https://docs.openstack.org/neutron/zed/install/install-ubuntu.html
+https://docs.openstack.org/neutron/2023.2/install/install-ubuntu.html
 ### Install and configure controller node
-https://docs.openstack.org/neutron/zed/install/controller-install-ubuntu.html
+https://docs.openstack.org/neutron/2023.2/install/controller-install-ubuntu.html
 #### Prerequisites
 ```
 $ sudo mysql
@@ -1208,11 +1208,12 @@ Repeat User Password:
 +---------------------+----------------------------------+
 | domain_id           | default                          |
 | enabled             | True                             |
-| id                  | 8649665c5e524e5ea4e03345cee830a7 |
+| id                  | f3d37658cdc64cdcb7c7a9da1c263271 |
 | name                | neutron                          |
 | options             | {}                               |
 | password_expires_at | None                             |
 +---------------------+----------------------------------+
+
 
 $ openstack role add --project service --user neutron admin
 $ openstack service create --name neutron --description "OpenStack Networking" network
@@ -1221,51 +1222,54 @@ $ openstack service create --name neutron --description "OpenStack Networking" n
 +-------------+----------------------------------+
 | description | OpenStack Networking             |
 | enabled     | True                             |
-| id          | 086adf14468a44d4a355b974c5681a24 |
+| id          | d62dafb6b60e4e048e0b963ba6501b36 |
 | name        | neutron                          |
 | type        | network                          |
 +-------------+----------------------------------+
+
 
 $ openstack endpoint create --region RegionOne network public http://192.168.3.200:9696
 +--------------+----------------------------------+
 | Field        | Value                            |
 +--------------+----------------------------------+
 | enabled      | True                             |
-| id           | 457ef68776414aaa8ba5cae90030a811 |
+| id           | aa1be566abc04b6b9896de6d7a43edf2 |
 | interface    | public                           |
 | region       | RegionOne                        |
 | region_id    | RegionOne                        |
-| service_id   | 086adf14468a44d4a355b974c5681a24 |
+| service_id   | d62dafb6b60e4e048e0b963ba6501b36 |
 | service_name | neutron                          |
 | service_type | network                          |
 | url          | http://192.168.3.200:9696        |
 +--------------+----------------------------------+
+
 
 $ openstack endpoint create --region RegionOne network internal http://192.168.3.200:9696
 +--------------+----------------------------------+
 | Field        | Value                            |
 +--------------+----------------------------------+
 | enabled      | True                             |
-| id           | 63872ce016bb4efebc8da20e23406785 |
+| id           | 0b71365447884139b7d5e1e345c33172 |
 | interface    | internal                         |
 | region       | RegionOne                        |
 | region_id    | RegionOne                        |
-| service_id   | 086adf14468a44d4a355b974c5681a24 |
+| service_id   | d62dafb6b60e4e048e0b963ba6501b36 |
 | service_name | neutron                          |
 | service_type | network                          |
 | url          | http://192.168.3.200:9696        |
 +--------------+----------------------------------+
+
   
 $ openstack endpoint create --region RegionOne network admin http://192.168.3.200:9696
 +--------------+----------------------------------+
 | Field        | Value                            |
 +--------------+----------------------------------+
 | enabled      | True                             |
-| id           | 4445329e19184aeca9984a4e299f805a |
+| id           | 17c975cf69894acf8e4f01e7baa47d1c |
 | interface    | admin                            |
 | region       | RegionOne                        |
 | region_id    | RegionOne                        |
-| service_id   | 086adf14468a44d4a355b974c5681a24 |
+| service_id   | d62dafb6b60e4e048e0b963ba6501b36 |
 | service_name | neutron                          |
 | service_type | network                          |
 | url          | http://192.168.3.200:9696        |
@@ -1274,7 +1278,11 @@ $ openstack endpoint create --region RegionOne network admin http://192.168.3.20
 
 ### Configure networking options
 Networking Option 2: Self-service networks
-https://docs.openstack.org/neutron/zed/install/controller-install-option2-ubuntu.html
+https://docs.openstack.org/neutron/2023.2/install/controller-install-option2-ubuntu.html  
+  
+【注意】  
+従来通りLinuxBridgeでインストールを進める。  
+（マニュアルではOpenvSwitchになっているが、利便性を考慮して）
 #### Install the components
 ```
 $ sudo apt -y install neutron-server neutron-plugin-ml2 neutron-linuxbridge-agent neutron-l3-agent neutron-dhcp-agent neutron-metadata-agent
@@ -1283,111 +1291,68 @@ $ sudo apt -y install neutron-server neutron-plugin-ml2 neutron-linuxbridge-agen
 ```
 $ sudo cp -rafv /etc/neutron ~
 $ sudo vim /etc/neutron/neutron.conf
-$ sudo diff --unified=2 ~/neutron/neutron.conf /etc/neutron/neutron.conf
 ----
---- /home/ogalush/neutron/neutron.conf  2022-10-07 11:45:06.000000000 +0900
-+++ /etc/neutron/neutron.conf   2022-10-15 23:21:36.671706296 +0900
-@@ -1,4 +1,9 @@
- [DEFAULT]
- core_plugin = ml2
-+service_plugins = router
-+transport_url = rabbit://openstack:password@192.168.3.200
-+auth_strategy = keystone
-+notify_nova_on_port_status_changes = true
-+notify_nova_on_port_data_changes = true
-
- #
-@@ -873,6 +878,6 @@
-
- [database]
--connection = sqlite:////var/lib/neutron/neutron.sqlite
--
-+connection = mysql+pymysql://neutron:password@192.168.3.200/neutron
-+
- #
- # From neutron.db
-@@ -980,4 +985,5 @@
-
- [experimental]
-+linuxbridge = true
-
- #
-@@ -1123,4 +1129,13 @@
-
- [keystone_authtoken]
-+www_authenticate_uri = http://192.168.3.200:5000
-+auth_url = http://192.168.3.200:5000
-+memcached_servers = 192.168.3.200:11211
-+auth_type = password
-+project_domain_name = default
-+user_domain_name = default
-+project_name = service
-+username = neutron
-+password = password
-
- #
-@@ -1285,4 +1300,12 @@
-
- [nova]
-+auth_url = http://192.168.3.200:5000
-+auth_type = password
-+project_domain_name = default
-+user_domain_name = default
-+region_name = RegionOne
-+project_name = service
-+username = nova
-+password = password
-
- #
-@@ -1396,4 +1419,5 @@
-
- [oslo_concurrency]
-+lock_path = /var/lib/neutron/tmp
-
-
-※2022.10.15 neutron-server.logを見るとlinuxbridgeがExperimentalとのことでデフォルトだと有効化出来なかった.
-experimentalで「linuxbridge = true」を追加して解決.
+[database]
+- connection = sqlite:////var/lib/neutron/neutron.sqlite
++ connection = mysql+pymysql://neutron:password@192.168.3.200/neutron
+...
+[DEFAULT]
+...
+core_plugin = ml2
++ service_plugins = router
++ transport_url = rabbit://openstack:password@192.168.3.200
++ auth_strategy = keystone
++ notify_nova_on_port_status_changes = true
++ notify_nova_on_port_data_changes = true
+...
+[keystone_authtoken]
++ www_authenticate_uri = http://192.168.3.200:5000
++ auth_url = http://192.168.3.200:5000
++ memcached_servers = 192.168.3.200:11211
++ auth_type = password
++ project_domain_name = default
++ user_domain_name = default
++ project_name = service
++ username = neutron
++ password = password
+...
+[nova]
++ auth_url = http://192.168.3.200:5000
++ auth_type = password
++ project_domain_name = default
++ user_domain_name = default
++ region_name = RegionOne
++ project_name = service
++ username = nova
++ password = password
+...
+[oslo_concurrency]
++ lock_path = /var/lib/neutron/tmp
+...
+[experimental]
++ linuxbridge = true
+...
 ----
-$ sudo less /var/log/neutron/neutron-server.log
-2022-10-15 22:18:41.898 41199 ERROR neutron.common.experimental [-] Feature 'linuxbridge' is experimental and has to be explicitly enabled in 'cfg.CONF.experimental'
-----
-----
-→  adapt ci to neutron making linux bridge experimental
-https://bugs.launchpad.net/nova/+bug/1980948
 ```
 
 #### Configure the Modular Layer 2 (ML2) plug-in
 ```
 $ sudo vim /etc/neutron/plugins/ml2/ml2_conf.ini
-$ sudo diff --unified=2 ~/neutron/plugins/ml2/ml2_conf.ini /etc/neutron/plugins/ml2/ml2_conf.ini
 ----
---- /home/ogalush/neutron/plugins/ml2/ml2_conf.ini      2022-10-07 11:45:06.000000000 +0900
-+++ /etc/neutron/plugins/ml2/ml2_conf.ini       2022-10-15 22:02:24.473880008 +0900
-@@ -152,4 +152,8 @@
- 
- [ml2]
+[ml2]
 +type_drivers = flat,vlan,vxlan
 +tenant_network_types = vxlan
 +mechanism_drivers = linuxbridge,l2population
 +extension_drivers = port_security
- 
- #
-@@ -201,4 +205,5 @@
- 
+...
  [ml2_type_flat]
 +flat_networks = provider
- 
- #
-@@ -257,4 +262,5 @@
- 
- [ml2_type_vxlan]
-+vni_ranges = 1:1000
- 
- #
-@@ -292,4 +298,5 @@
- 
- [securitygroup]
-+enable_ipset = true
+...
+[ml2_type_vxlan]
++ vni_ranges = 1:1000
+...
+[securitygroup]
++ enable_ipset = true
 ----
 ```
 
@@ -1408,6 +1373,7 @@ $ sudo vim /etc/neutron/plugins/ml2/linuxbridge_agent.ini
 + firewall_driver = neutron.agent.linux.iptables_firewall.IptablesFirewallDriver
 ----
 
+$ sudo cp -pv /etc/sysctl.conf ~
 $ sudo vim /etc/sysctl.conf
 $ tail -n 2 /etc/sysctl.conf
 ----
@@ -1441,7 +1407,7 @@ $ sudo vim /etc/neutron/dhcp_agent.ini
 ```
 
 ### Configure the metadata agent
-https://docs.openstack.org/neutron/zed/install/controller-install-ubuntu.html
+https://docs.openstack.org/neutron/2023.2/install/controller-install-ubuntu.html
 ```
 $ sudo vim /etc/neutron/metadata_agent.ini
 ----
@@ -1476,29 +1442,44 @@ $ sudo vim /etc/nova/nova.conf
 $ sudo -s /bin/sh -c "neutron-db-manage --config-file /etc/neutron/neutron.conf --config-file /etc/neutron/plugins/ml2/ml2_conf.ini upgrade head" neutron
 $ sudo systemctl restart nova-api neutron-server neutron-linuxbridge-agent neutron-dhcp-agent neutron-metadata-agent neutron-l3-agent
 $ sudo systemctl status nova-api neutron-server neutron-linuxbridge-agent neutron-dhcp-agent neutron-metadata-agent neutron-l3-agent |grep Active
- Active: active (running) since Sat 2022-10-15 22:10:01 JST; 6s ago
- Active: active (running) since Sat 2022-10-15 22:10:08 JST; 4ms ago
- Active: active (running) since Sat 2022-10-15 22:10:02 JST; 6s ago
- Active: active (running) since Sat 2022-10-15 22:10:02 JST; 5s ago
- Active: active (running) since Sat 2022-10-15 22:10:02 JST; 6s ago
- Active: active (running) since Sat 2022-10-15 22:10:01 JST; 6s ago
+  Active: active (running) since Mon 2024-04-29 19:44:51 JST; 8s ago
+  Active: active (running) since Mon 2024-04-29 19:44:51 JST; 8s ago
+  Active: active (running) since Mon 2024-04-29 19:44:59 JST; 802ms ago
+  Active: active (running) since Mon 2024-04-29 19:44:57 JST; 3s ago
+  Active: active (running) since Mon 2024-04-29 19:44:51 JST; 8s ago
+  Active: active (running) since Mon 2024-04-29 19:44:53 JST; 6s ago
+
+$ sudo systemctl is-active nova-api neutron-server neutron-linuxbridge-agent neutron-dhcp-agent neutron-metadata-agent neutron-l3-agent
+active
+active
+active
+active
+active
+active
+
+$ sudo systemctl is-enabled nova-api neutron-server neutron-linuxbridge-agent neutron-dhcp-agent neutron-metadata-agent neutron-l3-agent
+enabled
+enabled
+enabled
+enabled
+enabled
+enabled
 ```
 
 ## Verify operation
-https://docs.openstack.org/neutron/zed/install/verify.html
+https://docs.openstack.org/neutron/2023.2/install/verify.html
 ```
 $ source ~/admin-openrc
 $ openstack extension list --network
-+----------------------------------------------------------------------------------------------------------------------------------------------------------------+---------------------------------------+-------------------------
----------------------------------------------------------------------------------------------------------------------------------+
-| Name                                                                                                                                                           | Alias                                 | Description             
-                                                                                                                                 |
-+----------------------------------------------------------------------------------------------------------------------------------------------------------------+---------------------------------------+-------------------------
----------------------------------------------------------------------------------------------------------------------------------+
-| Address group                                                                                                                                                  | address-group                         | Support address group   
-                                                                                                                                 |
-| Address scope                                                                                                                                                  | address-scope                         | Address scopes extension
++-------------------------------------------------+---------------------------------------------+-------------------------------------------------+
+| Name                                            | Alias                                       | Description                                     |
++-------------------------------------------------+---------------------------------------------+-------------------------------------------------+
+| Address group                                   | address-group                               | Support address group                           |
 ...(略)...
+| Resource timestamps                             | standard-attr-timestamp                     | Adds created_at and updated_at fields to all    |
+|                                                 |                                             | Neutron resources that have Neutron standard    |
+|                                                 |                                             | attributes.                                     |
++-------------------------------------------------+---------------------------------------------+-------------------------------------------------+
 ```
 
 ## Networking Option 2: Self-service networks
@@ -1507,10 +1488,10 @@ $ openstack network agent list
 +--------------------------------------+--------------------+-----------+-------------------+-------+-------+---------------------------+
 | ID                                   | Agent Type         | Host      | Availability Zone | Alive | State | Binary                    |
 +--------------------------------------+--------------------+-----------+-------------------+-------+-------+---------------------------+
-| 2cb59b97-4db9-494e-abe0-7bf3e639fa36 | Metadata agent     | ryunosuke | None              | :-)   | UP    | neutron-metadata-agent    |
-| 6dc989d6-0c4a-4dc5-ac13-ac9c2d1db53b | Linux bridge agent | ryunosuke | None              | :-)   | UP    | neutron-linuxbridge-agent |
-| 77c349b1-d9ab-46aa-9c8b-2d3a84dedd41 | DHCP agent         | ryunosuke | nova              | :-)   | UP    | neutron-dhcp-agent        |
-| d5789a5d-96d2-455a-843f-3b29fe3938a4 | L3 agent           | ryunosuke | nova              | :-)   | UP    | neutron-l3-agent          |
+| 1fb2560b-e207-470e-841a-636e044b376c | DHCP agent         | ryunosuke | nova              | :-)   | UP    | neutron-dhcp-agent        |
+| 4dcb8847-5536-4514-9766-2cedb2653df5 | Metadata agent     | ryunosuke | None              | :-)   | UP    | neutron-metadata-agent    |
+| 7a536ba2-ea32-417c-bdd4-519728efd252 | L3 agent           | ryunosuke | nova              | :-)   | UP    | neutron-l3-agent          |
+| f6726859-9c96-4848-b162-529e284230b5 | Linux bridge agent | ryunosuke | None              | :-)   | UP    | neutron-linuxbridge-agent |
 +--------------------------------------+--------------------+-----------+-------------------+-------+-------+---------------------------+
 ```
 
