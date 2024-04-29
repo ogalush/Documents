@@ -1,11 +1,12 @@
 # Install OpenStack Caracal on Ubuntu 24.04
-OpenStack Document: [OpenStack Docs](https://docs.openstack.org/install-guide/)  
+OpenStack Document: [OpenStack Docs](https://docs.openstack.org/install-guide/)  , [Archtecture](https://object-storage-ca-ymq-1.vexxhost.net/swift/v1/6e4619c416ff4bd19e1c087f27a43eea/www-assets-prod/openstack-map/openstack-map-v20240401.pdf)
 Configs: TBD
 TargetHost: 192.168.3.200
 ```
 $ uname -na
 Linux ryunosuke 6.8.0-31-generic #31-Ubuntu SMP PREEMPT_DYNAMIC Sat Apr 20 00:40:06 UTC 2024 x86_64 x86_64 x86_64 GNU/Linux
 ```
+
 
 # Install OS Settings.
 個人アカウント、ntpdなどの基本パッケージをインストールする.
@@ -1539,7 +1540,12 @@ $ sudo vim /etc/openstack-dashboard/local_settings.py
 ...
 - TIME_ZONE = "UTC"
 + TIME_ZONE = "Asia/Tokyo"
+...
+- COMPRESS_OFFLINE = True
++ COMPRESS_OFFLINE = False
 ----
+※ 「COMPRESS_OFFLINE = False」へ変更.
+Horizonの動作確認時にInternalServerErorとなるため.
 
 
 $ sudo cp -rafv /etc/apache2 ~
@@ -1557,7 +1563,7 @@ enabled
 ```
 
 ## Verify operation for Ubuntu
-https://docs.openstack.org/horizon/zed/install/verify-ubuntu.html
+https://docs.openstack.org/horizon/2023.2/install/verify-ubuntu.html
 
 http://192.168.3.200/horizon/  
 ID: admin, myuser
