@@ -1640,10 +1640,14 @@ $ openstack subnet create --network provider --allocation-pool start=192.168.3.1
 ```
 
 ## Self-service network
+◆ERROR◆ `Error while executing command: ForbiddenException: 403, rule:create_network is disallowed by policy` 
 ```
 $ source ~/demo-openrc
 $ openstack network create selfservice
 Error while executing command: ForbiddenException: 403, rule:create_network is disallowed by policy
+
+KeyStoneのpolicy.jsonでcreate_networkを許可する必要がある？
+https://docs.openstack.org/neutron/queens/admin/archives/auth.html
 
 $ source ~/demo-openrc
 $ openstack network create selfservice
