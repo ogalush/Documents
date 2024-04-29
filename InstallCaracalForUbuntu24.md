@@ -1582,10 +1582,10 @@ $ openstack network create --share --external --provider-physical-network provid
 | admin_state_up            | UP                                   |
 | availability_zone_hints   |                                      |
 | availability_zones        |                                      |
-| created_at                | 2022-10-15T14:53:15Z                 |
+| created_at                | 2024-04-29T11:35:21Z                 |
 | description               |                                      |
 | dns_domain                | None                                 |
-| id                        | 5b1f0b2e-49eb-480a-86cb-8f05e6e8d4ff |
+| id                        | 333186c7-8532-4997-bebe-3f43eae17fb2 |
 | ipv4_address_scope        | None                                 |
 | ipv6_address_scope        | None                                 |
 | is_default                | False                                |
@@ -1593,7 +1593,7 @@ $ openstack network create --share --external --provider-physical-network provid
 | mtu                       | 1500                                 |
 | name                      | provider                             |
 | port_security_enabled     | True                                 |
-| project_id                | 32b4bc8011454da3837a54d15e16d31e     |
+| project_id                | c6bca75875974f8697ddf9cd81d9222d     |
 | provider:network_type     | flat                                 |
 | provider:physical_network | provider                             |
 | provider:segmentation_id  | None                                 |
@@ -1605,7 +1605,8 @@ $ openstack network create --share --external --provider-physical-network provid
 | status                    | ACTIVE                               |
 | subnets                   |                                      |
 | tags                      |                                      |
-| updated_at                | 2022-10-15T14:53:15Z                 |
+| tenant_id                 | c6bca75875974f8697ddf9cd81d9222d     |
+| updated_at                | 2024-04-29T11:35:21Z                 |
 +---------------------------+--------------------------------------+
 
 
@@ -1615,31 +1616,35 @@ $ openstack subnet create --network provider --allocation-pool start=192.168.3.1
 +----------------------+--------------------------------------+
 | allocation_pools     | 192.168.3.130-192.168.3.140          |
 | cidr                 | 192.168.3.0/24                       |
-| created_at           | 2022-10-15T14:53:54Z                 |
+| created_at           | 2024-04-29T11:35:51Z                 |
 | description          |                                      |
 | dns_nameservers      | 192.168.3.220                        |
 | dns_publish_fixed_ip | None                                 |
 | enable_dhcp          | True                                 |
 | gateway_ip           | 192.168.3.254                        |
 | host_routes          |                                      |
-| id                   | e2b1b5e4-4f12-4dc9-9d01-7e693769537b |
+| id                   | e76c5f62-dbbe-4cad-9c47-02057447fa98 |
 | ip_version           | 4                                    |
 | ipv6_address_mode    | None                                 |
 | ipv6_ra_mode         | None                                 |
 | name                 | provider                             |
-| network_id           | 5b1f0b2e-49eb-480a-86cb-8f05e6e8d4ff |
-| project_id           | 32b4bc8011454da3837a54d15e16d31e     |
+| network_id           | 333186c7-8532-4997-bebe-3f43eae17fb2 |
+| project_id           | c6bca75875974f8697ddf9cd81d9222d     |
 | revision_number      | 0                                    |
 | segment_id           | None                                 |
 | service_types        |                                      |
 | subnetpool_id        | None                                 |
 | tags                 |                                      |
-| updated_at           | 2022-10-15T14:53:54Z                 |
+| updated_at           | 2024-04-29T11:35:51Z                 |
 +----------------------+--------------------------------------+
 ```
 
 ## Self-service network
 ```
+$ source ~/demo-openrc
+$ openstack network create selfservice
+Error while executing command: ForbiddenException: 403, rule:create_network is disallowed by policy
+
 $ source ~/demo-openrc
 $ openstack network create selfservice
 +---------------------------+--------------------------------------+
