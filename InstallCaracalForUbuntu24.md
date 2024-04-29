@@ -151,7 +151,8 @@ $ sudo service memcached status |grep Active
 
 # Etcd for Ubuntu
 ## Install and configure components
-→ Ubuntu 22.04までは「etcd」でインストール出来たが、Ubuntu24.04には無いため、「etcd-server, etcd-client」とそれぞれインストールする.
+→ 「etcd-server, etcd-client」とそれぞれインストールする.  
+Ubuntu 22.04までは「etcd」でインストール出来たが、Ubuntu 24.04には無いため.
 ```
 $ sudo apt -y install etcd-server etcd-client
 $ sudo cp -pv /etc/default/etcd ~
@@ -601,10 +602,10 @@ $ glance image-list
 ```
 
 
-# placement installation for Zed
-https://docs.openstack.org/placement/zed/install/
+# placement installation
+https://docs.openstack.org/placement/2023.2/install/
 ## Install and configure Placement for Ubuntu
-https://docs.openstack.org/placement/zed/install/install-ubuntu.html
+https://docs.openstack.org/placement/2023.2/install/install-ubuntu.html
 ### Create Database
 ```
 $ sudo mysql
@@ -625,11 +626,12 @@ Repeat User Password:
 +---------------------+----------------------------------+
 | domain_id           | default                          |
 | enabled             | True                             |
-| id                  | ed762d30c746492f90888f3566611a83 |
+| id                  | cee34de1216e46518f73e6050ea39e2b |
 | name                | placement                        |
 | options             | {}                               |
 | password_expires_at | None                             |
 +---------------------+----------------------------------+
+
 
 $ openstack role add --project service --user placement admin
 $ openstack service create --name placement --description "Placement API" placement
@@ -638,51 +640,54 @@ $ openstack service create --name placement --description "Placement API" placem
 +-------------+----------------------------------+
 | description | Placement API                    |
 | enabled     | True                             |
-| id          | b60fe2e8d5ba4bed803439cbd560575e |
+| id          | 026a24fe85dc4b45839cc6b74577434a |
 | name        | placement                        |
 | type        | placement                        |
 +-------------+----------------------------------+
+
 
 $ openstack endpoint create --region RegionOne placement public http://192.168.3.200:8778
 +--------------+----------------------------------+
 | Field        | Value                            |
 +--------------+----------------------------------+
 | enabled      | True                             |
-| id           | c417ea178e6840cf9a340c0c41a418c3 |
+| id           | 57ac6ee5e2cf4179bbe487a997a37342 |
 | interface    | public                           |
 | region       | RegionOne                        |
 | region_id    | RegionOne                        |
-| service_id   | b60fe2e8d5ba4bed803439cbd560575e |
+| service_id   | 026a24fe85dc4b45839cc6b74577434a |
 | service_name | placement                        |
 | service_type | placement                        |
 | url          | http://192.168.3.200:8778        |
 +--------------+----------------------------------+
+
 
 $ openstack endpoint create --region RegionOne placement internal http://192.168.3.200:8778
 +--------------+----------------------------------+
 | Field        | Value                            |
 +--------------+----------------------------------+
 | enabled      | True                             |
-| id           | eec38f0095cd40bbb3e4646fa0811b06 |
+| id           | 6f2b653d98234243b471734d590a7a2b |
 | interface    | internal                         |
 | region       | RegionOne                        |
 | region_id    | RegionOne                        |
-| service_id   | b60fe2e8d5ba4bed803439cbd560575e |
+| service_id   | 026a24fe85dc4b45839cc6b74577434a |
 | service_name | placement                        |
 | service_type | placement                        |
 | url          | http://192.168.3.200:8778        |
 +--------------+----------------------------------+
+
 
 $ openstack endpoint create --region RegionOne placement admin http://192.168.3.200:8778
 +--------------+----------------------------------+
 | Field        | Value                            |
 +--------------+----------------------------------+
 | enabled      | True                             |
-| id           | c232110eb52447bead6dd7ebd11a2621 |
+| id           | c6d4d760d00448a5987803ddf8aad66a |
 | interface    | admin                            |
 | region       | RegionOne                        |
 | region_id    | RegionOne                        |
-| service_id   | b60fe2e8d5ba4bed803439cbd560575e |
+| service_id   | 026a24fe85dc4b45839cc6b74577434a |
 | service_name | placement                        |
 | service_type | placement                        |
 | url          | http://192.168.3.200:8778        |
@@ -694,52 +699,34 @@ $ openstack endpoint create --region RegionOne placement admin http://192.168.3.
 $ sudo apt -y install placement-api
 $ sudo cp -rafv /etc/placement ~
 $ sudo vim /etc/placement/placement.conf
-$ sudo diff -u ~/placement/placement.conf /etc/placement/placement.conf
------
---- /home/ogalush/placement/placement.conf      2022-10-07 10:45:58.000000000 +0900
-+++ /etc/placement/placement.conf       2022-10-15 21:09:22.430678076 +0900
-@@ -189,6 +189,7 @@
- 
- 
- [api]
-+auth_strategy = keystone
- #
- # Options under this group are used to define Placement API.
- 
-@@ -238,6 +239,14 @@
- 
- 
- [keystone_authtoken]
-+auth_url = http://192.168.3.200:5000/v3
-+memcached_servers = 192.168.3.200:11211
-+auth_type = password
-+project_domain_name = default
-+user_domain_name = default
-+project_name = service
-+username = placement
-+password = password
- 
- #
- # From keystonemiddleware.auth_token
-@@ -512,7 +521,7 @@
- 
- 
- [placement_database]
--connection = sqlite:////var/lib/placement/placement.sqlite
-+connection = mysql+pymysql://placement:password@192.168.3.200/placement
- #
- # The *Placement API Database* is a the database used with the placement
- # service. If the connection option is not set, the placement service will
+----
+[placement_database]
+- connection = sqlite:////var/lib/placement/placement.sqlite
++ connection = mysql+pymysql://placement:password@192.168.3.200/placement
+...
+[api]
++ auth_strategy = keystone
+...
+[keystone_authtoken]
++ auth_url = http://192.168.3.200:5000/v3
++ memcached_servers = 192.168.3.200:11211
++ auth_type = password
++ project_domain_name = default
++ user_domain_name = default
++ project_name = service
++ username = placement
++ password = password
+----
 -----
 
 $ sudo -s /bin/sh -c "placement-manage db sync" placement
 $ sudo service apache2 restart
 $ sudo service apache2 status |grep Active
- Active: active (running) since Sat 2022-10-15 21:11:25 JST; 4s ago
+  Active: active (running) since Mon 2024-04-29 18:36:27 JST; 4s ago
 ```
 
 ## Verify Installation
-https://docs.openstack.org/placement/zed/install/verify.html
+https://docs.openstack.org/placement/2023.2/install/verify.html
 ```
 $ source ~/admin-openrc
 $ sudo placement-status upgrade check
@@ -761,7 +748,35 @@ $ sudo placement-status upgrade check
 
 
 $ sudo apt -y install python3-pip
+$ sudo apt -y install python3-osc-placement
+
+※ マニュアルに記載のpip3経由だとエラー終了するため、apt経由でインストールした.
+----
 $ sudo pip3 install osc-placement
+error: externally-managed-environment
+
+× This environment is externally managed
+╰─> To install Python packages system-wide, try apt install
+    python3-xyz, where xyz is the package you are trying to
+    install.
+    
+    If you wish to install a non-Debian-packaged Python package,
+    create a virtual environment using python3 -m venv path/to/venv.
+    Then use path/to/venv/bin/python and path/to/venv/bin/pip. Make
+    sure you have python3-full installed.
+    
+    If you wish to install a non-Debian packaged Python application,
+    it may be easiest to use pipx install xyz, which will manage a
+    virtual environment for you. Make sure you have pipx installed.
+    
+    See /usr/share/doc/python3.12/README.venv for more information.
+
+note: If you believe this is a mistake, please contact your Python installation or OS distribution provider.
+ You can override this, at the risk of breaking your Python installation or OS, by passing --break-system-packages.
+hint: See PEP 668 for the detailed specification.
+----
+
+
 $ openstack --os-placement-api-version 1.2 resource class list --sort-column name
 +----------------------------------------+
 | name                                   |
@@ -789,13 +804,15 @@ $ openstack --os-placement-api-version 1.2 resource class list --sort-column nam
 | VGPU_DISPLAY_HEAD                      |
 +----------------------------------------+
 
+
 $ openstack --os-placement-api-version 1.6 trait list --sort-column name
 +---------------------------------------+
 | name                                  |
 +---------------------------------------+
 | COMPUTE_ACCELERATORS                  |
-| COMPUTE_ARCH_AARCH64                  |
-...
+| COMPUTE_ADDRESS_SPACE_EMULATED        |
+| COMPUTE_ADDRESS_SPACE_PASSTHROUGH     |
+...(略)...
 | STORAGE_DISK_HDD                      |
 | STORAGE_DISK_SSD                      |
 +---------------------------------------+
@@ -803,9 +820,9 @@ $ openstack --os-placement-api-version 1.6 trait list --sort-column name
 
 
 # Compute service
-https://docs.openstack.org/nova/zed/install/
+https://docs.openstack.org/nova/2023.2/install/
 ## Install and configure controller node for Ubuntu
-https://docs.openstack.org/nova/zed/install/controller-install-ubuntu.html
+https://docs.openstack.org/nova/2023.2/install/controller-install-ubuntu.html
 ### Prerequisites
 ```
 $ sudo mysql
@@ -828,11 +845,12 @@ Repeat User Password:
 +---------------------+----------------------------------+
 | domain_id           | default                          |
 | enabled             | True                             |
-| id                  | 5bdbfca993b64f35b4e2507420bb6b73 |
+| id                  | ded655a2d20d4966b575640d60ad7d12 |
 | name                | nova                             |
 | options             | {}                               |
 | password_expires_at | None                             |
 +---------------------+----------------------------------+
+
 
 $ openstack role add --project service --user nova admin
 $ openstack service create --name nova --description "OpenStack Compute" compute
@@ -841,51 +859,54 @@ $ openstack service create --name nova --description "OpenStack Compute" compute
 +-------------+----------------------------------+
 | description | OpenStack Compute                |
 | enabled     | True                             |
-| id          | eb69807631074078bb0916ceadb9371a |
+| id          | 9054015268b646d2994cba137a990566 |
 | name        | nova                             |
 | type        | compute                          |
 +-------------+----------------------------------+
+
 
 $ openstack endpoint create --region RegionOne compute public http://192.168.3.200:8774/v2.1
 +--------------+----------------------------------+
 | Field        | Value                            |
 +--------------+----------------------------------+
 | enabled      | True                             |
-| id           | 5b5d96fd20304b6f88c6c69be0aa29d4 |
+| id           | 274ea540295f48a18db5e310a43dbf6e |
 | interface    | public                           |
 | region       | RegionOne                        |
 | region_id    | RegionOne                        |
-| service_id   | eb69807631074078bb0916ceadb9371a |
+| service_id   | 9054015268b646d2994cba137a990566 |
 | service_name | nova                             |
 | service_type | compute                          |
 | url          | http://192.168.3.200:8774/v2.1   |
 +--------------+----------------------------------+
+
 
 $ openstack endpoint create --region RegionOne compute internal http://192.168.3.200:8774/v2.1
 +--------------+----------------------------------+
 | Field        | Value                            |
 +--------------+----------------------------------+
 | enabled      | True                             |
-| id           | 423c6f7d2af44c2996507da1fa3c3d46 |
+| id           | 9781652833344443a0ab2403dab02b16 |
 | interface    | internal                         |
 | region       | RegionOne                        |
 | region_id    | RegionOne                        |
-| service_id   | eb69807631074078bb0916ceadb9371a |
+| service_id   | 9054015268b646d2994cba137a990566 |
 | service_name | nova                             |
 | service_type | compute                          |
 | url          | http://192.168.3.200:8774/v2.1   |
 +--------------+----------------------------------+
+
 
 $ openstack endpoint create --region RegionOne compute admin http://192.168.3.200:8774/v2.1
 +--------------+----------------------------------+
 | Field        | Value                            |
 +--------------+----------------------------------+
 | enabled      | True                             |
-| id           | c545dd51760041188035801416d17157 |
+| id           | 181765d78551482380f4dabafc50107a |
 | interface    | admin                            |
 | region       | RegionOne                        |
 | region_id    | RegionOne                        |
-| service_id   | eb69807631074078bb0916ceadb9371a |
+| service_id   | 9054015268b646d2994cba137a990566 |
 | service_name | nova                             |
 | service_type | compute                          |
 | url          | http://192.168.3.200:8774/v2.1   |
@@ -897,102 +918,70 @@ $ openstack endpoint create --region RegionOne compute admin http://192.168.3.20
 $ sudo apt -y install nova-api nova-conductor nova-novncproxy nova-scheduler
 $ sudo cp -rafv /etc/nova ~
 $ sudo vim /etc/nova/nova.conf
-$ sudo diff -u ~/nova/nova.conf /etc/nova/nova.conf
 ----
---- /home/ogalush/nova/nova.conf        2022-10-07 07:35:50.000000000 +0900
-+++ /etc/nova/nova.conf 2022-10-15 21:31:31.552012335 +0900
-@@ -2,6 +2,8 @@
- log_dir = /var/log/nova
- lock_path = /var/lock/nova
- state_path = /var/lib/nova
-+transport_url = rabbit://openstack:password@192.168.3.200:5672/
-+my_ip = 192.168.3.200
+[api_database]
+- connection = sqlite:////var/lib/nova/nova_api.sqlite
++ connection = mysql+pymysql://nova:password@192.168.3.200/nova_api
+...
+[database]
+- connection = sqlite:////var/lib/nova/nova.sqlite
++ connection = mysql+pymysql://nova:password@192.168.3.200/nova
+...
 
- #
- # From nova.conf
-@@ -884,6 +886,7 @@
+[DEFAULT]
+...
++ transport_url = rabbit://openstack:password@192.168.3.200:5672/
++ my_ip = 192.168.3.200
+...
 
+[api]
+auth_strategy = keystone
+...
 
- [api]
-+auth_strategy = keystone
- #
- # Options under this group are used to define Nova API.
+[keystone_authtoken]
++ www_authenticate_uri = http://192.168.3.200:5000/
++ auth_url = http://192.168.3.200:5000/
++ memcached_servers = 192.168.3.200:11211
++ auth_type = password
++ project_domain_name = default
++ user_domain_name = default
++ project_name = service
++ username = nova
++ password = password
+...
 
-@@ -1095,7 +1098,7 @@
-
-
- [api_database]
--connection = sqlite:////var/lib/nova/nova_api.sqlite
-+connection = mysql+pymysql://nova:password@192.168.3.200/nova_api
- #
- # The *Nova API Database* is a separate database which is used for information
- # which is used across *cells*. This database is mandatory since the Mitaka
-@@ -1838,7 +1841,7 @@
-
-
- [database]
--connection = sqlite:////var/lib/nova/nova.sqlite
-+connection = mysql+pymysql://nova:password@192.168.3.200/nova
- #
- # The *Nova Database* is the primary database which is used for information
- # local to a *cell*.
-@@ -2136,6 +2139,7 @@
-
-
- [glance]
-+api_servers = http://192.168.3.200:9292
- # Configuration options for the Image service
-
- #
-@@ -2841,6 +2845,15 @@
-
-
- [keystone_authtoken]
-+www_authenticate_uri = http://192.168.3.200:5000/
-+auth_url = http://192.168.3.200:5000/
-+memcached_servers = 192.168.3.200:11211
-+auth_type = password
-+project_domain_name = default
-+user_domain_name = default
-+project_name = service
-+username = nova
-+password = password
-
- #
- # From keystonemiddleware.auth_token
-@@ -3891,6 +3904,7 @@
-
-
- [oslo_concurrency]
-+lock_path = /var/lib/nova/tmp
-
- #
- # From oslo.concurrency
-@@ -4641,6 +4655,14 @@
-
-
- [placement]
-+region_name = RegionOne
-+project_domain_name = default
-+project_name = service
-+auth_type = password
-+user_domain_name = default
-+auth_url = http://192.168.3.200:5000/v3
-+username = placement
-+password = password
-
- #
- # From nova.conf
-@@ -5641,6 +5663,9 @@
-
-
- [vnc]
-+enabled = true
-+server_listen = $my_ip
-+server_proxyclient_address = $my_ip
- #
- # Virtual Network Computer (VNC) can be used to provide remote desktop
- # console access to instances for tenants and/or administrators.
+[service_user]
++ send_service_user_token = true
++ auth_url = https://192.168.3.200/identity
++ auth_strategy = keystone
++ auth_type = password
++ project_domain_name = default
++ project_name = service
++ user_domain_name = default
++ username = nova
++ password = password
+...
+[vnc]
++ enabled = true
++ server_listen = $my_ip
++ server_proxyclient_address = $my_ip
+...
+[glance]
++ api_servers = http://192.168.3.200:9292
+...
+[oslo_concurrency]
++ lock_path = /var/lib/nova/tmp
+...
+[placement]
++ region_name = RegionOne
++ project_domain_name = default
++ project_name = service
++ auth_type = password
++ user_domain_name = default
++ auth_url = http://192.168.3.200:5000/v3
++ username = placement
++ password = password
+...
 ----
 
 ※追加
@@ -1008,19 +997,19 @@ dhcp_domain = localdomain
 $ sudo -s /bin/sh -c "nova-manage api_db sync" nova
 $ sudo -s /bin/sh -c "nova-manage cell_v2 map_cell0" nova
 $ sudo -s /bin/sh -c "nova-manage cell_v2 create_cell --name=cell1 --verbose" nova
-Modules with known eventlet monkey patching issues were imported prior to eventlet monkey patching: urllib3. This warning can usually be ignored if the caller is only importing and not executing nova code.
+3 RLock(s) were not greened, to fix this error make sure you run eventlet.monkey_patch() before importing any other modules.
 --transport-url not provided in the command line, using the value [DEFAULT]/transport_url from the configuration file
 --database_connection not provided in the command line, using the value [database]/connection from the configuration file
-77290bf0-22a9-43a4-ae8c-4373e25c4f05
+cf3ceeb5-e40b-4be2-a90c-d7e02c5f49ac
 
 $ sudo -s /bin/sh -c "nova-manage db sync" nova
 $ sudo -s /bin/sh -c "nova-manage cell_v2 list_cells" nova
-Modules with known eventlet monkey patching issues were imported prior to eventlet monkey patching: urllib3. This warning can usually be ignored if the caller is only importing and not executing nova code.
+3 RLock(s) were not greened, to fix this error make sure you run eventlet.monkey_patch() before importing any other modules.
 +-------+--------------------------------------+---------------------------------------------+----------------------------------------------------+----------+
 |  Name |                 UUID                 |                Transport URL                |                Database Connection                 | Disabled |
 +-------+--------------------------------------+---------------------------------------------+----------------------------------------------------+----------+
 | cell0 | 00000000-0000-0000-0000-000000000000 |                    none:/                   | mysql+pymysql://nova:****@192.168.3.200/nova_cell0 |  False   |
-| cell1 | 77290bf0-22a9-43a4-ae8c-4373e25c4f05 | rabbit://openstack:****@192.168.3.200:5672/ |    mysql+pymysql://nova:****@192.168.3.200/nova    |  False   |
+| cell1 | cf3ceeb5-e40b-4be2-a90c-d7e02c5f49ac | rabbit://openstack:****@192.168.3.200:5672/ |    mysql+pymysql://nova:****@192.168.3.200/nova    |  False   |
 +-------+--------------------------------------+---------------------------------------------+----------------------------------------------------+----------+
 ```
 
@@ -1028,14 +1017,24 @@ Modules with known eventlet monkey patching issues were imported prior to eventl
 ```
 $ sudo systemctl restart nova-api nova-scheduler nova-conductor nova-novncproxy
 $ sudo systemctl status nova-api nova-scheduler nova-conductor nova-novncproxy |grep Active
-     Active: active (running) since Sat 2022-10-15 21:36:34 JST; 6s ago
-     Active: active (running) since Sat 2022-10-15 21:36:34 JST; 6s ago
-     Active: active (running) since Sat 2022-10-15 21:36:34 JST; 6s ago
-     Active: active (running) since Sat 2022-10-15 21:36:34 JST; 6s ago
+  Active: active (running) since Mon 2024-04-29 19:09:23 JST; 4s ago
+  Active: active (running) since Mon 2024-04-29 19:09:23 JST; 5s ago
+  Active: active (running) since Mon 2024-04-29 19:09:23 JST; 5s ago
+  Active: active (running) since Mon 2024-04-29 19:09:23 JST; 4s ago
+$ sudo systemctl is-active nova-api nova-scheduler nova-conductor nova-novncproxy
+active
+active
+active
+active
+$ sudo systemctl is-enabled nova-api nova-scheduler nova-conductor nova-novncproxy
+enabled
+enabled
+enabled
+enabled
 ```
 
 ## Install and configure a compute node for Ubuntu
-https://docs.openstack.org/nova/zed/install/compute-install-ubuntu.html
+https://docs.openstack.org/nova/2023.2/install/compute-install-ubuntu.html
 ### Install and configure components
 ```
 $ sudo apt -y install nova-compute
@@ -1045,10 +1044,12 @@ $ sudo vim /etc/nova/nova.conf
 ...
 + novncproxy_base_url = http://192.168.3.200:6080/vnc_auto.html
 ...
+
 [scheduler]
 + discover_hosts_in_cells_interval = 300
 ----
 ```
+
 ### Finalize installation
 ```
 $ egrep -c '(vmx|svm)' /proc/cpuinfo
@@ -1058,11 +1059,16 @@ $ sudo vim /etc/nova/nova-compute.conf
 ----
 ...
 [libvirt]
-virt_type=kvm ・・・KVMであればOK.
+virt_type=kvm ・・・KVMのままでOK.(Intel VT)
 ----
+
 $ sudo systemctl restart nova-compute
 $ sudo systemctl status nova-compute |grep Active
- Active: active (running) since Sat 2022-10-15 21:41:10 JST; 5s ago
+  Active: active (running) since Mon 2024-04-29 19:14:18 JST; 4s ago
+$ sudo systemctl is-active nova-compute
+active
+$ sudo systemctl is-enabled nova-compute
+enabled
 ```
 
 ### Add the compute node to the cell database
@@ -1072,32 +1078,33 @@ $ openstack compute service list --service nova-compute
 +--------------------------------------+--------------+-----------+------+---------+-------+----------------------------+
 | ID                                   | Binary       | Host      | Zone | Status  | State | Updated At                 |
 +--------------------------------------+--------------+-----------+------+---------+-------+----------------------------+
-| 4d20a7b1-d08d-442f-b136-7ea67d7d7b85 | nova-compute | ryunosuke | nova | enabled | up    | 2022-10-15T12:41:58.000000 |
+| fedc9728-a77f-42dc-97b6-f370ff5e29a2 | nova-compute | ryunosuke | nova | enabled | up    | 2024-04-29T10:15:17.000000 |
 +--------------------------------------+--------------+-----------+------+---------+-------+----------------------------+
 
 
 $ sudo -s /bin/sh -c "nova-manage cell_v2 discover_hosts --verbose" nova
-Modules with known eventlet monkey patching issues were imported prior to eventlet monkey patching: urllib3. This warning can usually be ignored if the caller is only importing and not executing nova code.
+3 RLock(s) were not greened, to fix this error make sure you run eventlet.monkey_patch() before importing any other modules.
 Found 2 cell mappings.
 Skipping cell0 since it does not contain hosts.
-Getting computes from cell 'cell1': 77290bf0-22a9-43a4-ae8c-4373e25c4f05
-Checking host mapping for compute host 'ryunosuke': 2a55b0ff-00f1-4691-8365-a6c8e1b289ab
-Creating host mapping for compute host 'ryunosuke': 2a55b0ff-00f1-4691-8365-a6c8e1b289ab
-Found 1 unmapped computes in cell: 77290bf0-22a9-43a4-ae8c-4373e25c4f05
+Getting computes from cell 'cell1': cf3ceeb5-e40b-4be2-a90c-d7e02c5f49ac
+Checking host mapping for compute host 'ryunosuke': a921624a-abec-451f-bdc2-7b5466d33b97
+Creating host mapping for compute host 'ryunosuke': a921624a-abec-451f-bdc2-7b5466d33b97
+Found 1 unmapped computes in cell: cf3ceeb5-e40b-4be2-a90c-d7e02c5f49ac
 ```
 
 ## Verify operation
-https://docs.openstack.org/nova/zed/install/verify.html
+https://docs.openstack.org/nova/2023.2/install/verify.html
 ```
 $ source ~/admin-openrc
 $ openstack compute service list
 +--------------------------------------+----------------+-----------+----------+---------+-------+----------------------------+
 | ID                                   | Binary         | Host      | Zone     | Status  | State | Updated At                 |
 +--------------------------------------+----------------+-----------+----------+---------+-------+----------------------------+
-| efcfa3f5-ad1e-41b1-a0f5-7367d707e38a | nova-scheduler | ryunosuke | internal | enabled | up    | 2022-10-15T12:43:41.000000 |
-| 5a0d036e-89db-4940-aa82-150acb40bc6b | nova-conductor | ryunosuke | internal | enabled | up    | 2022-10-15T12:43:41.000000 |
-| 4d20a7b1-d08d-442f-b136-7ea67d7d7b85 | nova-compute   | ryunosuke | nova     | enabled | up    | 2022-10-15T12:43:48.000000 |
+| 6d64eeac-c86e-47b8-9f2d-8f31387b18b4 | nova-scheduler | ryunosuke | internal | enabled | up    | 2024-04-29T10:17:20.000000 |
+| a2b41edf-344a-4ca5-befb-66f4218ff30d | nova-conductor | ryunosuke | internal | enabled | up    | 2024-04-29T10:17:20.000000 |
+| fedc9728-a77f-42dc-97b6-f370ff5e29a2 | nova-compute   | ryunosuke | nova     | enabled | up    | 2024-04-29T10:17:20.000000 |
 +--------------------------------------+----------------+-----------+----------+---------+-------+----------------------------+
+
 
 $ openstack catalog list
 +-----------+-----------+--------------------------------------------+
@@ -1110,39 +1117,40 @@ $ openstack catalog list
 |           |           | RegionOne                                  |
 |           |           |   public: http://192.168.3.200:5000/v3/    |
 |           |           |                                            |
-| glance    | image     | RegionOne                                  |
-|           |           |   internal: http://192.168.3.200:9292      |
-|           |           | RegionOne                                  |
-|           |           |   admin: http://192.168.3.200:9292         |
-|           |           | RegionOne                                  |
-|           |           |   public: http://192.168.3.200:9292        |
-|           |           |                                            |
 | placement | placement | RegionOne                                  |
-|           |           |   admin: http://192.168.3.200:8778         |
-|           |           | RegionOne                                  |
 |           |           |   public: http://192.168.3.200:8778        |
 |           |           | RegionOne                                  |
 |           |           |   internal: http://192.168.3.200:8778      |
+|           |           | RegionOne                                  |
+|           |           |   admin: http://192.168.3.200:8778         |
+|           |           |                                            |
+| glance    | image     | RegionOne                                  |
+|           |           |   admin: http://192.168.3.200:9292         |
+|           |           | RegionOne                                  |
+|           |           |   public: http://192.168.3.200:9292        |
+|           |           | RegionOne                                  |
+|           |           |   internal: http://192.168.3.200:9292      |
 |           |           |                                            |
 | nova      | compute   | RegionOne                                  |
-|           |           |   internal: http://192.168.3.200:8774/v2.1 |
+|           |           |   admin: http://192.168.3.200:8774/v2.1    |
 |           |           | RegionOne                                  |
 |           |           |   public: http://192.168.3.200:8774/v2.1   |
 |           |           | RegionOne                                  |
-|           |           |   admin: http://192.168.3.200:8774/v2.1    |
+|           |           |   internal: http://192.168.3.200:8774/v2.1 |
 |           |           |                                            |
 +-----------+-----------+--------------------------------------------+
+
 
 $ openstack image list
 +--------------------------------------+--------+--------+
 | ID                                   | Name   | Status |
 +--------------------------------------+--------+--------+
-| 65933176-c232-460a-8c46-062ee5266a35 | cirros | active |
+| 047d4142-4a9d-401e-ab0e-ee6ba1a0ea94 | cirros | active |
 +--------------------------------------+--------+--------+
 
 
 $ sudo nova-status upgrade check
-Modules with known eventlet monkey patching issues were imported prior to eventlet monkey patching: urllib3. This warning can usually be ignored if the caller is only importing and not executing nova code.
+3 RLock(s) were not greened, to fix this error make sure you run eventlet.monkey_patch() before importing any other modules.
 +-------------------------------------------+
 | Upgrade Check Results                     |
 +-------------------------------------------+
@@ -1167,6 +1175,10 @@ Modules with known eventlet monkey patching issues were imported prior to eventl
 | Details: None                             |
 +-------------------------------------------+
 | Check: hw_machine_type unset              |
+| Result: Success                           |
+| Details: None                             |
++-------------------------------------------+
+| Check: Service User Token Configuration   |
 | Result: Success                           |
 | Details: None                             |
 +-------------------------------------------+
