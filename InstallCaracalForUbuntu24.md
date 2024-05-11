@@ -341,6 +341,22 @@ $ openstack role create myrole
 
 $ openstack role add --project myproject --user myuser myrole
 $
+
+※ 「openstack network create selfservice」時にエラーになる対応
+エラーメッセージ: Error while executing command: ForbiddenException: 403, rule:create_network is disallowed by policy
+
+原因は
+https://docs.openstack.org/neutron/latest/configuration/policy.html
+----
+create_network
+Default: (rule:admin_only) or (role:member and project_id:%(project_id)s)
+Operations: POST /networks
+Scope Types: project
+----
+の権限が不足しているため.
+
+対応として、memberロールへ追加する.
+$ openstack role add --project myproject --user myuser member
 ```
 
 
@@ -1662,23 +1678,16 @@ $ openstack subnet create --network provider --allocation-pool start=192.168.3.1
 ```
 $ source ~/demo-openrc
 $ openstack network create selfservice
-Error while executing command: ForbiddenException: 403, rule:create_network is disallowed by policy
-
-KeyStoneのpolicy.jsonでcreate_networkを許可する必要がある？
-https://docs.openstack.org/neutron/queens/admin/archives/auth.html
-
-$ source ~/demo-openrc
-$ openstack network create selfservice
 +---------------------------+--------------------------------------+
 | Field                     | Value                                |
 +---------------------------+--------------------------------------+
 | admin_state_up            | UP                                   |
 | availability_zone_hints   |                                      |
 | availability_zones        |                                      |
-| created_at                | 2022-10-15T14:54:33Z                 |
+| created_at                | 2024-05-11T17:22:20Z                 |
 | description               |                                      |
 | dns_domain                | None                                 |
-| id                        | e8020321-d29c-4b87-97cb-66cddd15c77e |
+| id                        | 0849a2a4-40b2-4d20-8932-4bed835feb39 |
 | ipv4_address_scope        | None                                 |
 | ipv6_address_scope        | None                                 |
 | is_default                | False                                |
@@ -1686,7 +1695,7 @@ $ openstack network create selfservice
 | mtu                       | 1450                                 |
 | name                      | selfservice                          |
 | port_security_enabled     | True                                 |
-| project_id                | ce6550a158c64ea6b54883cf74064f10     |
+| project_id                | fb33f516c20d462aaa0b7ceba3297be3     |
 | provider:network_type     | None                                 |
 | provider:physical_network | None                                 |
 | provider:segmentation_id  | None                                 |
@@ -1698,7 +1707,8 @@ $ openstack network create selfservice
 | status                    | ACTIVE                               |
 | subnets                   |                                      |
 | tags                      |                                      |
-| updated_at                | 2022-10-15T14:54:33Z                 |
+| tenant_id                 | fb33f516c20d462aaa0b7ceba3297be3     |
+| updated_at                | 2024-05-11T17:22:20Z                 |
 +---------------------------+--------------------------------------+
 
 
@@ -1708,26 +1718,26 @@ $ openstack subnet create --network selfservice --dns-nameserver 192.168.3.220 -
 +----------------------+--------------------------------------+
 | allocation_pools     | 10.0.0.2-10.0.0.254                  |
 | cidr                 | 10.0.0.0/24                          |
-| created_at           | 2022-10-15T14:54:55Z                 |
+| created_at           | 2024-05-11T17:25:38Z                 |
 | description          |                                      |
 | dns_nameservers      | 192.168.3.220                        |
 | dns_publish_fixed_ip | None                                 |
 | enable_dhcp          | True                                 |
 | gateway_ip           | 10.0.0.1                             |
 | host_routes          |                                      |
-| id                   | ea4f2ebf-9853-4ec2-83d7-ce58398f51f1 |
+| id                   | f8f10fbc-1cc9-4793-95dd-1eaa5774c574 |
 | ip_version           | 4                                    |
 | ipv6_address_mode    | None                                 |
 | ipv6_ra_mode         | None                                 |
 | name                 | selfservice                          |
-| network_id           | e8020321-d29c-4b87-97cb-66cddd15c77e |
-| project_id           | ce6550a158c64ea6b54883cf74064f10     |
+| network_id           | 0849a2a4-40b2-4d20-8932-4bed835feb39 |
+| project_id           | fb33f516c20d462aaa0b7ceba3297be3     |
 | revision_number      | 0                                    |
 | segment_id           | None                                 |
 | service_types        |                                      |
 | subnetpool_id        | None                                 |
 | tags                 |                                      |
-| updated_at           | 2022-10-15T14:54:55Z                 |
+| updated_at           | 2024-05-11T17:25:38Z                 |
 +----------------------+--------------------------------------+
 
 
@@ -1738,20 +1748,20 @@ $ openstack router create router
 | admin_state_up          | UP                                   |
 | availability_zone_hints |                                      |
 | availability_zones      |                                      |
-| created_at              | 2022-10-15T14:55:18Z                 |
+| created_at              | 2024-05-11T17:26:00Z                 |
 | description             |                                      |
 | enable_ndp_proxy        | None                                 |
 | external_gateway_info   | null                                 |
 | flavor_id               | None                                 |
-| id                      | f681a77f-7f61-4246-ad18-9ac870fc3a67 |
+| id                      | ba6f1cf4-33b2-43f4-acd2-a74e1dced2f9 |
 | name                    | router                               |
-| project_id              | ce6550a158c64ea6b54883cf74064f10     |
+| project_id              | fb33f516c20d462aaa0b7ceba3297be3     |
 | revision_number         | 1                                    |
 | routes                  |                                      |
 | status                  | ACTIVE                               |
 | tags                    |                                      |
-| tenant_id               | ce6550a158c64ea6b54883cf74064f10     |
-| updated_at              | 2022-10-15T14:55:18Z                 |
+| tenant_id               | fb33f516c20d462aaa0b7ceba3297be3     |
+| updated_at              | 2024-05-11T17:26:00Z                 |
 +-------------------------+--------------------------------------+
 
 
@@ -1762,28 +1772,30 @@ $ openstack router set router --external-gateway provider
 ## Verify operation
 ```
 $ source ~/admin-openrc
-$ ip netns
-qrouter-f681a77f-7f61-4246-ad18-9ac870fc3a67 (id: 2)
-qdhcp-e8020321-d29c-4b87-97cb-66cddd15c77e (id: 1)
-qdhcp-5b1f0b2e-49eb-480a-86cb-8f05e6e8d4ff (id: 0)
+ogalush@ryunosuke:~$ ip netns
+qdhcp-333186c7-8532-4997-bebe-3f43eae17fb2 (id: 0)
+qdhcp-0849a2a4-40b2-4d20-8932-4bed835feb39 (id: 1)
+qrouter-ba6f1cf4-33b2-43f4-acd2-a74e1dced2f9 (id: 2)
 
 $ openstack port list --router router
 +--------------------------------------+------+-------------------+------------------------------------------------------------------------------+--------+
 | ID                                   | Name | MAC Address       | Fixed IP Addresses                                                           | Status |
 +--------------------------------------+------+-------------------+------------------------------------------------------------------------------+--------+
-| 18fe0514-db65-4900-94f2-5697af82baad |      | fa:16:3e:a6:b3:0e | ip_address='10.0.0.1', subnet_id='ea4f2ebf-9853-4ec2-83d7-ce58398f51f1'      | ACTIVE |
-| 6a65676d-53ee-498b-b122-57fc71b1f662 |      | fa:16:3e:97:88:37 | ip_address='192.168.3.136', subnet_id='e2b1b5e4-4f12-4dc9-9d01-7e693769537b' | ACTIVE |
+| 82f9107d-79c5-441a-8023-a527363bc6c5 |      | fa:16:3e:86:7a:12 | ip_address='192.168.3.137', subnet_id='e76c5f62-dbbe-4cad-9c47-02057447fa98' | ACTIVE |
+| eaff279b-a0d8-4b41-9f9e-08bf90e8cbbc |      | fa:16:3e:d8:da:00 | ip_address='10.0.0.1', subnet_id='f8f10fbc-1cc9-4793-95dd-1eaa5774c574'      | ACTIVE |
 +--------------------------------------+------+-------------------+------------------------------------------------------------------------------+--------+
 
-$ ping -c 3 192.168.3.136
-PING 192.168.3.136 (192.168.3.136) 56(84) bytes of data.
-64 bytes from 192.168.3.136: icmp_seq=1 ttl=64 time=0.088 ms
-64 bytes from 192.168.3.136: icmp_seq=2 ttl=64 time=0.053 ms
-64 bytes from 192.168.3.136: icmp_seq=3 ttl=64 time=0.065 ms
 
---- 192.168.3.136 ping statistics ---
-3 packets transmitted, 3 received, 0% packet loss, time 2049ms
-rtt min/avg/max/mdev = 0.053/0.068/0.088/0.014 ms
+$ ping -c 3 192.168.3.137
+PING 192.168.3.137 (192.168.3.137) 56(84) bytes of data.
+64 bytes from 192.168.3.137: icmp_seq=1 ttl=64 time=0.099 ms
+64 bytes from 192.168.3.137: icmp_seq=2 ttl=64 time=0.071 ms
+64 bytes from 192.168.3.137: icmp_seq=3 ttl=64 time=0.056 ms
+
+--- 192.168.3.137 ping statistics ---
+3 packets transmitted, 3 received, 0% packet loss, time 2038ms
+rtt min/avg/max/mdev = 0.056/0.075/0.099/0.017 ms
+
 → RouterのIPアドレスへping出来たためOK.
 ```
 
@@ -1804,9 +1816,10 @@ $ openstack flavor create --id 0 --vcpus 1 --ram 2048 --disk 20 m1.small
 | properties                 |          |
 | ram                        | 2048     |
 | rxtx_factor                | 1.0      |
-| swap                       |          |
+| swap                       | 0        |
 | vcpus                      | 1        |
 +----------------------------+----------+
+
 ```
 
 ## Generate a key pair
@@ -1822,7 +1835,7 @@ $ openstack keypair create --public-key ~/.ssh/authorized_keys ogakey
 | is_deleted  | None                                            |
 | name        | ogakey                                          |
 | type        | ssh                                             |
-| user_id     | 27745669d8b54d46958cce0a913edb2e                |
+| user_id     | 223997b993684a5f9570b86ee460d044                |
 +-------------+-------------------------------------------------+
 
 $ openstack keypair list
@@ -1840,47 +1853,52 @@ $ openstack security group rule create --proto icmp default
 +-------------------------+--------------------------------------+
 | Field                   | Value                                |
 +-------------------------+--------------------------------------+
-| created_at              | 2022-10-15T15:02:38Z                 |
+| belongs_to_default_sg   | True                                 |
+| created_at              | 2024-05-11T17:28:56Z                 |
 | description             |                                      |
 | direction               | ingress                              |
 | ether_type              | IPv4                                 |
-| id                      | b9a36df4-0362-46c0-bbbf-b7f52df8965b |
+| id                      | 3b740f49-66b4-4773-b16c-b9111b60f17a |
 | name                    | None                                 |
+| normalized_cidr         | 0.0.0.0/0                            |
 | port_range_max          | None                                 |
 | port_range_min          | None                                 |
-| project_id              | ce6550a158c64ea6b54883cf74064f10     |
+| project_id              | fb33f516c20d462aaa0b7ceba3297be3     |
 | protocol                | icmp                                 |
 | remote_address_group_id | None                                 |
 | remote_group_id         | None                                 |
 | remote_ip_prefix        | 0.0.0.0/0                            |
 | revision_number         | 0                                    |
-| security_group_id       | 24ef7fc3-fdd3-40ed-8992-da3c3d8595ef |
+| security_group_id       | 4714112f-6564-4be6-aa8a-15b35c785019 |
 | tags                    | []                                   |
-| updated_at              | 2022-10-15T15:02:38Z                 |
+| updated_at              | 2024-05-11T17:28:56Z                 |
 +-------------------------+--------------------------------------+
 
-・22/tcpをデフォルトで開けておく.
+
+・22/tcpを開けておく.
 $ openstack security group rule create --proto tcp --dst-port 22 default
 +-------------------------+--------------------------------------+
 | Field                   | Value                                |
 +-------------------------+--------------------------------------+
-| created_at              | 2022-10-15T15:02:58Z                 |
+| belongs_to_default_sg   | True                                 |
+| created_at              | 2024-05-11T17:29:19Z                 |
 | description             |                                      |
 | direction               | ingress                              |
 | ether_type              | IPv4                                 |
-| id                      | b398424d-93f8-4163-8045-e295d5fb79eb |
+| id                      | c47d8ed7-fdf1-4494-8789-5be8e0ac2a3d |
 | name                    | None                                 |
+| normalized_cidr         | 0.0.0.0/0                            |
 | port_range_max          | 22                                   |
 | port_range_min          | 22                                   |
-| project_id              | ce6550a158c64ea6b54883cf74064f10     |
+| project_id              | fb33f516c20d462aaa0b7ceba3297be3     |
 | protocol                | tcp                                  |
 | remote_address_group_id | None                                 |
 | remote_group_id         | None                                 |
 | remote_ip_prefix        | 0.0.0.0/0                            |
 | revision_number         | 0                                    |
-| security_group_id       | 24ef7fc3-fdd3-40ed-8992-da3c3d8595ef |
+| security_group_id       | 4714112f-6564-4be6-aa8a-15b35c785019 |
 | tags                    | []                                   |
-| updated_at              | 2022-10-15T15:02:58Z                 |
+| updated_at              | 2024-05-11T17:29:19Z                 |
 +-------------------------+--------------------------------------+
 
 ・80/tcpをデフォルトで開けておく.
@@ -1888,47 +1906,52 @@ $ openstack security group rule create --proto tcp --dst-port 80 default
 +-------------------------+--------------------------------------+
 | Field                   | Value                                |
 +-------------------------+--------------------------------------+
-| created_at              | 2022-10-15T15:55:56Z                 |
+| belongs_to_default_sg   | True                                 |
+| created_at              | 2024-05-11T17:29:39Z                 |
 | description             |                                      |
 | direction               | ingress                              |
 | ether_type              | IPv4                                 |
-| id                      | 31d57aba-d21c-492a-9cf9-236ebdf9dcc0 |
+| id                      | f7e05f43-9b4a-441b-8938-b2bc68a2954e |
 | name                    | None                                 |
+| normalized_cidr         | 0.0.0.0/0                            |
 | port_range_max          | 80                                   |
 | port_range_min          | 80                                   |
-| project_id              | ce6550a158c64ea6b54883cf74064f10     |
+| project_id              | fb33f516c20d462aaa0b7ceba3297be3     |
 | protocol                | tcp                                  |
 | remote_address_group_id | None                                 |
 | remote_group_id         | None                                 |
 | remote_ip_prefix        | 0.0.0.0/0                            |
 | revision_number         | 0                                    |
-| security_group_id       | 24ef7fc3-fdd3-40ed-8992-da3c3d8595ef |
+| security_group_id       | 4714112f-6564-4be6-aa8a-15b35c785019 |
 | tags                    | []                                   |
-| updated_at              | 2022-10-15T15:55:56Z                 |
+| updated_at              | 2024-05-11T17:29:39Z                 |
 +-------------------------+--------------------------------------+
+
 
 ・443/tcpをデフォルトで開けておく.
 $ openstack security group rule create --proto tcp --dst-port 443 default
 +-------------------------+--------------------------------------+
 | Field                   | Value                                |
 +-------------------------+--------------------------------------+
-| created_at              | 2022-10-15T15:56:01Z                 |
+| belongs_to_default_sg   | True                                 |
+| created_at              | 2024-05-11T17:29:53Z                 |
 | description             |                                      |
 | direction               | ingress                              |
 | ether_type              | IPv4                                 |
-| id                      | ab1446a1-5eed-4f27-a846-6b59694eb0e1 |
+| id                      | 27f24281-0087-4f5f-b291-f8d82dad9f22 |
 | name                    | None                                 |
+| normalized_cidr         | 0.0.0.0/0                            |
 | port_range_max          | 443                                  |
 | port_range_min          | 443                                  |
-| project_id              | ce6550a158c64ea6b54883cf74064f10     |
+| project_id              | fb33f516c20d462aaa0b7ceba3297be3     |
 | protocol                | tcp                                  |
 | remote_address_group_id | None                                 |
 | remote_group_id         | None                                 |
 | remote_ip_prefix        | 0.0.0.0/0                            |
 | revision_number         | 0                                    |
-| security_group_id       | 24ef7fc3-fdd3-40ed-8992-da3c3d8595ef |
+| security_group_id       | 4714112f-6564-4be6-aa8a-15b35c785019 |
 | tags                    | []                                   |
-| updated_at              | 2022-10-15T15:56:01Z                 |
+| updated_at              | 2024-05-11T17:29:53Z                 |
 +-------------------------+--------------------------------------+
 ```
 
@@ -1939,45 +1962,46 @@ OpenStack Dashboardからインスタンスを起動できればOK.
 ### CloudImageの取得
 https://cloud-images.ubuntu.com/releases/22.04/release/
 ```
-$ wget https://cloud-images.ubuntu.com/releases/22.04/release/ubuntu-22.04-server-cloudimg-amd64-disk-kvm.img
-$ sudo mv -v ~/ubuntu-22.04-server-cloudimg-amd64-disk-kvm.img /usr/local/src
+$ wget https://cloud-images.ubuntu.com/releases/24.04/release/ubuntu-24.04-server-cloudimg-amd64.img
+$ sudo mv -v ~/ubuntu-24.04-server-cloudimg-amd64.img /usr/local/src
 ```
 ## OSイメージのインポート
 ```
 $ source ~/admin-openrc
-$ glance image-create --name "ubuntu22.04" --file /usr/local/src/ubuntu-22.04-server-cloudimg-amd64-disk-kvm.img --disk-format qcow2 --container-format bare --visibility=public
+$ glance image-create --name "ubuntu24.04" --file /usr/local/src/ubuntu-24.04-server-cloudimg-amd64.img --disk-format qcow2 --container-format bare --visibility=public
 +------------------+----------------------------------------------------------------------------------+
 | Property         | Value                                                                            |
 +------------------+----------------------------------------------------------------------------------+
-| checksum         | bc5b2a699b0986680d0f4f30344f6b22                                                 |
+| checksum         | 77827ac858413ba6165bcfdbc85c64e2                                                 |
 | container_format | bare                                                                             |
-| created_at       | 2022-10-15T15:40:42Z                                                             |
+| created_at       | 2024-05-11T17:33:30Z                                                             |
 | disk_format      | qcow2                                                                            |
-| id               | 667bd279-6a5c-4eb9-9840-b204fa7971c7                                             |
+| id               | 21b1ee5f-5425-4ce5-8b1d-fecd10e56047                                             |
 | min_disk         | 0                                                                                |
 | min_ram          | 0                                                                                |
-| name             | ubuntu22.04                                                                      |
+| name             | ubuntu24.04                                                                      |
 | os_hash_algo     | sha512                                                                           |
-| os_hash_value    | 0243f97d0a3bcf5260d31f173b166d024f6157ae9337ec339fda0dc2cca380c81194cbc7eeccd84b |
-|                  | bc0e5f8e3ceba0c744f8d98f8b2632854c71904893c199b2                                 |
+| os_hash_value    | f3f1a30d35389cfd2c124ce057460a9924ebf50a43dbea2e021a8b0f048bd8f2450ab3ce8644ceba |
+|                  | 7845e7b48af83fc5bc645c224ac0ba92731b35079e9269ef                                 |
 | os_hidden        | False                                                                            |
-| owner            | 32b4bc8011454da3837a54d15e16d31e                                                 |
+| owner            | c6bca75875974f8697ddf9cd81d9222d                                                 |
 | protected        | False                                                                            |
-| size             | 631701504                                                                        |
+| size             | 475004928                                                                        |
 | status           | active                                                                           |
+| stores           | fs                                                                               |
 | tags             | []                                                                               |
-| updated_at       | 2022-10-15T15:40:45Z                                                             |
-| virtual_size     | 2361393152                                                                       |
+| updated_at       | 2024-05-11T17:33:32Z                                                             |
+| virtual_size     | 3758096384                                                                       |
 | visibility       | public                                                                           |
 +------------------+----------------------------------------------------------------------------------+
 
-$ glance image-list
-+--------------------------------------+-------------+
-| ID                                   | Name        |
-+--------------------------------------+-------------+
-| 65933176-c232-460a-8c46-062ee5266a35 | cirros      |
-| 5befb15d-7e69-416c-bc7a-1004742f487f | ubuntu22.04 |
-+--------------------------------------+-------------+
+$ openstack image list
++--------------------------------------+-------------+--------+
+| ID                                   | Name        | Status |
++--------------------------------------+-------------+--------+
+| 047d4142-4a9d-401e-ab0e-ee6ba1a0ea94 | cirros      | active |
+| 21b1ee5f-5425-4ce5-8b1d-fecd10e56047 | ubuntu24.04 | active |
++--------------------------------------+-------------+--------+
 ```
 
 # Disable virbr0
@@ -1988,35 +2012,34 @@ OpenStackインストール時にlibvirtdが入るため、 `virbr0` のInterfac
 ## Show virbr0
 ```
 $ ip addr show virbr0
-4: virbr0: <NO-CARRIER,BROADCAST,MULTICAST,UP> mtu 1500 qdisc noqueue state DOWN group default qlen 1000
-    link/ether 52:54:00:83:d9:7e brd ff:ff:ff:ff:ff:ff
+5: virbr0: <NO-CARRIER,BROADCAST,MULTICAST,UP> mtu 1500 qdisc noqueue state DOWN group default qlen 1000
+    link/ether 52:54:00:4a:a6:3a brd ff:ff:ff:ff:ff:ff
     inet 192.168.122.1/24 brd 192.168.122.255 scope global virbr0
        valid_lft forever preferred_lft forever
-$
-ogalush@ryunosuke:~$ virsh net-list
+
+$ virsh net-list
  Name      State    Autostart   Persistent
 --------------------------------------------
  default   active   yes         yes
 
-ogalush@ryunosuke:~$ virsh net-dumpxml default
+
+$ virsh net-dumpxml default
 <network>
   <name>default</name>
-  <uuid>73c83bdd-9aa3-4c03-8aa9-4ccb74fcc9f2</uuid>
+  <uuid>28933d13-a357-4dd8-80d0-f59eff8d0bd5</uuid>
   <forward mode='nat'>
     <nat>
       <port start='1024' end='65535'/>
     </nat>
   </forward>
   <bridge name='virbr0' stp='on' delay='0'/>
-  <mac address='52:54:00:83:d9:7e'/>
+  <mac address='52:54:00:4a:a6:3a'/>
   <ip address='192.168.122.1' netmask='255.255.255.0'>
     <dhcp>
       <range start='192.168.122.2' end='192.168.122.254'/>
     </dhcp>
   </ip>
 </network>
-
-ogalush@ryunosuke:~$ 
 ```
 
 ## Delete And Disable virbr0
@@ -2035,6 +2058,5 @@ $ virsh net-list --all
 ----------------------------------------------
  default   inactive   no          yes
 
-$
 → Autostart = No, State = inactiveになっていればOK.
 ```
