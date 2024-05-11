@@ -987,7 +987,7 @@ auth_strategy = keystone
 
 [service_user]
 + send_service_user_token = true
-+ auth_url = https://192.168.3.200/identity
++ auth_url = http://192.168.3.200/identity
 + auth_strategy = keystone
 + auth_type = password
 + project_domain_name = default
