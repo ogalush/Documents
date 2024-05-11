@@ -975,7 +975,7 @@ auth_strategy = keystone
 
 [keystone_authtoken]
 + www_authenticate_uri = http://192.168.3.200:5000/
-+ auth_url = http://192.168.3.200:5000/
++ auth_url = http://192.168.3.200:5000/v3
 + memcached_servers = 192.168.3.200:11211
 + auth_type = password
 + project_domain_name = default
@@ -987,7 +987,7 @@ auth_strategy = keystone
 
 [service_user]
 + send_service_user_token = true
-+ auth_url = http://192.168.3.200/identity
++ auth_url = http://192.168.3.200:5000/identity
 + auth_strategy = keystone
 + auth_type = password
 + project_domain_name = default
