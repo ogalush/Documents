@@ -142,11 +142,23 @@ $ diff --unified=0 ~/memcached.conf /etc/memcached.conf
 +++ /etc/memcached.conf 2024-04-29 17:40:51.007973505 +0900
 @@ -35 +35 @@
 --l 127.0.0.1
-+-l 192.168.3.200
++-l 0.0.0.0
 $ sudo systemctl is-active memcached
 active
 $ sudo systemctl is-enabled memcached
 enabled
+
+※ 2024.5.11
+「-l 192.168.3.200」の場合、
+「bind(): Cannot assign requested address」エラーになりOS起動時にmemcachedのstartに失敗するため、
+「-l 0.0.0.0」で設定する。
+----
+----
+$ sudo less /var/log/syslog
+2024-05-12T01:19:47.237202+09:00 ryunosuke systemd[1]: memcached.service: Scheduled restart job, restart counter is at 4.
+2024-05-12T01:19:47.237310+09:00 ryunosuke systemd-memcached-wrapper[1072]: bind(): Cannot assign requested address
+2024-05-12T01:19:47.237347+09:00 ryunosuke systemd-memcached-wrapper[1072]: failed to listen on one of interface(s) 192.168.3.200: Cannot assign requested address
+----
 ```
 
 ## Finalize installation
