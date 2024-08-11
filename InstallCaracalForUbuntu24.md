@@ -4,7 +4,7 @@ OpenStack Document:
 * [OpenStack Docs](https://docs.openstack.org/install-guide/)
   
 Configs:
-* TBD
+* [Caracal-InstallConfigs](https://github.com/ogalush/Caracal-InstallConfigs) 
   
 TargetHost:
 * 192.168.3.200
